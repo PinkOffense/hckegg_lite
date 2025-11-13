@@ -54,6 +54,15 @@ class Translations {
       'language': 'Language',
       'english': 'English',
       'portuguese': 'Português',
+      'login': 'Login',
+      'login_button': 'Login',
+      'signup_button': 'Sign up',
+      'create_account': 'Create account',
+      'already_have_account': 'I already have an account',
+      'email': 'Email',
+      'password': 'Password',
+      'login_failed': 'Login failed',
+
     },
     'pt': {
       'app_title': 'HCKEgg 360 Lite',
@@ -107,6 +116,15 @@ class Translations {
       'language': 'Idioma',
       'english': 'English',
       'portuguese': 'Português',
+      'login': 'Entrar',
+      'login_button': 'Entrar',
+      'signup_button': 'Criar conta',
+      'create_account': 'Criar conta',
+      'already_have_account': 'Já tenho conta',
+      'email': 'Email',
+      'password': 'Senha',
+      'login_failed': 'Falha ao entrar',
+
     }
   };
 
