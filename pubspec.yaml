@@ -1,0 +1,63 @@
+name: hckegg_lite
+description: "HCKEgg Avicultura 360º — Versão Lite (Flutter)"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.7.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI / utilitários
+  cupertino_icons: ^1.0.8
+  provider: ^6.0.5
+
+  # Supabase (Auth / Postgres / Storage)
+  supabase_flutter: ^2.10.2
+
+  # Offline local DB (Drift) + sqlite libs for mobile
+  drift: ^2.15.0
+  drift_flutter: 0.2.7
+  sqlite3_flutter_libs: ^0.5.40
+
+  # Firebase (core + crashlytics + analytics) - versões corrigidas
+  firebase_core: ^4.2.1
+  firebase_crashlytics: ^5.0.4
+  firebase_analytics: ^12.0.4
+
+  # Networking / json helpers
+  dio: ^5.3.2
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  # Codegen para Drift e json_serializable
+  build_runner: ^2.4.7
+  drift_dev: ^2.15.0
+  json_serializable: ^6.7.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+
+  fonts:
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/Montserrat-Regular.ttf
+        - asset: assets/fonts/Montserrat-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Montserrat-Bold.ttf
+          weight: 700
+
+analyzer:
+  strong-mode:
+    implicit-casts: false
+    implicit-dynamic: false
