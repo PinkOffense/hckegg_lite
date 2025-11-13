@@ -11,19 +11,20 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # UI / utilitários
+  # UI / utilities
   cupertino_icons: ^1.0.8
   provider: ^6.0.5
+  google_fonts: ^6.3.2
 
   # Supabase (Auth / Postgres / Storage)
   supabase_flutter: ^2.10.2
 
-  # Offline local DB (Drift) + sqlite libs for mobile
+  # Offline local DB (Drift) + sqlite libs
   drift: ^2.15.0
   drift_flutter: 0.2.7
   sqlite3_flutter_libs: ^0.5.40
 
-  # Firebase (core + crashlytics + analytics) - versões corrigidas
+  # Firebase (core + crashlytics + analytics)
   firebase_core: ^4.2.1
   firebase_crashlytics: ^5.0.4
   firebase_analytics: ^12.0.4
@@ -38,7 +39,7 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
 
-  # Codegen para Drift e json_serializable
+  # Codegen for Drift + JSON serializable
   build_runner: ^2.4.7
   drift_dev: ^2.15.0
   json_serializable: ^6.7.0
@@ -46,17 +47,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  assets:
+ # assets
 
-  fonts:
-    - family: Montserrat
-      fonts:
-        - asset: assets/fonts/Montserrat-Regular.ttf
-        - asset: assets/fonts/Montserrat-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Montserrat-Bold.ttf
-          weight: 700
 
+# Removed local fonts — now using Google Fonts
+# analyzer settings
 analyzer:
   strong-mode:
     implicit-casts: false

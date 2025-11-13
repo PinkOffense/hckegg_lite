@@ -1,196 +1,224 @@
-🥚 HCKEgg Lite — Mobile Poultry Management App
+# 🐔 HCKEgg Aviculture 360º — Lite Version
 
-HCKEgg Lite is a lightweight, offline-first mobile application designed for small and medium poultry farms.
-It enables egg tracking, batch management, production history, and cloud synchronization — all while running at zero backend cost thanks to Supabase Free Tier.
+**Intelligent Poultry Management, Offline-First and Zero-Cost**
 
-This repository contains the complete Flutter implementation of the Lite version.
+A Flutter mobile application for small and medium-sized poultry producers raising laying hens. Control production, costs, and herd health — all working offline, syncing to the cloud when connected.
 
-🚀 Features
-✅ Core Functionalities
+---
 
-Offline-first database using Drift + SQLite
+## 🎯 About the Project
 
-Local caching and sync queues
+HCKEgg is an innovative solution that modernizes rural poultry management, bringing accessible technology to farmers in the field. Built with **Flutter**, **SQLite (Drift)** local database, and free **Supabase** backend, it offers professional features with zero infrastructure costs.
 
-Manual or background sync with Supabase
+**Current Version**: Lite (0€/month)  
+**Target Audience**: Small and medium-sized poultry producers (50-500 hens)  
+**Platforms**: Android (iOS on roadmap)
 
-Egg entry creation, editing, deletion
+---
 
-Production timeline & basic dashboard
+## ✨ Key Features
 
-User authentication (email/password + optional OAuth)
+### 📊 Herd Management
+- Detailed registry of each hen (ID, breed, date of birth)
+- Grouping by batches with history
+- Mortality control and replacement tracking
 
-Secure cloud backup through Supabase Storage
+### 🥚 Production Control
+- Daily egg production logging
+- Classification by size and quality
+- Real-time performance dashboards
 
-📡 Backend (Zero-cost Architecture)
+### 💰 Cost Management
+- Feed and cost tracking
+- Medications and treatments registry
+- Automatic profitability calculation per hen
 
-Supabase Free Tier
+### 📅 Health & Wellness
+- Vaccination calendar
+- Common disease alerts
+- Treatment history
 
-Auth
+### 📱 Offline-First Experience
+- Works 100% without internet connection
+- Automatic sync when reconnecting
+- Data always available locally
 
-PostgreSQL (+ RLS security policies)
+---
 
-Storage
+## 🏗️ Technical Architecture
 
-Logs
+```
+┌─────────────────────────────────────────┐
+│  Flutter App (Offline-First)            │
+│  ├─ Drift/SQLite (Local Database)       │
+│  ├─ Provider (State Management)         │
+│  └─ Firebase Analytics + Crashlytics    │
+└────────────┬────────────────────────────┘
+             │ (Synchronization)
+             ↓
+┌─────────────────────────────────────────┐
+│  Supabase (Free Backend)                │
+│  ├─ PostgreSQL (Auth + Data)            │
+│  ├─ Row Level Security (RLS)            │
+│  └─ Edge Functions (when scaled)        │
+└─────────────────────────────────────────┘
+```
 
-No paid servers, no microservices
+### Technology Stack
 
-🛡️ Stability & Monitoring
+| Component       | Technology     | Version |
+|-----------------|----------------|---------|
+| **Frontend**    | Flutter        | 3.38.1  |
+| **Language**    | Dart           | 3.10.0  |
+| **Local DB**    | SQLite (Drift) | 2.29.0  |
+| **State Mgmt**  | Provider       | 6.1.5   |
+| **Backend**     | Supabase       | 2.10.3  |
+| **Analytics**   | Firebase       | 12.0.4  |
+| **HTTP Client** | Dio            | 5.3.2   |
+|-----------------|----------------|---------|
+---
 
-Firebase Crashlytics for error tracking
+## 🚀 Quick Start
 
-Firebase Analytics (optional)
+### Prerequisites
 
-Supabase logs for backend activity
+- Flutter 3.38.1+
+- Android SDK 21+ or iOS 13+
+- Git
+- Editor: Android Studio or VS Code
 
-🔒 Security
+### Installation
 
-Row Level Security in Supabase
+```bash
+# 1. Clone the repository
+git clone https://github.com/your-username/hckegg-lite.git
+cd hckegg_lite
 
-JWT handling
+# 2. Install dependencies
+flutter pub get
 
-HTTPS-only data transfer
+# 3. Generate code (Drift + JSON)
+dart run build_runner build
 
-🏛️ System Architecture
-Flutter App (Mobile)
-│
-├── Offline Layer
-│     ├── Drift (SQLite)
-│     ├── Local queue system
-│     └── Local dashboards
-│
-├── Sync Layer
-│     ├── Incremental sync
-│     ├── Timestamp-based deltas
-│     └── Batch upload
-│
-└── Supabase Backend
-├── Auth
-├── PostgreSQL
-├── Storage
-└── RLS Security
+# 4. Run the app
+flutter run
+```
 
-🛠️ Tech Stack
-Component	Technology
-UI Framework	Flutter (Dart)
-Local DB	Drift (SQLite)
-Backend	Supabase
-Cloud Storage	Supabase Storage
-Crash Reporting	Firebase Crashlytics
-Analytics	Firebase Analytics
-HTTP Client	Dio
-State Management	Provider
-📁 Project Structure
-lib/
-├── src/
-│   ├── db/
-│   │   ├── app_database.dart
-│   │   └── tables/
-│   ├── features/
-│   ├── services/
-│   ├── screens/
-│   └── widgets/
-└── main.dart
+### Running in Development Mode
 
-🧱 Installation & Setup
-1. Clone the repo
-   git clone https://github.com/<your-user>/hckegg_lite.git
-   cd hckegg_lite
-
-2. Install dependencies
-   flutter pub get
-
-3. Configure Supabase
-
-Create a .env or a config file with:
-
-const String supabaseUrl = "YOUR_SUPABASE_URL";
-const String supabaseAnonKey = "YOUR_SUPABASE_ANON_KEY";
-
-
-Enable:
-
-Auth (email)
-
-RLS policies
-
-Tables according to your schema
-
-4. Configure Firebase (Crashlytics & Analytics)
-   flutterfire configure
-
-
-Then:
-
-Add google-services.json to android/app/
-
-Ensure Gradle files are updated automatically
-
-5. Generate Drift files
-   flutter pub run build_runner build --delete-conflicting-outputs
-
-▶️ Running the App
-Android
+```bash
+# Hot reload enabled
 flutter run
 
-Build release
-flutter build apk --release
+# Verbose mode (debug)
+flutter run -v
 
-🧩 Environment Requirements
+# Specific device
+flutter run -d <device-id>
+```
 
-Flutter SDK 3.10+
+---
 
-Dart 3.10+
+## 📁 Project Structure
 
-Android Studio / VS Code
+```
+hckegg_lite/
+├── lib/
+│   ├── main.dart                 # App entry point
+│   ├── domain/
+│   │   ├── entities/             # Business models
+│   │   │   ├── hen.dart
+│   │   │   ├── batch.dart
+│   │   │   └── daily_production.dart
+│   │   └── repositories/         # Repository interfaces
+│   ├── data/
+│   │   ├── database/
+│   │   │   ├── app_database.dart # Drift database
+│   │   │   ├── tables/           # Table definitions
+│   │   │   └── daos/             # Data Access Objects
+│   │   ├── datasources/          # Local & Remote sources
+│   │   └── repositories/         # Repository implementations
+│   ├── presentation/
+│   │   ├── pages/                # App screens
+│   │   ├── widgets/              # Reusable widgets
+│   │   ├── providers/            # Riverpod providers
+│   │   └── theme/                # Styles and themes
+│   └── utils/
+│       ├── constants.dart        # Global constants
+│       └── helpers.dart          # Helper functions
+├── test/                         # Unit and integration tests
+├── pubspec.yaml                  # Project dependencies
+└── README.md                      # This file
+```
 
-Supabase project
+---
 
-Firebase project (optional but recommended)
+## 🗄️ Database
 
-🧮 Local Database Example (Drift)
-class Eggs extends Table {
-IntColumn get id => integer().autoIncrement()();
-TextColumn get tag => text()();
-IntColumn get weight => integer().nullable()();
-DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-}
+### Main Tables
 
-📦 Offline-First Sync Logic (Summary)
+**Hens**
+- ID, Identification, Breed, Date of Birth, Status, Batch
 
-Each local change is added to a sync queue.
+**Batches**
+- ID, Name, Start Date, End Date, Initial Quantity
 
-When internet is available, the queue is processed.
+**Daily Production**
+- ID, Date, Hen ID, Eggs, Quality, Batch
 
-Sync uses:
+**Costs**
+- ID, Date, Type (Feed/Medication), Amount, Description
 
-Timestamps for incremental updates
+**Treatments**
+- ID, Date, Hen ID, Type, Description, Completion Date
 
-Batching for low bandwidth
+---
 
-Automatic conflict resolution
+## 🔐 Security
 
-📜 Roadmap (Lite → Pro Upgrade Path)
+- ✅ **Authentication**: JWT with Supabase Auth
+- ✅ **Authorization**: Row Level Security (RLS) on Postgres
+- ✅ **Communication**: SSL/TLS
+- ✅ **Local Data**: Encrypted SQLite
+- ✅ **Privacy**: Zero personal data collection without consent
 
-Add advanced charts (production, mortality, feed)
+---
 
-Add multi-farm support
+## 📊 Performance & Limits
 
-Automatic background sync
+| Metric          | Limit            | Status  |
+|-----------------|------------------|---------|
+| Hens per app    | Unlimited        | ✅       |
+| History         | 30 days          | ✅       |
+| Sync            | Manual/Automatic | ✅       |
+| DB Size         | <500MB           | ✅       |
+| Supabase Egress | 2GB/month        | ✅       |
+|-----------------|------------------| --------|
 
-IoT sensor integration (Pro+ edition)
+---
 
-Web dashboard
+## 📄 License
 
-AI insights (Enterprise edition)
+This project is licensed under the **MIT License**. See `LICENSE` for details.
 
-🤝 Contributing
+---
 
-Contributions are welcome!
-Please open an issue or a PR with improvements or bug fixes.
+## 📞 Support & Contact
 
-📄 License
+- **Email**: [your-email@hckegg.com]
+- **GitHub Issues**: [Report bugs and suggestions]
+- **Website**: [hckegg.com] (in development)
 
-This project is proprietary software.
-All rights reserved © HCKEgg.
+---
+
+## 🙏 Acknowledgments
+
+- **Simon Binder** - Drift ORM
+- **Supabase Team** - Open-source backend
+- **Flutter Community** - Support and tools
+
+---
+
+**Built with ❤️ to modernize poultry farming.**
+
+*HCKEgg © 2025 - Aviculture 360º*
