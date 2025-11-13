@@ -5,10 +5,13 @@ version: 1.0.0+1
 
 environment:
   sdk: ">=3.10.0 <4.0.0"
-  flutter: ">=3.7.0"
 
 dependencies:
   flutter:
+    sdk: flutter
+
+  # Flutter-provided localization package (required for Material localizations)
+  flutter_localizations:
     sdk: flutter
 
   # UI / utilities
@@ -21,7 +24,7 @@ dependencies:
 
   # Offline local DB (Drift) + sqlite libs
   drift: ^2.15.0
-  drift_flutter: 0.2.7
+  drift_flutter: ^0.2.7
   sqlite3_flutter_libs: ^0.5.40
 
   # Firebase (core + crashlytics + analytics)
@@ -47,10 +50,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
- # assets
-
-
-# Removed local fonts — now using Google Fonts
 # analyzer settings
 analyzer:
   strong-mode:
