@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.6.0 <4.0.0"
+  sdk: ">=3.10.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -16,36 +16,34 @@ dependencies:
 
   # UI / utilities
   cupertino_icons: ^1.0.8
-  provider: ^6.0.5
-  google_fonts: ^6.3.2
+  provider: ^6.1.2
+  google_fonts: ^6.2.1
 
   # Supabase (Auth / Postgres / Storage)
-  supabase_flutter: ^2.10.2
+  supabase_flutter: ^2.8.0
 
-  # Offline local DB (Drift) + sqlite libs
-  drift: ^2.15.0
-  drift_flutter: ^0.2.7
-  sqlite3_flutter_libs: ^0.5.40
+  # Offline local DB (Drift) - web compatible
+  drift: ^2.20.3
 
-  # Firebase (core + crashlytics + analytics)
-  firebase_core: ^4.2.1
-  firebase_crashlytics: ^5.0.4
-  firebase_analytics: ^12.0.4
+  # Firebase (core + analytics) - web compatible
+  firebase_core: ^3.6.0
+  firebase_analytics: ^11.3.3
+  # Note: firebase_crashlytics removed - not supported on web
 
   # Networking / json helpers
-  dio: ^5.3.2
+  dio: ^5.7.0
   json_annotation: ^4.9.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^6.0.0
+  flutter_lints: ^5.0.0
 
   # Codegen for Drift + JSON serializable
-  build_runner: ^2.4.7
-  drift_dev: ^2.15.0
-  json_serializable: ^6.7.0
+  build_runner: ^2.4.13
+  drift_dev: ^2.20.3
+  json_serializable: ^6.8.0
 
 flutter:
   uses-material-design: true
