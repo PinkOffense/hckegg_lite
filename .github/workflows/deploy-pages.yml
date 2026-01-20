@@ -34,7 +34,10 @@ jobs:
         run: flutter pub get
 
       - name: Build Flutter web app
-        run: flutter build web --release --base-href "/hckegg_lite/"
+        run: flutter build web --release --base-href "/hckegg_lite/" --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
