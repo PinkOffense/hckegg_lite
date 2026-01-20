@@ -15,19 +15,19 @@ class AppRouter {
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case home:
+      case AppRouter.home:
         return MaterialPageRoute(
           builder: (_) => const DashboardPage(),
           settings: settings,
         );
 
-      case eggs:
+      case AppRouter.eggs:
         return MaterialPageRoute(
           builder: (_) => const EggListPage(),
           settings: settings,
         );
 
-      case eggDetail:
+      case AppRouter.eggDetail:
         final args = settings.arguments;
         if (args is int) {
           return MaterialPageRoute(
@@ -38,13 +38,13 @@ class AppRouter {
         // Fallback if no argument provided
         return _errorRoute(settings);
 
-      case sync:
+      case AppRouter.sync:
         return MaterialPageRoute(
           builder: (_) => const SyncPage(),
           settings: settings,
         );
 
-      case settings:
+      case AppRouter.settings:
         return MaterialPageRoute(
           builder: (_) => const SettingsPage(),
           settings: settings,
@@ -57,7 +57,7 @@ class AppRouter {
 
   static Route<dynamic> _errorRoute(RouteSettings settings) {
     return MaterialPageRoute(
-      builder: (_) => Scaffold(
+      builder: (context) => Scaffold(
         appBar: AppBar(
           title: const Text('Error'),
         ),
@@ -78,7 +78,7 @@ class AppRouter {
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: () => Navigator.of(_).pushReplacementNamed('/'),
+                onPressed: () => Navigator.of(context).pushReplacementNamed('/'),
                 icon: const Icon(Icons.home),
                 label: const Text('Go to Home'),
               ),
