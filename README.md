@@ -10,9 +10,19 @@ A Flutter mobile application for small and medium-sized poultry producers raisin
 
 HCKEgg is an innovative solution that modernizes rural poultry management, bringing accessible technology to farmers in the field. Built with **Flutter**, **SQLite (Drift)** local database, and free **Supabase** backend, it offers professional features with zero infrastructure costs.
 
-**Current Version**: Lite (0€/month)  
-**Target Audience**: Small and medium-sized poultry producers (50-500 hens)  
-**Platforms**: Android (iOS on roadmap)
+**Current Version**: Lite (0€/month)
+**Target Audience**: Small and medium-sized poultry producers (50-500 hens)
+**Platforms**: Android, Web (iOS on roadmap)
+
+---
+
+## 🌐 Try It Online
+
+**Live Demo**: [https://pinkoffense.github.io/hckegg_lite/](https://pinkoffense.github.io/hckegg_lite/)
+
+Experience HCKEgg directly in your browser - no installation required! The web version includes all core features and works offline after the first load.
+
+**New to HCKEgg?** Check out the [User Guide](USER_GUIDE.md) to learn how to use the app.
 
 ---
 
@@ -80,18 +90,30 @@ HCKEgg is an innovative solution that modernizes rural poultry management, bring
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Option 1: Use Web Version (Instant)
+
+Simply visit: **[https://pinkoffense.github.io/hckegg_lite/](https://pinkoffense.github.io/hckegg_lite/)**
+
+- No installation needed
+- Works in any modern browser
+- Can be installed as PWA (Progressive Web App)
+- Full offline support after first load
+
+### Option 2: Run Locally
+
+#### Prerequisites
 
 - Flutter 3.38.1+
-- Android SDK 21+ or iOS 13+
+- Android SDK 21+ or iOS 13+ (for mobile)
+- Chrome (for web development)
 - Git
 - Editor: Android Studio or VS Code
 
-### Installation
+#### Installation
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/hckegg-lite.git
+git clone https://github.com/PinkOffense/hckegg_lite.git
 cd hckegg_lite
 
 # 2. Install dependencies
@@ -101,21 +123,34 @@ flutter pub get
 dart run build_runner build
 
 # 4. Run the app
-flutter run
+flutter run              # Auto-selects available device
+flutter run -d chrome    # Run in browser
+flutter run -d android   # Run on Android
 ```
 
-### Running in Development Mode
+#### Running in Development Mode
 
 ```bash
 # Hot reload enabled
 flutter run
 
+# Web browser
+flutter run -d chrome
+
 # Verbose mode (debug)
 flutter run -v
 
 # Specific device
+flutter devices          # List available devices
 flutter run -d <device-id>
 ```
+
+---
+
+## 📖 Documentation
+
+- **[User Guide](USER_GUIDE.md)** - Learn how to use HCKEgg
+- **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Deploy your own instance to GitHub Pages
 
 ---
 
