@@ -1,6 +1,5 @@
 // lib/app/app_widget.dart
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -9,6 +8,8 @@ import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 
 import 'auth_gate.dart';
+import 'app_theme.dart';
+import 'app_router.dart';
 
 class HckEggApp extends StatelessWidget {
   const HckEggApp({super.key});
@@ -26,11 +27,14 @@ class HckEggApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             title: Translations.title(localeProvider.code),
 
-            theme: ThemeData(
-              colorSchemeSeed: const Color(0xFF7E57C2),
-              useMaterial3: true,
-              textTheme: GoogleFonts.montserratTextTheme(),
-            ),
+            // Enhanced theme with dark mode support
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: ThemeMode.system,
+
+            // Proper route configuration
+            onGenerateRoute: AppRouter.generateRoute,
+            initialRoute: '/',
 
             locale: Locale(localeProvider.code),
             supportedLocales: const [
