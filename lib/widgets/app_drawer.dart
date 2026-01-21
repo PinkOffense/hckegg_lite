@@ -11,15 +11,55 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = Provider.of<LocaleProvider>(context).code;
     final t = (String k) => Translations.of(locale, k);
+    final user = Supabase.instance.client.auth.currentUser;
+    final theme = Theme.of(context);
 
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
-            ListTile(
-              title: Text(t('app_title'), style: const TextStyle(fontWeight: FontWeight.bold)),
+            // User Profile Section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 35,
+                    backgroundColor: theme.colorScheme.primary,
+                    child: Text(
+                      user?.email?.substring(0, 1).toUpperCase() ?? 'U',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    user?.email ?? 'Guest',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Egg Farmer',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const Divider(),
+            const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.dashboard),
               title: Text(t('dashboard')),
@@ -37,11 +77,11 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.sync),
-              title: Text(t('sync')),
+              leading: const Icon(Icons.settings),
+              title: Text(t('settings')),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/sync');
+                Navigator.pushReplacementNamed(context, '/settings');
               },
             ),
             const Spacer(),

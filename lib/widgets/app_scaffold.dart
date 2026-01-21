@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../state/theme_provider.dart';
@@ -30,13 +31,39 @@ class AppScaffold extends StatelessWidget {
             onPressed: () => themeProvider.toggleTheme(),
           ),
           IconButton(
-            tooltip: Translations.of(locale, 'open_sync_tooltip'),
-            icon: const Icon(Icons.sync),
-            onPressed: () => Navigator.pushNamed(context, '/sync'),
+            tooltip: 'Logout',
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to sign out?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Logout'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true && context.mounted) {
+                await Supabase.instance.client.auth.signOut();
+              }
+            },
           ),
           IconButton(
-            tooltip: Translations.of(locale, 'open_settings_tooltip'),
-            icon: const Icon(Icons.settings),
+            tooltip: 'Profile',
+            icon: const Icon(Icons.account_circle),
             onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),
         ],
