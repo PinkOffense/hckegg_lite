@@ -1,21 +1,12 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
-import '../dialogs/new_egg_dialog.dart';
+import '../dialogs/daily_record_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
-import '../models/egg.dart';
-
-String formatDate(DateTime d) {
-  final dt = d.toLocal();
-  final y = dt.year.toString().padLeft(4, '0');
-  final m = dt.month.toString().padLeft(2, '0');
-  final day = dt.day.toString().padLeft(2, '0');
-  return '$y-$m-$day';
-}
+import '../models/daily_egg_record.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -60,6 +51,16 @@ class _DashboardPageState extends State<DashboardPage>
     super.dispose();
   }
 
+  String _formatDate(DateTime date) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[date.month - 1]} ${date.day}';
+  }
+
+  String _getTodayString() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = Provider.of<LocaleProvider>(context).code;
@@ -74,20 +75,20 @@ class _DashboardPageState extends State<DashboardPage>
         child: SlideTransition(
           position: _slideAnimation,
           child: Consumer<AppState>(builder: (context, state, _) {
-            final eggs = state.eggs;
-            final total = eggs.length;
-            final unsynced = state.syncQueue.length;
-            final recent = eggs.take(5).toList();
+            final records = state.records;
+            final todayRecord = state.getRecordByDate(_getTodayString());
+            final weekStats = state.getWeekStats();
+            final recentRecords = state.getRecentRecords(7);
 
-            if (eggs.isEmpty) {
+            if (records.isEmpty) {
               return EmptyState(
                 icon: Icons.egg_outlined,
-                title: t('no_records_yet'),
-                message: t('start_by_adding_first_egg'),
-                actionLabel: t('new_egg'),
+                title: 'No Records Yet',
+                message: 'Start tracking your daily egg collection',
+                actionLabel: 'Add Today\'s Record',
                 onAction: () => showDialog(
                   context: context,
-                  builder: (_) => const NewEggDialog(),
+                  builder: (_) => const DailyRecordDialog(),
                 ),
               );
             }
@@ -97,41 +98,151 @@ class _DashboardPageState extends State<DashboardPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // KPI Cards
-                  _KpiRow(total: total),
+                  // Today's Collection - Big Number
+                  Card(
+                    elevation: 4,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            colorScheme.primaryContainer.withOpacity(0.3),
+                            colorScheme.primaryContainer.withOpacity(0.1),
+                          ],
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.egg,
+                                size: 32,
+                                color: colorScheme.primary,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Today\'s Collection',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            '${todayRecord?.eggsCollected ?? 0}',
+                            style: theme.textTheme.displayLarge?.copyWith(
+                              fontSize: 64,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _formatDate(DateTime.now()),
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.textTheme.bodyLarge?.color?.withOpacity(0.7),
+                            ),
+                          ),
+                          if (todayRecord == null) ...[
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: () => showDialog(
+                                context: context,
+                                builder: (_) => const DailyRecordDialog(),
+                              ),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add Today\'s Record'),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
-                  // Overview and Chart
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      if (constraints.maxWidth > 800) {
-                        // Desktop layout
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: _OverviewCard(recent: recent),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              flex: 2,
-                              child: _ChartCard(eggs: eggs),
-                            ),
-                          ],
-                        );
-                      } else {
-                        // Mobile layout
-                        return Column(
-                          children: [
-                            _OverviewCard(recent: recent),
-                            const SizedBox(height: 16),
-                            _ChartCard(eggs: eggs),
-                          ],
-                        );
-                      }
-                    },
+                  // This Week's Stats
+                  Text(
+                    'This Week',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.egg,
+                          label: 'Collected',
+                          value: '${weekStats['collected']}',
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.sell,
+                          label: 'Sold',
+                          value: '${weekStats['sold']}',
+                          color: colorScheme.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.restaurant,
+                          label: 'Consumed',
+                          value: '${weekStats['consumed']}',
+                          color: colorScheme.tertiary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.attach_money,
+                          label: 'Revenue',
+                          value: '\$${(weekStats['revenue'] as double).toStringAsFixed(2)}',
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Last 7 Days
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Last 7 Days',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pushNamed(context, '/eggs'),
+                        child: const Text('View All'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ...recentRecords.map((record) => _DayRecordCard(
+                        record: record,
+                        onTap: () => showDialog(
+                          context: context,
+                          builder: (_) => DailyRecordDialog(existingRecord: record),
+                        ),
+                      )),
                 ],
               ),
             );
@@ -140,44 +251,26 @@ class _DashboardPageState extends State<DashboardPage>
       ),
       fab: FloatingActionButton.extended(
         icon: const Icon(Icons.add),
-        label: Text(Translations.of(locale, 'new_egg')),
+        label: const Text('Add Record'),
         onPressed: () => showDialog(
           context: context,
-          builder: (_) => const NewEggDialog(),
+          builder: (_) => const DailyRecordDialog(),
         ),
       ),
     );
   }
 }
 
-class _KpiRow extends StatelessWidget {
-  final int total;
-  const _KpiRow({required this.total});
-
-  @override
-  Widget build(BuildContext context) {
-    final locale = Provider.of<LocaleProvider>(context).code;
-    final t = (String k) => Translations.of(locale, k);
-
-    return _KpiCard(
-      label: t('total_records'),
-      value: '$total',
-      icon: Icons.egg,
-      color: Theme.of(context).colorScheme.primary,
-    );
-  }
-}
-
-class _KpiCard extends StatelessWidget {
+class _StatCard extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
-  final IconData icon;
   final Color color;
 
-  const _KpiCard({
+  const _StatCard({
+    required this.icon,
     required this.label,
     required this.value,
-    required this.icon,
     required this.color,
   });
 
@@ -186,54 +279,24 @@ class _KpiCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              color.withOpacity(0.1),
-              color.withOpacity(0.05),
-            ],
-          ),
-        ),
-        child: Row(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                size: 32,
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall,
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -242,292 +305,112 @@ class _KpiCard extends StatelessWidget {
   }
 }
 
-class _OverviewCard extends StatelessWidget {
-  final List<Egg> recent;
-  const _OverviewCard({required this.recent});
+class _DayRecordCard extends StatelessWidget {
+  final DailyEggRecord record;
+  final VoidCallback onTap;
+
+  const _DayRecordCard({
+    required this.record,
+    required this.onTap,
+  });
+
+  String _formatDate(String dateStr) {
+    final date = DateTime.parse(dateStr);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final recordDate = DateTime(date.year, date.month, date.day);
+    final difference = today.difference(recordDate).inDays;
+
+    if (difference == 0) return 'Today';
+    if (difference == 1) return 'Yesterday';
+
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[date.month - 1]} ${date.day}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final locale = Provider.of<LocaleProvider>(context).code;
-    final t = (String k) => Translations.of(locale, k);
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.history,
-                  size: 24,
-                  color: colorScheme.primary,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  t('recent_entries'),
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (recent.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Center(
                   child: Text(
-                    t('no_recent_entries'),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.5),
-                    ),
-                  ),
-                ),
-              )
-            else
-              ...recent.map((e) {
-                final isSynced = e.synced;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceVariant.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: colorScheme.outline.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.egg_outlined,
-                          size: 20,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              e.tag,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${e.weight ?? '-'} g • ${formatDate(e.createdAt)}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurface.withOpacity(0.6),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        isSynced ? Icons.cloud_done : Icons.cloud_upload_outlined,
-                        size: 20,
-                        color: isSynced
-                            ? colorScheme.secondary
-                            : colorScheme.onSurface.withOpacity(0.4),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            if (recent.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              TextButton.icon(
-                icon: const Icon(Icons.arrow_forward),
-                label: Text(t('view_all')),
-                onPressed: () => Navigator.pushNamed(context, '/eggs'),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChartCard extends StatelessWidget {
-  final List<Egg> eggs;
-  const _ChartCard({required this.eggs});
-
-  @override
-  Widget build(BuildContext context) {
-    final locale = Provider.of<LocaleProvider>(context).code;
-    final t = (String k) => Translations.of(locale, k);
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    final weights = eggs.take(10).map((e) => (e.weight ?? 0).toDouble()).toList();
-    final maxW = weights.isEmpty ? 1.0 : weights.reduce(max);
-    final avgWeight = weights.isEmpty
-        ? 0.0
-        : weights.reduce((a, b) => a + b) / weights.length;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.bar_chart,
-                  size: 24,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    t('production_last'),
+                    '${record.eggsCollected}',
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (weights.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colorScheme.secondaryContainer.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      children: [
-                        Text(
-                          '${avgWeight.toStringAsFixed(1)}g',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.secondary,
-                          ),
-                        ),
-                        Text(
-                          'Average',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
+                    Text(
+                      _formatDate(record.date),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    Container(
-                      width: 1,
-                      height: 30,
-                      color: colorScheme.outline.withOpacity(0.3),
-                    ),
-                    Column(
+                    const SizedBox(height: 4),
+                    Row(
                       children: [
-                        Text(
-                          '${maxW.toInt()}g',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.tertiary,
+                        if (record.eggsSold > 0) ...[
+                          Icon(Icons.sell, size: 14, color: theme.textTheme.bodySmall?.color),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${record.eggsSold} sold',
+                            style: theme.textTheme.bodySmall,
                           ),
-                        ),
-                        Text(
-                          'Max',
-                          style: theme.textTheme.bodySmall,
-                        ),
+                        ],
+                        if (record.eggsSold > 0 && record.eggsConsumed > 0)
+                          const Text(' • ', style: TextStyle(fontSize: 12)),
+                        if (record.eggsConsumed > 0) ...[
+                          Icon(Icons.restaurant, size: 14, color: theme.textTheme.bodySmall?.color),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${record.eggsConsumed} eaten',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                        if (record.revenue > 0) ...[
+                          const Text(' • ', style: TextStyle(fontSize: 12)),
+                          Text(
+                            '\$${record.revenue.toStringAsFixed(2)}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.green,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
                 ),
               ),
-            const SizedBox(height: 16),
-            if (weights.isEmpty)
-              SizedBox(
-                height: 120,
-                child: Center(
-                  child: Text(
-                    t('no_data_to_display'),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.5),
-                    ),
-                  ),
-                ),
-              )
-            else
-              SizedBox(
-                height: 150,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: weights.asMap().entries.map((entry) {
-                    final w = entry.value;
-                    final height = (w / maxW) * 110 + 10;
-                    final color = w >= avgWeight
-                        ? colorScheme.secondary
-                        : colorScheme.tertiary;
-
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 3.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Tooltip(
-                              message: '${w.toInt()}g',
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 800),
-                                curve: Curves.easeOutCubic,
-                                height: height,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.bottomCenter,
-                                    end: Alignment.topCenter,
-                                    colors: [
-                                      color,
-                                      color.withOpacity(0.7),
-                                    ],
-                                  ),
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(6),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: color.withOpacity(0.3),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              w.toInt().toString(),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+              Icon(
+                Icons.chevron_right,
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
