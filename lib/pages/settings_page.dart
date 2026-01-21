@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/app_scaffold.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
@@ -85,7 +86,68 @@ class SettingsPage extends StatelessWidget {
                   ],
                 ),
               ),
-            )
+            ),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 8),
+            Card(
+              color: Theme.of(context).brightness == Brightness.light
+                  ? Colors.red.shade50
+                  : Colors.red.shade900.withOpacity(0.2),
+              child: ListTile(
+                leading: Icon(
+                  Icons.logout,
+                  color: Theme.of(context).brightness == Brightness.light
+                      ? Colors.red.shade700
+                      : Colors.red.shade300,
+                ),
+                title: Text(
+                  'Logout',
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.light
+                        ? Colors.red.shade700
+                        : Colors.red.shade300,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text('Sign out of your account'),
+                trailing: Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Theme.of(context).brightness == Brightness.light
+                      ? Colors.red.shade700
+                      : Colors.red.shade300,
+                ),
+                onTap: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Logout'),
+                      content: const Text('Are you sure you want to sign out?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Logout'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true && context.mounted) {
+                    await Supabase.instance.client.auth.signOut();
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
