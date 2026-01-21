@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
+import '../state/theme_provider.dart';
 import 'app_drawer.dart';
 
 class AppScaffold extends StatelessWidget {
@@ -14,11 +15,20 @@ class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
         elevation: 0,
         actions: [
+          IconButton(
+            tooltip: themeProvider.isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            icon: Icon(
+              themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+            ),
+            onPressed: () => themeProvider.toggleTheme(),
+          ),
           IconButton(
             tooltip: Translations.of(locale, 'open_sync_tooltip'),
             icon: const Icon(Icons.sync),
