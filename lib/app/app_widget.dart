@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../state/app_state.dart';
+import '../state/theme_provider.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 
@@ -20,9 +21,10 @@ class HckEggApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AppState()),
         ChangeNotifierProvider(create: (_) => LocaleProvider('en')),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: Consumer<LocaleProvider>(
-        builder: (context, localeProvider, _) {
+      child: Consumer2<LocaleProvider, ThemeProvider>(
+        builder: (context, localeProvider, themeProvider, _) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: Translations.title(localeProvider.code),
@@ -30,7 +32,7 @@ class HckEggApp extends StatelessWidget {
             // Enhanced theme with dark mode support
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            themeMode: ThemeMode.system,
+            themeMode: themeProvider.themeMode,
 
             // Proper route configuration
             onGenerateRoute: AppRouter.generateRoute,
