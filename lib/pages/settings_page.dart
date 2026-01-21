@@ -67,81 +67,6 @@ class SettingsPage extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Settings',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.cloud),
-                title: Text(t('backend')),
-                subtitle: Text(t('supabase_dialog')),
-                onTap: () async {
-                  showDialog(context: context, builder: (_) => AlertDialog(title: Text(t('configure_supabase')), content: Text(t('supabase_dialog'))));
-                },
-              ),
-            ),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.bug_report),
-                title: Text(t('crash_reporting')),
-                subtitle: Text(t('crash_dialog')),
-                onTap: () {
-                  showDialog(context: context, builder: (_) => AlertDialog(title: Text(t('crash_reporting')), content: Text(t('crash_dialog'))));
-                },
-              ),
-            ),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.storage),
-                title: Text(t('local_db')),
-                subtitle: const Text('Drift (SQLite)'),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.delete_forever),
-              label: Text(t('clear_local_mock_data')),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('clear_mock_not_impl'))));
-              },
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(t('language'), style: Theme.of(context).textTheme.titleSmall),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        ChoiceChip(
-                          label: Text(t('english')),
-                          selected: localeProvider.code == 'en',
-                          onSelected: (s) {
-                            if (s) localeProvider.setLocale('en');
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        ChoiceChip(
-                          label: Text(t('portuguese')),
-                          selected: localeProvider.code == 'pt',
-                          onSelected: (s) {
-                            if (s) localeProvider.setLocale('pt');
-                          },
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 8),
@@ -174,31 +99,7 @@ class SettingsPage extends StatelessWidget {
                       : Colors.red.shade300,
                 ),
                 onTap: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Logout'),
-                      content: const Text('Are you sure you want to sign out?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('Logout'),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirm == true && context.mounted) {
-                    await Supabase.instance.client.auth.signOut();
-                  }
+                  await Supabase.instance.client.auth.signOut();
                 },
               ),
             ),

@@ -34,31 +34,7 @@ class AppScaffold extends StatelessWidget {
             tooltip: 'Logout',
             icon: const Icon(Icons.logout),
             onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Logout'),
-                  content: const Text('Are you sure you want to sign out?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancel'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Logout'),
-                    ),
-                  ],
-                ),
-              );
-
-              if (confirm == true && context.mounted) {
-                await Supabase.instance.client.auth.signOut();
-              }
+              await Supabase.instance.client.auth.signOut();
             },
           ),
           IconButton(
