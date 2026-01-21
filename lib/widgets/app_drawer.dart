@@ -77,8 +77,8 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.settings),
-              title: Text(t('settings')),
+              leading: const Icon(Icons.account_circle),
+              title: const Text('Profile'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushReplacementNamed(context, '/settings');
