@@ -3,39 +3,52 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Enhanced color palette with better accessibility
-  static const Color primaryPurple = Color(0xFF6750A4);
-  static const Color secondaryGreen = Color(0xFF4CAF50);
-  static const Color accentOrange = Color(0xFFFF9800);
-  static const Color errorRed = Color(0xFFE53935);
-  static const Color warningAmber = Color(0xFFFFA726);
+  // Professional pink color palette
+  // Background: soft baby pink
+  static const Color backgroundPink = Color(0xFFFFEAF2);
 
-  // Surface colors for cards and elevated surfaces
-  static const Color lightSurface = Color(0xFFFFFBFF);
+  // Primary buttons: stronger pink with white text
+  static const Color primaryPink = Color(0xFFFF3B7A);
+
+  // Secondary elements/borders: medium pink
+  static const Color secondaryPink = Color(0xFFFF8FB3);
+
+  // Text: dark gray for body, white for buttons
+  static const Color textDark = Color(0xFF1F1F1F);
+  static const Color textWhite = Color(0xFFFFFFFF);
+
+  // Additional colors for error states
+  static const Color errorRed = Color(0xFFE53935);
+
+  // Surface colors for cards (white with subtle shadows)
+  static const Color lightSurface = Color(0xFFFFFFFF);
   static const Color darkSurface = Color(0xFF1C1B1F);
 
   // Text colors with proper contrast ratios (WCAG AA)
-  static const Color lightTextPrimary = Color(0xFF1C1B1F);
+  static const Color lightTextPrimary = textDark;
   static const Color lightTextSecondary = Color(0xFF49454F);
   static const Color darkTextPrimary = Color(0xFFE6E1E5);
   static const Color darkTextSecondary = Color(0xFFCAC4D0);
 
-  // Light theme
+  // Light theme with professional pink palette
   static ThemeData get lightTheme {
     final ColorScheme colorScheme = ColorScheme.fromSeed(
-      seedColor: primaryPurple,
+      seedColor: primaryPink,
       brightness: Brightness.light,
-      primary: primaryPurple,
-      secondary: secondaryGreen,
+      primary: primaryPink,
+      secondary: secondaryPink,
+      tertiary: secondaryPink,
       error: errorRed,
+      background: backgroundPink,
+      surface: lightSurface,
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
 
-      // Typography using Montserrat
-      textTheme: GoogleFonts.montserratTextTheme(
+      // Typography using Inter (professional, modern)
+      textTheme: GoogleFonts.interTextTheme(
         ThemeData.light().textTheme,
       ).apply(
         bodyColor: lightTextPrimary,
@@ -48,21 +61,22 @@ class AppTheme {
         elevation: 0,
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
-        titleTextStyle: GoogleFonts.montserrat(
+        titleTextStyle: GoogleFonts.inter(
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: lightTextPrimary,
         ),
       ),
 
-      // Card theme
+      // Card theme with subtle shadows
       cardTheme: CardThemeData(
-        elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.1),
+        elevation: 3,
+        shadowColor: Colors.black.withOpacity(0.08),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
         clipBehavior: Clip.antiAlias,
+        color: lightSurface,
       ),
 
       // Input decoration theme
@@ -107,20 +121,22 @@ class AppTheme {
         ),
       ),
 
-      // Elevated button theme
+      // Elevated button theme - big, obvious buttons
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          elevation: 2,
+          elevation: 3,
+          shadowColor: primaryPink.withOpacity(0.3),
           padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 14,
+            horizontal: 32,
+            vertical: 18,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: GoogleFonts.montserrat(
+          textStyle: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -135,16 +151,18 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
-          textStyle: GoogleFonts.montserrat(
+          textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
         ),
       ),
 
-      // Floating action button theme
+      // Floating action button theme - prominent pink buttons
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        elevation: 4,
+        elevation: 6,
+        backgroundColor: primaryPink,
+        foregroundColor: textWhite,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -258,20 +276,22 @@ class AppTheme {
         ),
       ),
 
-      // Elevated button theme
+      // Elevated button theme - big, obvious buttons
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          elevation: 2,
+          elevation: 3,
+          shadowColor: primaryPink.withOpacity(0.3),
           padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 14,
+            horizontal: 32,
+            vertical: 18,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: GoogleFonts.montserrat(
+          textStyle: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -286,16 +306,18 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
-          textStyle: GoogleFonts.montserrat(
+          textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
         ),
       ),
 
-      // Floating action button theme
+      // Floating action button theme - prominent pink buttons
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        elevation: 4,
+        elevation: 6,
+        backgroundColor: primaryPink,
+        foregroundColor: textWhite,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
