@@ -218,19 +218,19 @@ class AppTheme {
         elevation: 0,
         backgroundColor: darkSurface,
         foregroundColor: colorScheme.onSurface,
-        titleTextStyle: GoogleFonts.montserrat(
+        titleTextStyle: GoogleFonts.inter(
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: darkTextPrimary,
         ),
       ),
 
-      // Card theme
+      // Card theme with subtle shadows
       cardTheme: CardThemeData(
-        elevation: 2,
+        elevation: 3,
         shadowColor: Colors.black.withOpacity(0.3),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
         clipBehavior: Clip.antiAlias,
         color: darkSurface,
