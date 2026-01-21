@@ -13,13 +13,68 @@ class SettingsPage extends StatelessWidget {
     final localeProvider = Provider.of<LocaleProvider>(context);
     final locale = localeProvider.code;
     final t = (String k) => Translations.of(locale, k);
+    final user = Supabase.instance.client.auth.currentUser;
+    final theme = Theme.of(context);
 
     return AppScaffold(
-      title: t('settings'),
+      title: 'Profile & Settings',
       body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: ListView(
           children: [
+            // User Profile Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 45,
+                      backgroundColor: theme.colorScheme.primary,
+                      child: Text(
+                        user?.email?.substring(0, 1).toUpperCase() ?? 'U',
+                        style: TextStyle(
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      user?.email ?? 'Guest User',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Egg Farmer',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (user?.createdAt != null)
+                      Text(
+                        'Member since ${_formatDate(DateTime.parse(user!.createdAt))}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Settings',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
             Card(
               child: ListTile(
                 leading: const Icon(Icons.cloud),
@@ -152,5 +207,10 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[date.month - 1]} ${date.year}';
   }
 }
