@@ -46,6 +46,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      scaffoldBackgroundColor: backgroundPink,
 
       // Typography using Inter (professional, modern)
       textTheme: GoogleFonts.interTextTheme(
@@ -191,19 +192,20 @@ class AppTheme {
   // Dark theme
   static ThemeData get darkTheme {
     final ColorScheme colorScheme = ColorScheme.fromSeed(
-      seedColor: primaryPurple,
+      seedColor: primaryPink,
       brightness: Brightness.dark,
-      primary: Color(0xFFD0BCFF),
-      secondary: Color(0xFF81C784),
+      primary: Color(0xFFFF8FB3),
+      secondary: Color(0xFFFF3B7A),
       error: Color(0xFFEF5350),
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      scaffoldBackgroundColor: darkSurface,
 
-      // Typography using Montserrat
-      textTheme: GoogleFonts.montserratTextTheme(
+      // Typography using Inter (professional, modern)
+      textTheme: GoogleFonts.interTextTheme(
         ThemeData.dark().textTheme,
       ).apply(
         bodyColor: darkTextPrimary,
@@ -216,19 +218,19 @@ class AppTheme {
         elevation: 0,
         backgroundColor: darkSurface,
         foregroundColor: colorScheme.onSurface,
-        titleTextStyle: GoogleFonts.montserrat(
+        titleTextStyle: GoogleFonts.inter(
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: darkTextPrimary,
         ),
       ),
 
-      // Card theme
+      // Card theme with subtle shadows
       cardTheme: CardThemeData(
-        elevation: 2,
+        elevation: 3,
         shadowColor: Colors.black.withOpacity(0.3),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
         clipBehavior: Clip.antiAlias,
         color: darkSurface,
