@@ -17,7 +17,7 @@ class SettingsPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return AppScaffold(
-      title: 'Profile & Settings',
+      title: 'Profile',
       body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: ListView(
@@ -65,42 +65,6 @@ class SettingsPage extends StatelessWidget {
                       ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 8),
-            Card(
-              color: Theme.of(context).brightness == Brightness.light
-                  ? Colors.red.shade50
-                  : Colors.red.shade900.withOpacity(0.2),
-              child: ListTile(
-                leading: Icon(
-                  Icons.logout,
-                  color: Theme.of(context).brightness == Brightness.light
-                      ? Colors.red.shade700
-                      : Colors.red.shade300,
-                ),
-                title: Text(
-                  'Logout',
-                  style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.light
-                        ? Colors.red.shade700
-                        : Colors.red.shade300,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                subtitle: const Text('Sign out of your account'),
-                trailing: Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Theme.of(context).brightness == Brightness.light
-                      ? Colors.red.shade700
-                      : Colors.red.shade300,
-                ),
-                onTap: () async {
-                  await Supabase.instance.client.auth.signOut();
-                },
               ),
             ),
             const SizedBox(height: 16),
