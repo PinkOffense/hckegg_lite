@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 
@@ -44,6 +45,22 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             const Spacer(),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: Text(
+                'Logout',
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.light
+                      ? Colors.red.shade700
+                      : Colors.red.shade300,
+                ),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await Supabase.instance.client.auth.signOut();
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.info_outline),
               title: Text(t('about_lite')),
