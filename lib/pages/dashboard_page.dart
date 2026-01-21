@@ -98,7 +98,7 @@ class _DashboardPageState extends State<DashboardPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // KPI Cards
-                  _KpiRow(total: total, unsynced: unsynced),
+                  _KpiRow(total: total),
                   const SizedBox(height: 20),
 
                   // Overview and Chart
@@ -132,63 +132,6 @@ class _DashboardPageState extends State<DashboardPage>
                       }
                     },
                   ),
-                  const SizedBox(height: 24),
-
-                  // Quick Actions Section
-                  Text(
-                    t('quick_actions'),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      _ActionCard(
-                        icon: Icons.add_circle_outline,
-                        label: t('new_egg'),
-                        color: colorScheme.primary,
-                        onTap: () => showDialog(
-                          context: context,
-                          builder: (_) => const NewEggDialog(),
-                        ),
-                      ),
-                      _ActionCard(
-                        icon: Icons.sync,
-                        label: t('sync_now'),
-                        color: colorScheme.secondary,
-                        onTap: () async {
-                          final s = Provider.of<AppState>(context, listen: false);
-                          await s.performMockSync();
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    const Icon(Icons.check_circle, color: Colors.white),
-                                    const SizedBox(width: 12),
-                                    Text(t('sync_complete')),
-                                  ],
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                      _ActionCard(
-                        icon: Icons.list_alt,
-                        label: t('open_records'),
-                        color: colorScheme.tertiary,
-                        onTap: () => Navigator.pushNamed(context, '/eggs'),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             );
@@ -209,62 +152,18 @@ class _DashboardPageState extends State<DashboardPage>
 
 class _KpiRow extends StatelessWidget {
   final int total;
-  final int unsynced;
-  const _KpiRow({required this.total, required this.unsynced});
+  const _KpiRow({required this.total});
 
   @override
   Widget build(BuildContext context) {
     final locale = Provider.of<LocaleProvider>(context).code;
     final t = (String k) => Translations.of(locale, k);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth > 600) {
-          return Row(
-            children: [
-              Expanded(
-                child: _KpiCard(
-                  label: t('total_records'),
-                  value: '$total',
-                  icon: Icons.egg,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _KpiCard(
-                  label: t('pending_sync'),
-                  value: '$unsynced',
-                  icon: Icons.cloud_upload,
-                  color: unsynced > 0
-                      ? Theme.of(context).colorScheme.error
-                      : Theme.of(context).colorScheme.secondary,
-                ),
-              ),
-            ],
-          );
-        } else {
-          return Column(
-            children: [
-              _KpiCard(
-                label: t('total_records'),
-                value: '$total',
-                icon: Icons.egg,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(height: 16),
-              _KpiCard(
-                label: t('pending_sync'),
-                value: '$unsynced',
-                icon: Icons.cloud_upload,
-                color: unsynced > 0
-                    ? Theme.of(context).colorScheme.error
-                    : Theme.of(context).colorScheme.secondary,
-              ),
-            ],
-          );
-        }
-      },
+    return _KpiCard(
+      label: t('total_records'),
+      value: '$total',
+      icon: Icons.egg,
+      color: Theme.of(context).colorScheme.primary,
     );
   }
 }
@@ -628,60 +527,6 @@ class _ChartCard extends StatelessWidget {
                   }).toList(),
                 ),
               ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// New Action Card Widget
-class _ActionCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ActionCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 24,
-              color: color,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ],
         ),
       ),
