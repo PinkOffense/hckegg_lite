@@ -49,7 +49,7 @@ class RevenueVsExpensesChart extends StatelessWidget {
     }
 
     final maxY = (maxRevenue > maxExpense ? maxRevenue : maxExpense) * 1.2;
-    final adjustedMaxY = maxY > 0 ? maxY : 10;
+    final adjustedMaxY = maxY > 0 ? maxY : 10.0;
 
     return SizedBox(
       height: 250,
