@@ -7,14 +7,27 @@
 2. Login no seu projeto
 3. Selecione o projeto **HCKEgg Lite**
 
-### 2. Executar o SQL
+### 2. Limpar database existente (RECOMENDADO)
+
+**⚠️ Se já executou o schema antes ou tem erros de "already exists":**
+
 1. No menu lateral, clique em **SQL Editor**
 2. Clique em **New Query**
-3. Copie todo o conteúdo de `schema.sql`
+3. Copie **todo** o conteúdo de `cleanup.sql`
 4. Cole no editor SQL
 5. Clique em **Run** (ou `Cmd/Ctrl + Enter`)
+6. Aguarde a mensagem: "Cleanup completo!"
 
-### 3. Verificar as tabelas
+**⚠️ AVISO: Este passo remove TODAS as tabelas e dados! Use apenas se quiser começar do zero!**
+
+### 3. Executar o SQL principal
+1. No **SQL Editor**, clique em **New Query** novamente (ou limpe a query anterior)
+2. Copie **todo** o conteúdo de `schema.sql`
+3. Cole no editor SQL
+4. Clique em **Run** (ou `Cmd/Ctrl + Enter`)
+5. Aguarde ~5-10 segundos
+
+### 4. Verificar as tabelas
 1. No menu lateral, clique em **Table Editor**
 2. Deve ver 3 tabelas criadas:
    - ✅ `daily_egg_records`
