@@ -181,6 +181,8 @@ class EggRemoteDatasource {
 
   /// Converter de DailyEggRecord para JSON do Supabase
   Map<String, dynamic> _toSupabaseJson(DailyEggRecord record) {
+    final userId = _client.auth.currentUser?.id;
+
     return {
       'date': record.date,
       'eggs_collected': record.eggsCollected,
@@ -192,7 +194,8 @@ class EggRemoteDatasource {
       'feed_expense': record.feedExpense,
       'vet_expense': record.vetExpense,
       'other_expense': record.otherExpense,
-      // user_id é automaticamente adicionado pelo RLS
+      // Adicionar user_id explicitamente (também validado pelo RLS)
+      if (userId != null) 'user_id': userId,
       // id é gerado automaticamente se não existir
     };
   }

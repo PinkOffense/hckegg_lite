@@ -173,12 +173,16 @@ class ExpenseRemoteDatasource {
 
   /// Converter de Expense para JSON do Supabase
   Map<String, dynamic> _toSupabaseJson(Expense expense) {
+    final userId = _client.auth.currentUser?.id;
+
     return {
       'date': expense.date,
       'category': expense.category.name,
       'amount': expense.amount,
       'description': expense.description,
       'notes': expense.notes,
+      // Adicionar user_id explicitamente (também validado pelo RLS)
+      if (userId != null) 'user_id': userId,
     };
   }
 
