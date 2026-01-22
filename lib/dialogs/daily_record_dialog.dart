@@ -22,6 +22,9 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
   final _consumedController = TextEditingController();
   final _priceController = TextEditingController();
   final _henCountController = TextEditingController();
+  final _feedExpenseController = TextEditingController();
+  final _vetExpenseController = TextEditingController();
+  final _otherExpenseController = TextEditingController();
   final _notesController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -37,6 +40,9 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
       _consumedController.text = record.eggsConsumed.toString();
       _priceController.text = record.pricePerEgg?.toStringAsFixed(2) ?? '';
       _henCountController.text = record.henCount?.toString() ?? '';
+      _feedExpenseController.text = record.feedExpense?.toStringAsFixed(2) ?? '';
+      _vetExpenseController.text = record.vetExpense?.toStringAsFixed(2) ?? '';
+      _otherExpenseController.text = record.otherExpense?.toStringAsFixed(2) ?? '';
       _notesController.text = record.notes ?? '';
     } else {
       _selectedDate = DateTime.now();
@@ -54,6 +60,9 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     _consumedController.dispose();
     _priceController.dispose();
     _henCountController.dispose();
+    _feedExpenseController.dispose();
+    _vetExpenseController.dispose();
+    _otherExpenseController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -79,6 +88,9 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     final consumed = int.tryParse(_consumedController.text) ?? 0;
     final price = double.tryParse(_priceController.text);
     final henCount = int.tryParse(_henCountController.text);
+    final feedExpense = double.tryParse(_feedExpenseController.text);
+    final vetExpense = double.tryParse(_vetExpenseController.text);
+    final otherExpense = double.tryParse(_otherExpenseController.text);
     final notes = _notesController.text.trim();
 
     final record = DailyEggRecord(
@@ -89,6 +101,9 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
       eggsConsumed: consumed,
       pricePerEgg: price,
       henCount: henCount,
+      feedExpense: feedExpense,
+      vetExpense: vetExpense,
+      otherExpense: otherExpense,
       notes: notes.isEmpty ? null : notes,
     );
 
@@ -120,7 +135,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
 
     return Dialog(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 700),
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 850),
         child: Scaffold(
           appBar: AppBar(
             title: Text(widget.existingRecord != null ? t('edit_daily_record') : t('add_daily_record')),
@@ -247,6 +262,70 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 24),
+
+                // Expenses Section Header
+                Row(
+                  children: [
+                    Icon(Icons.account_balance_wallet, size: 20, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      t('expenses'),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Feed Expense
+                TextFormField(
+                  controller: _feedExpenseController,
+                  decoration: InputDecoration(
+                    labelText: '${t('feed_expense')} (${t('optional')})',
+                    hintText: '15.00',
+                    prefixIcon: const Icon(Icons.grass),
+                    suffixText: '€',
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Vet Expense
+                TextFormField(
+                  controller: _vetExpenseController,
+                  decoration: InputDecoration(
+                    labelText: '${t('vet_expense')} (${t('optional')})',
+                    hintText: '25.00',
+                    prefixIcon: const Icon(Icons.medical_services),
+                    suffixText: '€',
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Other Expenses
+                TextFormField(
+                  controller: _otherExpenseController,
+                  decoration: InputDecoration(
+                    labelText: '${t('other_expense')} (${t('optional')})',
+                    hintText: locale == 'pt' ? 'Material, capoeiro, etc.' : 'Materials, coop, etc.',
+                    prefixIcon: const Icon(Icons.build),
+                    suffixText: '€',
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                  ],
+                ),
                 const SizedBox(height: 16),
 
                 // Notes
@@ -291,10 +370,12 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                         Text(
                           locale == 'pt'
                               ? '• Apenas "${t('eggs_collected')}" é obrigatório\n'
-                                '• Deixe o preço vazio se não controlar vendas\n'
+                                '• Preço e despesas são opcionais\n'
+                                '• Registe despesas para calcular lucro líquido\n'
                                 '• As notas ajudam a lembrar detalhes importantes'
                               : '• Only "${t('eggs_collected')}" is required\n'
-                                '• Leave price empty if you don\'t track sales\n'
+                                '• Price and expenses are optional\n'
+                                '• Record expenses to calculate net profit\n'
                                 '• Notes help you remember important details',
                           style: theme.textTheme.bodySmall,
                         ),

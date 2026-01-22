@@ -76,6 +76,14 @@ class AppDrawer extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, '/eggs');
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet),
+              title: Text(t('expenses')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/expenses');
+              },
+            ),
             const Spacer(),
             const Divider(),
             ListTile(
