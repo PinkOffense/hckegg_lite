@@ -84,6 +84,14 @@ class AppDrawer extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, '/expenses');
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.health_and_safety),
+              title: Text(t('hen_health')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/health');
+              },
+            ),
             const Spacer(),
             const Divider(),
             ListTile(

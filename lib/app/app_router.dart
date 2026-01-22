@@ -4,12 +4,14 @@ import '../pages/dashboard_page.dart';
 import '../pages/egg_list_page.dart';
 import '../pages/expenses_page.dart';
 import '../pages/settings_page.dart';
+import '../pages/hen_health_page.dart';
 
 class AppRouter {
   static const String home = '/';
   static const String eggs = '/eggs';
   static const String expenses = '/expenses';
   static const String settings = '/settings';
+  static const String health = '/health';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -34,6 +36,12 @@ class AppRouter {
       case AppRouter.settings:
         return MaterialPageRoute(
           builder: (_) => const SettingsPage(),
+          settings: settings,
+        );
+
+      case AppRouter.health:
+        return MaterialPageRoute(
+          builder: (_) => const HenHealthPage(),
           settings: settings,
         );
 
