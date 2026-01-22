@@ -152,8 +152,8 @@ class VetRemoteDatasource {
     // Calcular estatísticas
     final totalRecords = records.length;
     final totalDeaths = records.where((r) => r.type == VetRecordType.death).length;
-    final totalCosts = records.fold(0.0, (sum, r) => sum + (r.cost ?? 0.0));
-    final totalHensAffected = records.fold(0, (sum, r) => sum + r.hensAffected);
+    final totalCosts = records.fold<double>(0.0, (sum, r) => sum + (r.cost ?? 0.0));
+    final totalHensAffected = records.fold<int>(0, (sum, r) => sum + r.hensAffected);
 
     // Contar por tipo
     final byType = <String, int>{};

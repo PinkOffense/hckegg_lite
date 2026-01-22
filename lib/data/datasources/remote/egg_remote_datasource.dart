@@ -145,11 +145,11 @@ class EggRemoteDatasource {
         .toList();
 
     // Calcular estatísticas
-    final totalCollected = records.fold(0, (sum, r) => sum + r.eggsCollected);
-    final totalSold = records.fold(0, (sum, r) => sum + r.eggsSold);
-    final totalConsumed = records.fold(0, (sum, r) => sum + r.eggsConsumed);
-    final totalRevenue = records.fold(0.0, (sum, r) => sum + r.revenue);
-    final totalExpenses = records.fold(0.0, (sum, r) => sum + r.totalExpenses);
+    final totalCollected = records.fold<int>(0, (sum, r) => sum + r.eggsCollected);
+    final totalSold = records.fold<int>(0, (sum, r) => sum + r.eggsSold);
+    final totalConsumed = records.fold<int>(0, (sum, r) => sum + r.eggsConsumed);
+    final totalRevenue = records.fold<double>(0.0, (sum, r) => sum + r.revenue);
+    final totalExpenses = records.fold<double>(0.0, (sum, r) => sum + r.totalExpenses);
 
     return {
       'collected': totalCollected,

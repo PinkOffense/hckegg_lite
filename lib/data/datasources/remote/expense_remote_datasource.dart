@@ -152,7 +152,7 @@ class ExpenseRemoteDatasource {
         .map((json) => _fromSupabaseJson(json))
         .toList();
 
-    return expenses.fold(0.0, (sum, e) => sum + e.amount);
+    return expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
   }
 
   /// Converter de JSON do Supabase para Expense

@@ -1,5 +1,6 @@
 // lib/data/repositories/egg_repository_impl.dart
 
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/repositories/egg_repository.dart';
 import '../../models/daily_egg_record.dart';
 import '../datasources/remote/egg_remote_datasource.dart';

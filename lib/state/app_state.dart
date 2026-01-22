@@ -59,19 +59,19 @@ class AppState extends ChangeNotifier {
 
   // Statistics
   int get totalEggsCollected {
-    return _records.fold(0, (sum, r) => sum + r.eggsCollected);
+    return _records.fold<int>(0, (sum, r) => sum + r.eggsCollected);
   }
 
   int get totalEggsSold {
-    return _records.fold(0, (sum, r) => sum + r.eggsSold);
+    return _records.fold<int>(0, (sum, r) => sum + r.eggsSold);
   }
 
   int get totalEggsConsumed {
-    return _records.fold(0, (sum, r) => sum + r.eggsConsumed);
+    return _records.fold<int>(0, (sum, r) => sum + r.eggsConsumed);
   }
 
   double get totalRevenue {
-    return _records.fold(0.0, (sum, r) => sum + r.revenue);
+    return _records.fold<double>(0.0, (sum, r) => sum + r.revenue);
   }
 
   // This week's statistics
@@ -80,13 +80,13 @@ class AppState extends ChangeNotifier {
     final weekAgo = now.subtract(const Duration(days: 7));
     final weekRecords = getRecordsInRange(weekAgo, now);
 
-    final revenue = weekRecords.fold(0.0, (sum, r) => sum + r.revenue);
-    final expenses = weekRecords.fold(0.0, (sum, r) => sum + r.totalExpenses);
+    final revenue = weekRecords.fold<double>(0.0, (sum, r) => sum + r.revenue);
+    final expenses = weekRecords.fold<double>(0.0, (sum, r) => sum + r.totalExpenses);
 
     return {
-      'collected': weekRecords.fold(0, (sum, r) => sum + r.eggsCollected),
-      'sold': weekRecords.fold(0, (sum, r) => sum + r.eggsSold),
-      'consumed': weekRecords.fold(0, (sum, r) => sum + r.eggsConsumed),
+      'collected': weekRecords.fold<int>(0, (sum, r) => sum + r.eggsCollected),
+      'sold': weekRecords.fold<int>(0, (sum, r) => sum + r.eggsSold),
+      'consumed': weekRecords.fold<int>(0, (sum, r) => sum + r.eggsConsumed),
       'revenue': revenue,
       'expenses': expenses,
       'net_profit': revenue - expenses,
@@ -158,9 +158,9 @@ class AppState extends ChangeNotifier {
 
   int get totalDeaths => _vetRecords.where((r) => r.type == VetRecordType.death).length;
 
-  double get totalVetCosts => _vetRecords.fold(0.0, (sum, r) => sum + (r.cost ?? 0.0));
+  double get totalVetCosts => _vetRecords.fold<double>(0.0, (sum, r) => sum + (r.cost ?? 0.0));
 
-  int get totalHensAffected => _vetRecords.fold(0, (sum, r) => sum + r.hensAffected);
+  int get totalHensAffected => _vetRecords.fold<int>(0, (sum, r) => sum + r.hensAffected);
 
   // Generate mock data for development
   static List<DailyEggRecord> _generateMockData() {
