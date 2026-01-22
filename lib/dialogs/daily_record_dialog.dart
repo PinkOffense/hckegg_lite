@@ -80,7 +80,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     final collected = int.parse(_collectedController.text);
@@ -108,9 +108,22 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     );
 
     final appState = Provider.of<AppState>(context, listen: false);
-    appState.saveRecord(record);
 
-    Navigator.of(context).pop();
+    try {
+      await appState.saveRecord(record);
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao guardar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   String _dateToString(DateTime date) {

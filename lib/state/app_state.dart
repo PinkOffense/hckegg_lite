@@ -1,15 +1,70 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+import '../core/di/repository_provider.dart';
+import '../domain/repositories/egg_repository.dart';
+import '../domain/repositories/expense_repository.dart';
+import '../domain/repositories/vet_repository.dart';
 import '../models/daily_egg_record.dart';
+import '../models/expense.dart';
 import '../models/vet_record.dart';
 
 class AppState extends ChangeNotifier {
-  final List<DailyEggRecord> _records = _generateMockData();
-  final List<VetRecord> _vetRecords = _generateMockVetData();
+  // Repositories
+  final EggRepository _eggRepository = RepositoryProvider.instance.eggRepository;
+  final ExpenseRepository _expenseRepository = RepositoryProvider.instance.expenseRepository;
+  final VetRepository _vetRepository = RepositoryProvider.instance.vetRepository;
 
+  // State - Egg Records
+  List<DailyEggRecord> _records = [];
+  bool _isLoadingRecords = false;
+  String? _recordsError;
+
+  // State - Expenses
+  List<Expense> _expenses = [];
+  bool _isLoadingExpenses = false;
+  String? _expensesError;
+
+  // State - Vet Records
+  List<VetRecord> _vetRecords = [];
+  bool _isLoadingVetRecords = false;
+  String? _vetRecordsError;
+
+  // Getters - Egg Records
   List<DailyEggRecord> get records => List.unmodifiable(_records);
+  bool get isLoadingRecords => _isLoadingRecords;
+  String? get recordsError => _recordsError;
 
-  // Get record for a specific date
+  // Getters - Expenses
+  List<Expense> get expenses => List.unmodifiable(_expenses);
+  bool get isLoadingExpenses => _isLoadingExpenses;
+  String? get expensesError => _expensesError;
+
+  // Getters - Vet Records
+  List<VetRecord> get vetRecords => List.unmodifiable(_vetRecords);
+  bool get isLoadingVetRecords => _isLoadingVetRecords;
+  String? get vetRecordsError => _vetRecordsError;
+
+  // Overall loading state
+  bool get isLoading => _isLoadingRecords || _isLoadingExpenses || _isLoadingVetRecords;
+
+  // ========== EGG RECORDS ==========
+
+  /// Carregar todos os registos de ovos do Supabase
+  Future<void> loadRecords() async {
+    _isLoadingRecords = true;
+    _recordsError = null;
+    notifyListeners();
+
+    try {
+      _records = await _eggRepository.getAll();
+    } catch (e) {
+      _recordsError = e.toString();
+    } finally {
+      _isLoadingRecords = false;
+      notifyListeners();
+    }
+  }
+
+  /// Obter registo por data
   DailyEggRecord? getRecordByDate(String date) {
     try {
       return _records.firstWhere((r) => r.date == date);
@@ -18,31 +73,44 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  // Add or update a daily record
-  void saveRecord(DailyEggRecord record) {
-    final existingIndex = _records.indexWhere((r) => r.date == record.date);
+  /// Guardar (criar ou actualizar) um registo
+  Future<void> saveRecord(DailyEggRecord record) async {
+    try {
+      final saved = await _eggRepository.save(record);
 
-    if (existingIndex != -1) {
-      // Update existing record
-      _records[existingIndex] = record;
-    } else {
-      // Add new record
-      _records.insert(0, record);
+      // Actualizar lista local
+      final existingIndex = _records.indexWhere((r) => r.date == saved.date);
+      if (existingIndex != -1) {
+        _records[existingIndex] = saved;
+      } else {
+        _records.insert(0, saved);
+      }
+
+      // Ordenar por data (mais recentes primeiro)
+      _records.sort((a, b) => b.date.compareTo(a.date));
+
+      notifyListeners();
+    } catch (e) {
+      _recordsError = e.toString();
+      notifyListeners();
+      rethrow;
     }
-
-    // Keep records sorted by date (newest first)
-    _records.sort((a, b) => b.date.compareTo(a.date));
-
-    notifyListeners();
   }
 
-  // Delete a record
-  void deleteRecord(String date) {
-    _records.removeWhere((r) => r.date == date);
-    notifyListeners();
+  /// Eliminar um registo por data
+  Future<void> deleteRecord(String date) async {
+    try {
+      await _eggRepository.deleteByDate(date);
+      _records.removeWhere((r) => r.date == date);
+      notifyListeners();
+    } catch (e) {
+      _recordsError = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
 
-  // Get records for date range
+  /// Obter registos num intervalo de datas
   List<DailyEggRecord> getRecordsInRange(DateTime start, DateTime end) {
     final startStr = _dateToString(start);
     final endStr = _dateToString(end);
@@ -52,12 +120,22 @@ class AppState extends ChangeNotifier {
     }).toList();
   }
 
-  // Get last N days of records
+  /// Obter últimos N dias de registos
   List<DailyEggRecord> getRecentRecords(int days) {
     return _records.take(days).toList();
   }
 
-  // Statistics
+  /// Pesquisar registos
+  List<DailyEggRecord> search(String query) {
+    if (query.isEmpty) return records;
+    return records.where((r) {
+      final notesMatch = r.notes?.toLowerCase().contains(query.toLowerCase()) ?? false;
+      final dateMatch = r.date.contains(query);
+      return notesMatch || dateMatch;
+    }).toList();
+  }
+
+  // Estatísticas de ovos
   int get totalEggsCollected {
     return _records.fold<int>(0, (sum, r) => sum + r.eggsCollected);
   }
@@ -74,7 +152,7 @@ class AppState extends ChangeNotifier {
     return _records.fold<double>(0.0, (sum, r) => sum + r.revenue);
   }
 
-  // This week's statistics
+  /// Estatísticas da semana
   Map<String, dynamic> getWeekStats() {
     final now = DateTime.now();
     final weekAgo = now.subtract(const Duration(days: 7));
@@ -93,54 +171,128 @@ class AppState extends ChangeNotifier {
     };
   }
 
-  // Search records by notes
-  List<DailyEggRecord> search(String query) {
-    if (query.isEmpty) return records;
-    return records.where((r) {
-      final notesMatch = r.notes?.toLowerCase().contains(query.toLowerCase()) ?? false;
-      final dateMatch = r.date.contains(query);
-      return notesMatch || dateMatch;
-    }).toList();
+  // ========== EXPENSES ==========
+
+  /// Carregar todas as despesas do Supabase
+  Future<void> loadExpenses() async {
+    _isLoadingExpenses = true;
+    _expensesError = null;
+    notifyListeners();
+
+    try {
+      _expenses = await _expenseRepository.getAll();
+    } catch (e) {
+      _expensesError = e.toString();
+    } finally {
+      _isLoadingExpenses = false;
+      notifyListeners();
+    }
   }
 
-  // ========== VET RECORDS MANAGEMENT ==========
+  /// Guardar uma despesa
+  Future<void> saveExpense(Expense expense) async {
+    try {
+      final saved = await _expenseRepository.save(expense);
 
-  List<VetRecord> get vetRecords => List.unmodifiable(_vetRecords);
+      // Actualizar lista local
+      final existingIndex = _expenses.indexWhere((e) => e.id == saved.id);
+      if (existingIndex != -1) {
+        _expenses[existingIndex] = saved;
+      } else {
+        _expenses.insert(0, saved);
+      }
 
+      notifyListeners();
+    } catch (e) {
+      _expensesError = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Eliminar uma despesa
+  Future<void> deleteExpense(String id) async {
+    try {
+      await _expenseRepository.delete(id);
+      _expenses.removeWhere((e) => e.id == id);
+      notifyListeners();
+    } catch (e) {
+      _expensesError = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Obter despesas por categoria
+  List<Expense> getExpensesByCategory(ExpenseCategory category) {
+    return _expenses.where((e) => e.category == category).toList();
+  }
+
+  // ========== VET RECORDS ==========
+
+  /// Carregar registos veterinários do Supabase
+  Future<void> loadVetRecords() async {
+    _isLoadingVetRecords = true;
+    _vetRecordsError = null;
+    notifyListeners();
+
+    try {
+      _vetRecords = await _vetRepository.getAll();
+    } catch (e) {
+      _vetRecordsError = e.toString();
+    } finally {
+      _isLoadingVetRecords = false;
+      notifyListeners();
+    }
+  }
+
+  /// Obter registos veterinários (ordenados)
   List<VetRecord> getVetRecords() {
-    // Return sorted by date (newest first)
     final sorted = List<VetRecord>.from(_vetRecords);
     sorted.sort((a, b) => b.date.compareTo(a.date));
     return sorted;
   }
 
-  // Add or update a vet record
-  void saveVetRecord(VetRecord record) {
-    final existingIndex = _vetRecords.indexWhere((r) => r.id == record.id);
+  /// Guardar um registo veterinário
+  Future<void> saveVetRecord(VetRecord record) async {
+    try {
+      final saved = await _vetRepository.save(record);
 
-    if (existingIndex != -1) {
-      // Update existing record
-      _vetRecords[existingIndex] = record;
-    } else {
-      // Add new record
-      _vetRecords.add(record);
+      // Actualizar lista local
+      final existingIndex = _vetRecords.indexWhere((r) => r.id == saved.id);
+      if (existingIndex != -1) {
+        _vetRecords[existingIndex] = saved;
+      } else {
+        _vetRecords.add(saved);
+      }
+
+      notifyListeners();
+    } catch (e) {
+      _vetRecordsError = e.toString();
+      notifyListeners();
+      rethrow;
     }
-
-    notifyListeners();
   }
 
-  // Delete a vet record
-  void deleteVetRecord(String id) {
-    _vetRecords.removeWhere((r) => r.id == id);
-    notifyListeners();
+  /// Eliminar um registo veterinário
+  Future<void> deleteVetRecord(String id) async {
+    try {
+      await _vetRepository.delete(id);
+      _vetRecords.removeWhere((r) => r.id == id);
+      notifyListeners();
+    } catch (e) {
+      _vetRecordsError = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
 
-  // Get vet records by type
+  /// Obter registos por tipo
   List<VetRecord> getVetRecordsByType(VetRecordType type) {
     return _vetRecords.where((r) => r.type == type).toList();
   }
 
-  // Get upcoming vet actions
+  /// Obter acções agendadas futuras
   List<VetRecord> getUpcomingVetActions() {
     final now = DateTime.now();
     return _vetRecords
@@ -153,7 +305,7 @@ class AppState extends ChangeNotifier {
       ..sort((a, b) => a.nextActionDate!.compareTo(b.nextActionDate!));
   }
 
-  // Vet statistics
+  // Estatísticas veterinárias
   int get totalVetRecords => _vetRecords.length;
 
   int get totalDeaths => _vetRecords.where((r) => r.type == VetRecordType.death).length;
@@ -162,113 +314,20 @@ class AppState extends ChangeNotifier {
 
   int get totalHensAffected => _vetRecords.fold<int>(0, (sum, r) => sum + r.hensAffected);
 
-  // Generate mock data for development
-  static List<DailyEggRecord> _generateMockData() {
-    final random = Random();
-    final records = <DailyEggRecord>[];
-    final now = DateTime.now();
+  // ========== LOAD ALL DATA ==========
 
-    for (int i = 0; i < 14; i++) {
-      final date = now.subtract(Duration(days: i));
-      final collected = 8 + random.nextInt(8); // 8-15 eggs per day
-      final sold = (collected * 0.6).floor() + random.nextInt(3);
-      final consumed = random.nextInt(3);
-
-      records.add(DailyEggRecord(
-        id: 'mock-${i + 1}',
-        date: _dateToString(date),
-        eggsCollected: collected,
-        eggsSold: sold,
-        eggsConsumed: consumed,
-        pricePerEgg: 0.50 + (random.nextDouble() * 0.30), // $0.50-$0.80
-        notes: i % 3 == 0 ? 'Weather was good today' : null,
-        henCount: 10 + random.nextInt(5),
-        createdAt: date,
-      ));
-    }
-
-    return records;
+  /// Carregar todos os dados ao iniciar a app
+  Future<void> loadAllData() async {
+    await Future.wait([
+      loadRecords(),
+      loadExpenses(),
+      loadVetRecords(),
+    ]);
   }
+
+  // ========== UTILITIES ==========
 
   static String _dateToString(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
-  // Generate mock vet data for development
-  static List<VetRecord> _generateMockVetData() {
-    final now = DateTime.now();
-    final records = <VetRecord>[];
-
-    // Vaccine record
-    records.add(VetRecord(
-      id: 'vet-1',
-      date: _dateToString(now.subtract(const Duration(days: 30))),
-      type: VetRecordType.vaccine,
-      hensAffected: 15,
-      description: 'Annual Newcastle disease vaccination',
-      medication: 'Newcastle Disease Vaccine',
-      cost: 45.00,
-      nextActionDate: _dateToString(now.add(const Duration(days: 335))),
-      notes: 'All hens vaccinated successfully',
-      severity: VetRecordSeverity.low,
-      createdAt: now.subtract(const Duration(days: 30)),
-    ));
-
-    // Disease record
-    records.add(VetRecord(
-      id: 'vet-2',
-      date: _dateToString(now.subtract(const Duration(days: 15))),
-      type: VetRecordType.disease,
-      hensAffected: 3,
-      description: 'Respiratory infection symptoms observed',
-      medication: 'Tylosin antibiotic',
-      cost: 28.50,
-      nextActionDate: _dateToString(now.add(const Duration(days: 5))),
-      notes: 'Monitor closely, separate affected hens if needed',
-      severity: VetRecordSeverity.medium,
-      createdAt: now.subtract(const Duration(days: 15)),
-    ));
-
-    // Treatment record
-    records.add(VetRecord(
-      id: 'vet-3',
-      date: _dateToString(now.subtract(const Duration(days: 7))),
-      type: VetRecordType.treatment,
-      hensAffected: 1,
-      description: 'Treatment for bumblefoot',
-      medication: 'Betadine solution + bandage',
-      cost: 12.00,
-      notes: 'Hen responding well to treatment',
-      severity: VetRecordSeverity.low,
-      createdAt: now.subtract(const Duration(days: 7)),
-    ));
-
-    // Checkup record
-    records.add(VetRecord(
-      id: 'vet-4',
-      date: _dateToString(now.subtract(const Duration(days: 60))),
-      type: VetRecordType.checkup,
-      hensAffected: 15,
-      description: 'Routine flock health check',
-      cost: 55.00,
-      nextActionDate: _dateToString(now.add(const Duration(days: 125))),
-      notes: 'Overall flock health is good',
-      severity: VetRecordSeverity.low,
-      createdAt: now.subtract(const Duration(days: 60)),
-    ));
-
-    // Death record
-    records.add(VetRecord(
-      id: 'vet-5',
-      date: _dateToString(now.subtract(const Duration(days: 90))),
-      type: VetRecordType.death,
-      hensAffected: 1,
-      description: 'Natural death - old age',
-      notes: 'Hen was 6 years old, died peacefully',
-      severity: VetRecordSeverity.high,
-      createdAt: now.subtract(const Duration(days: 90)),
-    ));
-
-    return records;
   }
 }
