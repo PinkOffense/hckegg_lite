@@ -86,7 +86,7 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     final hensAffected = int.parse(_hensAffectedController.text);
@@ -109,9 +109,22 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
     );
 
     final appState = Provider.of<AppState>(context, listen: false);
-    appState.saveVetRecord(record);
 
-    Navigator.of(context).pop();
+    try {
+      await appState.saveVetRecord(record);
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao guardar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   String _dateToString(DateTime date) {
