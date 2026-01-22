@@ -9,6 +9,7 @@ import '../l10n/translations.dart';
 import '../models/daily_egg_record.dart';
 import '../widgets/charts/production_chart.dart';
 import '../widgets/charts/revenue_chart.dart';
+import '../widgets/charts/revenue_vs_expenses_chart.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -219,6 +220,30 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+
+                  // Financial Stats (Expenses & Net Profit)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.trending_down,
+                          label: locale == 'pt' ? 'Despesas' : 'Expenses',
+                          value: '€${(weekStats['expenses'] as double).toStringAsFixed(2)}',
+                          color: Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          icon: (weekStats['net_profit'] as double) >= 0 ? Icons.trending_up : Icons.trending_down,
+                          label: locale == 'pt' ? 'Lucro Líquido' : 'Net Profit',
+                          value: '€${(weekStats['net_profit'] as double).toStringAsFixed(2)}',
+                          color: (weekStats['net_profit'] as double) >= 0 ? Colors.green : Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 24),
 
                   // Production Chart
@@ -277,6 +302,52 @@ class _DashboardPageState extends State<DashboardPage>
                       ],
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // Revenue vs Expenses Chart
+                  Card(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            children: [
+                              Icon(Icons.compare_arrows, color: theme.colorScheme.secondary),
+                              const SizedBox(width: 8),
+                              Text(
+                                t('revenue_vs_expenses'),
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        RevenueVsExpensesChart(
+                          records: recentRecords,
+                          locale: locale,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _ChartLegend(
+                                color: Colors.green,
+                                label: locale == 'pt' ? 'Receitas' : 'Revenue',
+                              ),
+                              const SizedBox(width: 24),
+                              _ChartLegend(
+                                color: Colors.red,
+                                label: locale == 'pt' ? 'Despesas' : 'Expenses',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 24),
 
                   // Last 7 Days
@@ -317,6 +388,38 @@ class _DashboardPageState extends State<DashboardPage>
           builder: (_) => const DailyRecordDialog(),
         ),
       ),
+    );
+  }
+}
+
+class _ChartLegend extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _ChartLegend({
+    required this.color,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ],
     );
   }
 }

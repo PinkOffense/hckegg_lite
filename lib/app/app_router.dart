@@ -2,11 +2,13 @@
 import 'package:flutter/material.dart';
 import '../pages/dashboard_page.dart';
 import '../pages/egg_list_page.dart';
+import '../pages/expenses_page.dart';
 import '../pages/settings_page.dart';
 
 class AppRouter {
   static const String home = '/';
   static const String eggs = '/eggs';
+  static const String expenses = '/expenses';
   static const String settings = '/settings';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -20,6 +22,12 @@ class AppRouter {
       case AppRouter.eggs:
         return MaterialPageRoute(
           builder: (_) => const EggListPage(),
+          settings: settings,
+        );
+
+      case AppRouter.expenses:
+        return MaterialPageRoute(
+          builder: (_) => const ExpensesPage(),
           settings: settings,
         );
 

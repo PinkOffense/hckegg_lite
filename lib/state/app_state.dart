@@ -78,11 +78,16 @@ class AppState extends ChangeNotifier {
     final weekAgo = now.subtract(const Duration(days: 7));
     final weekRecords = getRecordsInRange(weekAgo, now);
 
+    final revenue = weekRecords.fold(0.0, (sum, r) => sum + r.revenue);
+    final expenses = weekRecords.fold(0.0, (sum, r) => sum + r.totalExpenses);
+
     return {
       'collected': weekRecords.fold(0, (sum, r) => sum + r.eggsCollected),
       'sold': weekRecords.fold(0, (sum, r) => sum + r.eggsSold),
       'consumed': weekRecords.fold(0, (sum, r) => sum + r.eggsConsumed),
-      'revenue': weekRecords.fold(0.0, (sum, r) => sum + r.revenue),
+      'revenue': revenue,
+      'expenses': expenses,
+      'net_profit': revenue - expenses,
     };
   }
 
