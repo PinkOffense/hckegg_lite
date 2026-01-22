@@ -7,6 +7,8 @@ import '../dialogs/daily_record_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/daily_egg_record.dart';
+import '../widgets/charts/production_chart.dart';
+import '../widgets/charts/revenue_chart.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -83,9 +85,9 @@ class _DashboardPageState extends State<DashboardPage>
             if (records.isEmpty) {
               return EmptyState(
                 icon: Icons.egg_outlined,
-                title: 'No Records Yet',
-                message: 'Start tracking your daily egg collection',
-                actionLabel: 'Add Today\'s Record',
+                title: locale == 'pt' ? 'Sem Registos' : 'No Records Yet',
+                message: locale == 'pt' ? 'Comece a registar a sua recolha diária de ovos' : 'Start tracking your daily egg collection',
+                actionLabel: locale == 'pt' ? 'Adicionar Registo de Hoje' : 'Add Today\'s Record',
                 onAction: () => showDialog(
                   context: context,
                   builder: (_) => const DailyRecordDialog(),
@@ -126,7 +128,7 @@ class _DashboardPageState extends State<DashboardPage>
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                'Today\'s Collection',
+                                locale == 'pt' ? 'Recolha de Hoje' : 'Today\'s Collection',
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -157,7 +159,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 builder: (_) => const DailyRecordDialog(),
                               ),
                               icon: const Icon(Icons.add),
-                              label: const Text('Add Today\'s Record'),
+                              label: Text(locale == 'pt' ? 'Adicionar Registo de Hoje' : 'Add Today\'s Record'),
                             ),
                           ],
                         ],
@@ -168,7 +170,7 @@ class _DashboardPageState extends State<DashboardPage>
 
                   // This Week's Stats
                   Text(
-                    'This Week',
+                    locale == 'pt' ? 'Esta Semana' : 'This Week',
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -179,7 +181,7 @@ class _DashboardPageState extends State<DashboardPage>
                       Expanded(
                         child: _StatCard(
                           icon: Icons.egg,
-                          label: 'Collected',
+                          label: locale == 'pt' ? 'Recolhidos' : 'Collected',
                           value: '${weekStats['collected']}',
                           color: colorScheme.primary,
                         ),
@@ -188,7 +190,7 @@ class _DashboardPageState extends State<DashboardPage>
                       Expanded(
                         child: _StatCard(
                           icon: Icons.sell,
-                          label: 'Sold',
+                          label: locale == 'pt' ? 'Vendidos' : 'Sold',
                           value: '${weekStats['sold']}',
                           color: colorScheme.secondary,
                         ),
@@ -201,7 +203,7 @@ class _DashboardPageState extends State<DashboardPage>
                       Expanded(
                         child: _StatCard(
                           icon: Icons.restaurant,
-                          label: 'Consumed',
+                          label: locale == 'pt' ? 'Consumidos' : 'Consumed',
                           value: '${weekStats['consumed']}',
                           color: colorScheme.tertiary,
                         ),
@@ -209,13 +211,71 @@ class _DashboardPageState extends State<DashboardPage>
                       const SizedBox(width: 12),
                       Expanded(
                         child: _StatCard(
-                          icon: Icons.attach_money,
-                          label: 'Revenue',
-                          value: '\$${(weekStats['revenue'] as double).toStringAsFixed(2)}',
+                          icon: Icons.euro,
+                          label: locale == 'pt' ? 'Receita' : 'Revenue',
+                          value: '€${(weekStats['revenue'] as double).toStringAsFixed(2)}',
                           color: Colors.green,
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Production Chart
+                  Card(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            children: [
+                              Icon(Icons.bar_chart, color: colorScheme.primary),
+                              const SizedBox(width: 8),
+                              Text(
+                                t('production_chart'),
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ProductionChart(
+                          records: recentRecords,
+                          locale: locale,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Revenue Chart
+                  Card(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            children: [
+                              Icon(Icons.euro, color: Colors.green),
+                              const SizedBox(width: 8),
+                              Text(
+                                t('revenue_chart'),
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        RevenueChart(
+                          records: recentRecords,
+                          locale: locale,
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
 
@@ -224,14 +284,14 @@ class _DashboardPageState extends State<DashboardPage>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Last 7 Days',
+                        t('last_7_days'),
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       TextButton(
                         onPressed: () => Navigator.pushNamed(context, '/eggs'),
-                        child: const Text('View All'),
+                        child: Text(locale == 'pt' ? 'Ver Todos' : 'View All'),
                       ),
                     ],
                   ),
@@ -251,7 +311,7 @@ class _DashboardPageState extends State<DashboardPage>
       ),
       fab: FloatingActionButton.extended(
         icon: const Icon(Icons.add),
-        label: const Text('Add Record'),
+        label: Text(t('add_daily_record')),
         onPressed: () => showDialog(
           context: context,
           builder: (_) => const DailyRecordDialog(),
@@ -314,23 +374,29 @@ class _DayRecordCard extends StatelessWidget {
     required this.onTap,
   });
 
-  String _formatDate(String dateStr) {
+  String _formatDate(String dateStr, String locale) {
     final date = DateTime.parse(dateStr);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final recordDate = DateTime(date.year, date.month, date.day);
     final difference = today.difference(recordDate).inDays;
 
-    if (difference == 0) return 'Today';
-    if (difference == 1) return 'Yesterday';
+    if (difference == 0) return locale == 'pt' ? 'Hoje' : 'Today';
+    if (difference == 1) return locale == 'pt' ? 'Ontem' : 'Yesterday';
 
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${months[date.month - 1]} ${date.day}';
+    if (locale == 'pt') {
+      final months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      return '${date.day} ${months[date.month - 1]}';
+    } else {
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[date.month - 1]} ${date.day}';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final locale = Provider.of<LocaleProvider>(context).code;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -364,7 +430,7 @@ class _DayRecordCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _formatDate(record.date),
+                      _formatDate(record.date, locale),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -376,7 +442,7 @@ class _DayRecordCard extends StatelessWidget {
                           Icon(Icons.sell, size: 14, color: theme.textTheme.bodySmall?.color),
                           const SizedBox(width: 4),
                           Text(
-                            '${record.eggsSold} sold',
+                            '${record.eggsSold} ${locale == 'pt' ? 'vendidos' : 'sold'}',
                             style: theme.textTheme.bodySmall,
                           ),
                         ],
@@ -386,14 +452,14 @@ class _DayRecordCard extends StatelessWidget {
                           Icon(Icons.restaurant, size: 14, color: theme.textTheme.bodySmall?.color),
                           const SizedBox(width: 4),
                           Text(
-                            '${record.eggsConsumed} eaten',
+                            '${record.eggsConsumed} ${locale == 'pt' ? 'consumidos' : 'eaten'}',
                             style: theme.textTheme.bodySmall,
                           ),
                         ],
                         if (record.revenue > 0) ...[
                           const Text(' • ', style: TextStyle(fontSize: 12)),
                           Text(
-                            '\$${record.revenue.toStringAsFixed(2)}',
+                            '€${record.revenue.toStringAsFixed(2)}',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: Colors.green,
                               fontWeight: FontWeight.w600,

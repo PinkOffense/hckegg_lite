@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/daily_egg_record.dart';
 import '../state/app_state.dart';
+import '../l10n/locale_provider.dart';
+import '../l10n/translations.dart';
 
 class DailyRecordDialog extends StatefulWidget {
   final DailyEggRecord? existingRecord;
@@ -100,21 +102,28 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
-  String _formatDate(DateTime date) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  String _formatDate(DateTime date, String locale) {
+    if (locale == 'pt') {
+      final months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
+    } else {
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final locale = Provider.of<LocaleProvider>(context).code;
+    final t = (String k) => Translations.of(locale, k);
 
     return Dialog(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 700),
         child: Scaffold(
           appBar: AppBar(
-            title: Text(widget.existingRecord != null ? 'Edit Record' : 'Add Daily Record'),
+            title: Text(widget.existingRecord != null ? t('edit_daily_record') : t('add_daily_record')),
             leading: IconButton(
               icon: const Icon(Icons.close),
               onPressed: () => Navigator.of(context).pop(),
@@ -123,7 +132,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
               TextButton(
                 onPressed: _save,
                 child: Text(
-                  'SAVE',
+                  t('save').toUpperCase(),
                   style: TextStyle(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w600,
@@ -141,12 +150,12 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                 InkWell(
                   onTap: () => _selectDate(context),
                   child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Date',
-                      suffixIcon: Icon(Icons.calendar_today),
+                    decoration: InputDecoration(
+                      labelText: t('date'),
+                      suffixIcon: const Icon(Icons.calendar_today),
                     ),
                     child: Text(
-                      _formatDate(_selectedDate),
+                      _formatDate(_selectedDate, locale),
                       style: theme.textTheme.bodyLarge,
                     ),
                   ),
@@ -156,20 +165,20 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                 // Eggs Collected (Required)
                 TextFormField(
                   controller: _collectedController,
-                  decoration: const InputDecoration(
-                    labelText: 'Eggs Collected *',
-                    hintText: 'How many eggs today?',
-                    prefixIcon: Icon(Icons.egg),
+                  decoration: InputDecoration(
+                    labelText: '${t('eggs_collected')} *',
+                    hintText: locale == 'pt' ? 'Quantos ovos hoje?' : 'How many eggs today?',
+                    prefixIcon: const Icon(Icons.egg),
                   ),
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter number of eggs collected';
+                      return locale == 'pt' ? 'Insira o número de ovos recolhidos' : 'Please enter number of eggs collected';
                     }
                     final num = int.tryParse(value);
                     if (num == null || num < 0) {
-                      return 'Please enter a valid number';
+                      return locale == 'pt' ? 'Insira um número válido' : 'Please enter a valid number';
                     }
                     return null;
                   },
@@ -182,9 +191,9 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _soldController,
-                        decoration: const InputDecoration(
-                          labelText: 'Eggs Sold',
-                          prefixIcon: Icon(Icons.sell),
+                        decoration: InputDecoration(
+                          labelText: t('eggs_sold'),
+                          prefixIcon: const Icon(Icons.sell),
                         ),
                         keyboardType: TextInputType.number,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -194,9 +203,9 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _consumedController,
-                        decoration: const InputDecoration(
-                          labelText: 'Eggs Eaten',
-                          prefixIcon: Icon(Icons.restaurant),
+                        decoration: InputDecoration(
+                          labelText: t('eggs_consumed'),
+                          prefixIcon: const Icon(Icons.restaurant),
                         ),
                         keyboardType: TextInputType.number,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -212,10 +221,11 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _priceController,
-                        decoration: const InputDecoration(
-                          labelText: 'Price per Egg',
+                        decoration: InputDecoration(
+                          labelText: t('price_per_egg'),
                           hintText: '0.50',
-                          prefixIcon: Icon(Icons.attach_money),
+                          prefixIcon: const Icon(Icons.euro),
+                          suffixText: '€',
                         ),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         inputFormatters: [
@@ -227,9 +237,9 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _henCountController,
-                        decoration: const InputDecoration(
-                          labelText: 'Hen Count',
-                          prefixIcon: Icon(Icons.flutter_dash),
+                        decoration: InputDecoration(
+                          labelText: t('hen_count'),
+                          prefixIcon: const Icon(Icons.flutter_dash),
                         ),
                         keyboardType: TextInputType.number,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -242,10 +252,10 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                 // Notes
                 TextFormField(
                   controller: _notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes',
-                    hintText: 'Weather, hen behavior, etc.',
-                    prefixIcon: Icon(Icons.note),
+                  decoration: InputDecoration(
+                    labelText: '${t('notes')} (${t('optional')})',
+                    hintText: locale == 'pt' ? 'Clima, comportamento das galinhas, etc.' : 'Weather, hen behavior, etc.',
+                    prefixIcon: const Icon(Icons.note),
                     alignLabelWithHint: true,
                   ),
                   maxLines: 3,
@@ -270,7 +280,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Quick Summary',
+                              locale == 'pt' ? 'Resumo Rápido' : 'Quick Summary',
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
@@ -279,9 +289,13 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '• Only "Eggs Collected" is required\n'
-                          '• Leave price empty if you don\'t track sales\n'
-                          '• Notes help you remember important details',
+                          locale == 'pt'
+                              ? '• Apenas "${t('eggs_collected')}" é obrigatório\n'
+                                '• Deixe o preço vazio se não controlar vendas\n'
+                                '• As notas ajudam a lembrar detalhes importantes'
+                              : '• Only "${t('eggs_collected')}" is required\n'
+                                '• Leave price empty if you don\'t track sales\n'
+                                '• Notes help you remember important details',
                           style: theme.textTheme.bodySmall,
                         ),
                       ],
