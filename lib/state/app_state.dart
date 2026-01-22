@@ -1,9 +1,11 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/daily_egg_record.dart';
+import '../models/vet_record.dart';
 
 class AppState extends ChangeNotifier {
   final List<DailyEggRecord> _records = _generateMockData();
+  final List<VetRecord> _vetRecords = _generateMockVetData();
 
   List<DailyEggRecord> get records => List.unmodifiable(_records);
 
@@ -101,6 +103,65 @@ class AppState extends ChangeNotifier {
     }).toList();
   }
 
+  // ========== VET RECORDS MANAGEMENT ==========
+
+  List<VetRecord> get vetRecords => List.unmodifiable(_vetRecords);
+
+  List<VetRecord> getVetRecords() {
+    // Return sorted by date (newest first)
+    final sorted = List<VetRecord>.from(_vetRecords);
+    sorted.sort((a, b) => b.date.compareTo(a.date));
+    return sorted;
+  }
+
+  // Add or update a vet record
+  void saveVetRecord(VetRecord record) {
+    final existingIndex = _vetRecords.indexWhere((r) => r.id == record.id);
+
+    if (existingIndex != -1) {
+      // Update existing record
+      _vetRecords[existingIndex] = record;
+    } else {
+      // Add new record
+      _vetRecords.add(record);
+    }
+
+    notifyListeners();
+  }
+
+  // Delete a vet record
+  void deleteVetRecord(String id) {
+    _vetRecords.removeWhere((r) => r.id == id);
+    notifyListeners();
+  }
+
+  // Get vet records by type
+  List<VetRecord> getVetRecordsByType(VetRecordType type) {
+    return _vetRecords.where((r) => r.type == type).toList();
+  }
+
+  // Get upcoming vet actions
+  List<VetRecord> getUpcomingVetActions() {
+    final now = DateTime.now();
+    return _vetRecords
+        .where((r) => r.nextActionDate != null)
+        .where((r) {
+          final nextDate = DateTime.parse(r.nextActionDate!);
+          return nextDate.isAfter(now);
+        })
+        .toList()
+      ..sort((a, b) => a.nextActionDate!.compareTo(b.nextActionDate!));
+  }
+
+  // Vet statistics
+  int get totalVetRecords => _vetRecords.length;
+
+  int get totalDeaths => _vetRecords.where((r) => r.type == VetRecordType.death).length;
+
+  double get totalVetCosts => _vetRecords.fold(0.0, (sum, r) => sum + (r.cost ?? 0.0));
+
+  int get totalHensAffected => _vetRecords.fold(0, (sum, r) => sum + r.hensAffected);
+
   // Generate mock data for development
   static List<DailyEggRecord> _generateMockData() {
     final random = Random();
@@ -131,5 +192,83 @@ class AppState extends ChangeNotifier {
 
   static String _dateToString(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  // Generate mock vet data for development
+  static List<VetRecord> _generateMockVetData() {
+    final now = DateTime.now();
+    final records = <VetRecord>[];
+
+    // Vaccine record
+    records.add(VetRecord(
+      id: 'vet-1',
+      date: _dateToString(now.subtract(const Duration(days: 30))),
+      type: VetRecordType.vaccine,
+      hensAffected: 15,
+      description: 'Annual Newcastle disease vaccination',
+      medication: 'Newcastle Disease Vaccine',
+      cost: 45.00,
+      nextActionDate: _dateToString(now.add(const Duration(days: 335))),
+      notes: 'All hens vaccinated successfully',
+      severity: VetRecordSeverity.low,
+      createdAt: now.subtract(const Duration(days: 30)),
+    ));
+
+    // Disease record
+    records.add(VetRecord(
+      id: 'vet-2',
+      date: _dateToString(now.subtract(const Duration(days: 15))),
+      type: VetRecordType.disease,
+      hensAffected: 3,
+      description: 'Respiratory infection symptoms observed',
+      medication: 'Tylosin antibiotic',
+      cost: 28.50,
+      nextActionDate: _dateToString(now.add(const Duration(days: 5))),
+      notes: 'Monitor closely, separate affected hens if needed',
+      severity: VetRecordSeverity.medium,
+      createdAt: now.subtract(const Duration(days: 15)),
+    ));
+
+    // Treatment record
+    records.add(VetRecord(
+      id: 'vet-3',
+      date: _dateToString(now.subtract(const Duration(days: 7))),
+      type: VetRecordType.treatment,
+      hensAffected: 1,
+      description: 'Treatment for bumblefoot',
+      medication: 'Betadine solution + bandage',
+      cost: 12.00,
+      notes: 'Hen responding well to treatment',
+      severity: VetRecordSeverity.low,
+      createdAt: now.subtract(const Duration(days: 7)),
+    ));
+
+    // Checkup record
+    records.add(VetRecord(
+      id: 'vet-4',
+      date: _dateToString(now.subtract(const Duration(days: 60))),
+      type: VetRecordType.checkup,
+      hensAffected: 15,
+      description: 'Routine flock health check',
+      cost: 55.00,
+      nextActionDate: _dateToString(now.add(const Duration(days: 125))),
+      notes: 'Overall flock health is good',
+      severity: VetRecordSeverity.low,
+      createdAt: now.subtract(const Duration(days: 60)),
+    ));
+
+    // Death record
+    records.add(VetRecord(
+      id: 'vet-5',
+      date: _dateToString(now.subtract(const Duration(days: 90))),
+      type: VetRecordType.death,
+      hensAffected: 1,
+      description: 'Natural death - old age',
+      notes: 'Hen was 6 years old, died peacefully',
+      severity: VetRecordSeverity.high,
+      createdAt: now.subtract(const Duration(days: 90)),
+    ));
+
+    return records;
   }
 }
