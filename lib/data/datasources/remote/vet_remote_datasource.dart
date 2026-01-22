@@ -202,6 +202,8 @@ class VetRemoteDatasource {
 
   /// Converter de VetRecord para JSON do Supabase
   Map<String, dynamic> _toSupabaseJson(VetRecord record) {
+    final userId = _client.auth.currentUser?.id;
+
     return {
       'date': record.date,
       'type': record.type.name,
@@ -212,6 +214,8 @@ class VetRemoteDatasource {
       'next_action_date': record.nextActionDate,
       'notes': record.notes,
       'severity': record.severity.name,
+      // Adicionar user_id explicitamente (também validado pelo RLS)
+      if (userId != null) 'user_id': userId,
     };
   }
 
