@@ -5,9 +5,7 @@ import '../state/app_state.dart';
 import '../widgets/app_scaffold.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
-import '../models/daily_egg_record.dart';
 import '../models/expense.dart';
-import '../dialogs/daily_record_dialog.dart';
 import '../dialogs/expense_dialog.dart';
 
 class ExpensesPage extends StatelessWidget {
@@ -26,14 +24,9 @@ class ExpensesPage extends StatelessWidget {
           final records = state.records;
           final standaloneExpenses = state.expenses;
 
-          // Calculate totals from daily records
-          double totalFeedFromRecords = 0;
-          double totalOtherFromRecords = 0;
+          // Calculate total revenue from egg sales
           double totalRevenue = 0;
-
           for (var record in records) {
-            totalFeedFromRecords += record.feedExpense ?? 0;
-            totalOtherFromRecords += record.otherExpense ?? 0;
             totalRevenue += record.revenue;
           }
 
@@ -65,15 +58,11 @@ class ExpensesPage extends StatelessWidget {
           }
 
           // Combined totals
-          final totalFeed = totalFeedFromRecords + totalFeedStandalone;
-          final totalOther = totalOtherFromRecords + totalOtherStandalone +
+          final totalFeed = totalFeedStandalone;
+          final totalOther = totalOtherStandalone +
               totalMaintenanceStandalone + totalEquipmentStandalone + totalUtilitiesStandalone;
           final totalExpenses = totalFeed + totalOther;
           final netProfit = totalRevenue - totalExpenses;
-
-          // Get records with expenses
-          final recordsWithExpenses = records.where((r) => r.totalExpenses > 0).toList()
-            ..sort((a, b) => b.date.compareTo(a.date));
 
           // Sort standalone expenses
           final sortedStandaloneExpenses = List<Expense>.from(standaloneExpenses)
@@ -331,63 +320,6 @@ class ExpensesPage extends StatelessWidget {
                               builder: (_) => ExpenseDialog(existingExpense: expense),
                             ),
                             onDelete: () => _deleteExpense(context, expense, t),
-                          )),
-
-                    const SizedBox(height: 24),
-
-                    // Daily Record Expenses
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          locale == 'pt' ? 'Despesas dos Registos Diários' : 'Daily Record Expenses',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '€${(totalFeedFromRecords + totalOtherFromRecords).toStringAsFixed(2)}',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    if (recordsWithExpenses.isEmpty)
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.receipt_long,
-                                  size: 64,
-                                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.3),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  t('no_expenses'),
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      ...recordsWithExpenses.map((record) => _ExpenseRecordCard(
-                            record: record,
-                            locale: locale,
-                            onTap: () => showDialog(
-                              context: context,
-                              builder: (_) => DailyRecordDialog(existingRecord: record),
-                            ),
                           )),
                   ],
                 ),
@@ -670,111 +602,6 @@ class _StandaloneExpenseCard extends StatelessWidget {
                   ),
                 ),
               ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ExpenseRecordCard extends StatelessWidget {
-  final DailyEggRecord record;
-  final String locale;
-  final VoidCallback onTap;
-
-  const _ExpenseRecordCard({
-    required this.record,
-    required this.locale,
-    required this.onTap,
-  });
-
-  String _formatDate(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    if (locale == 'pt') {
-      final months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      return '${date.day} ${months[date.month - 1]} ${date.year}';
-    } else {
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return '${months[date.month - 1]} ${date.day}, ${date.year}';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final t = (String k) => Translations.of(locale, k);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _formatDate(record.date),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '€${record.totalExpenses.toStringAsFixed(2)}',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red.shade700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (record.feedExpense != null && record.feedExpense! > 0)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      Icon(Icons.grass, size: 16, color: Colors.green),
-                      const SizedBox(width: 8),
-                      Text('${t('feed')}: ', style: theme.textTheme.bodySmall),
-                      Text(
-                        '€${record.feedExpense!.toStringAsFixed(2)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (record.otherExpense != null && record.otherExpense! > 0)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      Icon(Icons.build, size: 16, color: Colors.orange),
-                      const SizedBox(width: 8),
-                      Text('${t('other')}: ', style: theme.textTheme.bodySmall),
-                      Text(
-                        '€${record.otherExpense!.toStringAsFixed(2)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
             ],
           ),
         ),
