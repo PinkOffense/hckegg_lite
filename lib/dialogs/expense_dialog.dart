@@ -113,10 +113,6 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
                           icon = Icons.grass;
                           color = Colors.green;
                           break;
-                        case ExpenseCategory.veterinary:
-                          icon = Icons.medical_services;
-                          color = Colors.blue;
-                          break;
                         case ExpenseCategory.maintenance:
                           icon = Icons.build;
                           color = Colors.orange;
