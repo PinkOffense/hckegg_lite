@@ -149,15 +149,14 @@ class EggRemoteDatasource {
     final totalSold = records.fold<int>(0, (sum, r) => sum + r.eggsSold);
     final totalConsumed = records.fold<int>(0, (sum, r) => sum + r.eggsConsumed);
     final totalRevenue = records.fold<double>(0.0, (sum, r) => sum + r.revenue);
-    final totalExpenses = records.fold<double>(0.0, (sum, r) => sum + r.totalExpenses);
 
     return {
       'collected': totalCollected,
       'sold': totalSold,
       'consumed': totalConsumed,
       'revenue': totalRevenue,
-      'expenses': totalExpenses,
-      'net_profit': totalRevenue - totalExpenses,
+      'expenses': 0.0, // Expenses removed from daily records
+      'net_profit': totalRevenue,
     };
   }
 

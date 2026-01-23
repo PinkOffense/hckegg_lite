@@ -41,14 +41,12 @@ class RevenueVsExpensesChart extends StatelessWidget {
 
     // Calculate max value for Y axis
     double maxRevenue = 0;
-    double maxExpense = 0;
 
     for (var record in displayRecords) {
       if (record.revenue > maxRevenue) maxRevenue = record.revenue;
-      if (record.totalExpenses > maxExpense) maxExpense = record.totalExpenses;
     }
 
-    final maxY = (maxRevenue > maxExpense ? maxRevenue : maxExpense) * 1.2;
+    final maxY = maxRevenue * 1.2;
     final adjustedMaxY = maxY > 0 ? maxY : 10.0;
 
     return SizedBox(
@@ -64,11 +62,8 @@ class RevenueVsExpensesChart extends StatelessWidget {
               touchTooltipData: BarTouchTooltipData(
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final record = displayRecords[groupIndex];
-                  final isRevenue = rodIndex == 0;
-                  final value = isRevenue ? record.revenue : record.totalExpenses;
-                  final label = isRevenue
-                      ? (locale == 'pt' ? 'Receita' : 'Revenue')
-                      : (locale == 'pt' ? 'Despesas' : 'Expenses');
+                  final value = record.revenue;
+                  final label = locale == 'pt' ? 'Receita' : 'Revenue';
 
                   return BarTooltipItem(
                     '$label\n',
@@ -156,14 +151,7 @@ class RevenueVsExpensesChart extends StatelessWidget {
                     BarChartRodData(
                       toY: record.revenue,
                       color: Colors.green,
-                      width: 12,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                    ),
-                    // Expenses bar
-                    BarChartRodData(
-                      toY: record.totalExpenses,
-                      color: Colors.red,
-                      width: 12,
+                      width: 16,
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                     ),
                   ],
