@@ -115,6 +115,10 @@ class Translations {
       'no_expenses': 'No expenses recorded',
       'revenue_vs_expenses': 'Revenue vs Expenses',
       'financial_overview': 'Financial Overview',
+      'add_expense': 'Add Expense',
+      'edit_expense': 'Edit Expense',
+      'expense_category': 'Category',
+      'amount': 'Amount',
       // Veterinary Health
       'health': 'Health',
       'hen_health': 'Hen Health',
@@ -261,6 +265,10 @@ class Translations {
       'no_expenses': 'Sem despesas registadas',
       'revenue_vs_expenses': 'Receitas vs Despesas',
       'financial_overview': 'Panorama Financeiro',
+      'add_expense': 'Adicionar Despesa',
+      'edit_expense': 'Editar Despesa',
+      'expense_category': 'Categoria',
+      'amount': 'Montante',
       // Saúde Veterinária
       'health': 'Saúde',
       'hen_health': 'Saúde das Galinhas',
