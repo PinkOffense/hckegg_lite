@@ -28,20 +28,17 @@ class ExpensesPage extends StatelessWidget {
 
           // Calculate totals from daily records
           double totalFeedFromRecords = 0;
-          double totalVetFromRecords = 0;
           double totalOtherFromRecords = 0;
           double totalRevenue = 0;
 
           for (var record in records) {
             totalFeedFromRecords += record.feedExpense ?? 0;
-            totalVetFromRecords += record.vetExpense ?? 0;
             totalOtherFromRecords += record.otherExpense ?? 0;
             totalRevenue += record.revenue;
           }
 
           // Calculate totals from standalone expenses
           double totalFeedStandalone = 0;
-          double totalVetStandalone = 0;
           double totalMaintenanceStandalone = 0;
           double totalEquipmentStandalone = 0;
           double totalUtilitiesStandalone = 0;
@@ -51,9 +48,6 @@ class ExpensesPage extends StatelessWidget {
             switch (expense.category) {
               case ExpenseCategory.feed:
                 totalFeedStandalone += expense.amount;
-                break;
-              case ExpenseCategory.veterinary:
-                totalVetStandalone += expense.amount;
                 break;
               case ExpenseCategory.maintenance:
                 totalMaintenanceStandalone += expense.amount;
@@ -72,10 +66,9 @@ class ExpensesPage extends StatelessWidget {
 
           // Combined totals
           final totalFeed = totalFeedFromRecords + totalFeedStandalone;
-          final totalVet = totalVetFromRecords + totalVetStandalone;
           final totalOther = totalOtherFromRecords + totalOtherStandalone +
               totalMaintenanceStandalone + totalEquipmentStandalone + totalUtilitiesStandalone;
-          final totalExpenses = totalFeed + totalVet + totalOther;
+          final totalExpenses = totalFeed + totalOther;
           final netProfit = totalRevenue - totalExpenses;
 
           // Get records with expenses
@@ -238,18 +231,6 @@ class ExpensesPage extends StatelessWidget {
                                             color: Colors.white,
                                           ),
                                         ),
-                                      if (totalVet > 0)
-                                        PieChartSectionData(
-                                          value: totalVet,
-                                          title: '${(totalVet / totalExpenses * 100).toStringAsFixed(1)}%',
-                                          color: Colors.blue,
-                                          radius: 50,
-                                          titleStyle: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
                                       if (totalOther > 0)
                                         PieChartSectionData(
                                           value: totalOther,
@@ -271,12 +252,6 @@ class ExpensesPage extends StatelessWidget {
                                 color: Colors.green,
                                 label: t('feed'),
                                 value: '€${totalFeed.toStringAsFixed(2)}',
-                              ),
-                              const SizedBox(height: 8),
-                              _ExpenseLegendItem(
-                                color: Colors.blue,
-                                label: t('veterinary'),
-                                value: '€${totalVet.toStringAsFixed(2)}',
                               ),
                               const SizedBox(height: 8),
                               _ExpenseLegendItem(
@@ -371,7 +346,7 @@ class ExpensesPage extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '€${(totalFeedFromRecords + totalVetFromRecords + totalOtherFromRecords).toStringAsFixed(2)}',
+                          '€${(totalFeedFromRecords + totalOtherFromRecords).toStringAsFixed(2)}',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.orange,
@@ -588,8 +563,6 @@ class _StandaloneExpenseCard extends StatelessWidget {
     switch (expense.category) {
       case ExpenseCategory.feed:
         return Icons.grass;
-      case ExpenseCategory.veterinary:
-        return Icons.medical_services;
       case ExpenseCategory.maintenance:
         return Icons.build;
       case ExpenseCategory.equipment:
@@ -605,8 +578,6 @@ class _StandaloneExpenseCard extends StatelessWidget {
     switch (expense.category) {
       case ExpenseCategory.feed:
         return Colors.green;
-      case ExpenseCategory.veterinary:
-        return Colors.blue;
       case ExpenseCategory.maintenance:
         return Colors.orange;
       case ExpenseCategory.equipment:
@@ -780,23 +751,6 @@ class _ExpenseRecordCard extends StatelessWidget {
                       Text('${t('feed')}: ', style: theme.textTheme.bodySmall),
                       Text(
                         '€${record.feedExpense!.toStringAsFixed(2)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (record.vetExpense != null && record.vetExpense! > 0)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      Icon(Icons.medical_services, size: 16, color: Colors.blue),
-                      const SizedBox(width: 8),
-                      Text('${t('veterinary')}: ', style: theme.textTheme.bodySmall),
-                      Text(
-                        '€${record.vetExpense!.toStringAsFixed(2)}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
