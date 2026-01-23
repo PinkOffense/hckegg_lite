@@ -159,15 +159,14 @@ class AppState extends ChangeNotifier {
     final weekRecords = getRecordsInRange(weekAgo, now);
 
     final revenue = weekRecords.fold<double>(0.0, (sum, r) => sum + r.revenue);
-    final expenses = weekRecords.fold<double>(0.0, (sum, r) => sum + r.totalExpenses);
 
     return {
       'collected': weekRecords.fold<int>(0, (sum, r) => sum + r.eggsCollected),
       'sold': weekRecords.fold<int>(0, (sum, r) => sum + r.eggsSold),
       'consumed': weekRecords.fold<int>(0, (sum, r) => sum + r.eggsConsumed),
       'revenue': revenue,
-      'expenses': expenses,
-      'net_profit': revenue - expenses,
+      'expenses': 0.0, // Expenses removed from daily records
+      'net_profit': revenue,
     };
   }
 
