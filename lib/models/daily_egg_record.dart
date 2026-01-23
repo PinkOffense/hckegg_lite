@@ -7,8 +7,6 @@ class DailyEggRecord {
   final double? pricePerEgg;
   final String? notes;
   final int? henCount;
-  final double? feedExpense;      // Despesa com ração
-  final double? otherExpense;     // Outras despesas
   final DateTime createdAt;
 
   DailyEggRecord({
@@ -20,8 +18,6 @@ class DailyEggRecord {
     this.pricePerEgg,
     this.notes,
     this.henCount,
-    this.feedExpense,
-    this.otherExpense,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -30,12 +26,6 @@ class DailyEggRecord {
 
   // Calculate revenue for this day
   double get revenue => (pricePerEgg ?? 0) * eggsSold;
-
-  // Calculate total expenses for this day
-  double get totalExpenses => (feedExpense ?? 0) + (otherExpense ?? 0);
-
-  // Calculate net profit (revenue - expenses)
-  double get netProfit => revenue - totalExpenses;
 
   DailyEggRecord copyWith({
     String? id,
@@ -46,8 +36,6 @@ class DailyEggRecord {
     double? pricePerEgg,
     String? notes,
     int? henCount,
-    double? feedExpense,
-    double? otherExpense,
     DateTime? createdAt,
   }) {
     return DailyEggRecord(
@@ -59,8 +47,6 @@ class DailyEggRecord {
       pricePerEgg: pricePerEgg ?? this.pricePerEgg,
       notes: notes ?? this.notes,
       henCount: henCount ?? this.henCount,
-      feedExpense: feedExpense ?? this.feedExpense,
-      otherExpense: otherExpense ?? this.otherExpense,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -75,8 +61,6 @@ class DailyEggRecord {
       'price_per_egg': pricePerEgg,
       'notes': notes,
       'hen_count': henCount,
-      'feed_expense': feedExpense,
-      'other_expense': otherExpense,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -93,12 +77,6 @@ class DailyEggRecord {
           : null,
       notes: json['notes'] as String?,
       henCount: json['hen_count'] as int?,
-      feedExpense: json['feed_expense'] != null
-          ? (json['feed_expense'] as num).toDouble()
-          : null,
-      otherExpense: json['other_expense'] != null
-          ? (json['other_expense'] as num).toDouble()
-          : null,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
