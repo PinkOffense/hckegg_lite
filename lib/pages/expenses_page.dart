@@ -21,13 +21,13 @@ class ExpensesPage extends StatelessWidget {
       title: t('expenses'),
       body: Consumer<AppState>(
         builder: (context, state, _) {
-          final records = state.records;
+          final sales = state.sales;
           final standaloneExpenses = state.expenses;
 
           // Calculate total revenue from egg sales
           double totalRevenue = 0;
-          for (var record in records) {
-            totalRevenue += record.revenue;
+          for (var sale in sales) {
+            totalRevenue += sale.totalAmount;
           }
 
           // Calculate totals from standalone expenses

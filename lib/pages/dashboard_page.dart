@@ -79,9 +79,11 @@ class _DashboardPageState extends State<DashboardPage>
           position: _slideAnimation,
           child: Consumer<AppState>(builder: (context, state, _) {
             final records = state.records;
+            final sales = state.sales;
             final todayRecord = state.getRecordByDate(_getTodayString());
             final weekStats = state.getWeekStats();
             final recentRecords = state.getRecentRecords(7);
+            final recentSales = state.getRecentSales(7);
 
             if (records.isEmpty) {
               return EmptyState(
@@ -296,7 +298,7 @@ class _DashboardPageState extends State<DashboardPage>
                           ),
                         ),
                         RevenueChart(
-                          records: recentRecords,
+                          sales: recentSales,
                           locale: locale,
                         ),
                       ],
@@ -325,7 +327,7 @@ class _DashboardPageState extends State<DashboardPage>
                           ),
                         ),
                         RevenueVsExpensesChart(
-                          records: recentRecords,
+                          sales: recentSales,
                           locale: locale,
                         ),
                         Padding(

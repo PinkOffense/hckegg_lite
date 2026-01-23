@@ -1,14 +1,14 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import '../../models/daily_egg_record.dart';
+import '../../models/egg_sale.dart';
 
 class RevenueChart extends StatelessWidget {
-  final List<DailyEggRecord> records;
+  final List<EggSale> sales;
   final String locale;
 
   const RevenueChart({
     super.key,
-    required this.records,
+    required this.sales,
     required this.locale,
   });
 
@@ -16,15 +16,12 @@ class RevenueChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Filter records with price data
-    final recordsWithPrice = records.where((r) => r.pricePerEgg != null && r.pricePerEgg! > 0).toList();
-
-    if (recordsWithPrice.isEmpty) {
+    if (sales.isEmpty) {
       return SizedBox(
         height: 200,
         child: Center(
           child: Text(
-            locale == 'pt' ? 'Sem dados de preço disponíveis' : 'No price data available',
+            locale == 'pt' ? 'Sem dados de vendas disponíveis' : 'No sales data available',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
             ),
@@ -33,16 +30,16 @@ class RevenueChart extends StatelessWidget {
       );
     }
 
-    // Sort records by date
-    final sortedRecords = List<DailyEggRecord>.from(recordsWithPrice)
+    // Sort sales by date
+    final sortedSales = List<EggSale>.from(sales)
       ..sort((a, b) => a.date.compareTo(b.date));
 
-    // Get last 7 records
-    final displayRecords = sortedRecords.length > 7
-        ? sortedRecords.sublist(sortedRecords.length - 7)
-        : sortedRecords;
+    // Get last 7 sales
+    final displaySales = sortedSales.length > 7
+        ? sortedSales.sublist(sortedSales.length - 7)
+        : sortedSales;
 
-    final maxY = displayRecords.map((r) => r.revenue).reduce((a, b) => a > b ? a : b);
+    final maxY = displaySales.map((s) => s.totalAmount).reduce((a, b) => a > b ? a : b);
     final adjustedMaxY = (maxY * 1.2).ceil().toDouble();
 
     return SizedBox(
@@ -68,9 +65,9 @@ class RevenueChart extends StatelessWidget {
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 && value.toInt() < displayRecords.length) {
-                      final record = displayRecords[value.toInt()];
-                      final date = DateTime.parse(record.date);
+                    if (value.toInt() >= 0 && value.toInt() < displaySales.length) {
+                      final sale = displaySales[value.toInt()];
+                      final date = DateTime.parse(sale.date);
                       return Padding(
                         padding: const EdgeInsets.only(top: 8.0),
                         child: Text(
@@ -100,16 +97,16 @@ class RevenueChart extends StatelessWidget {
             ),
             borderData: FlBorderData(show: false),
             minX: 0,
-            maxX: (displayRecords.length - 1).toDouble(),
+            maxX: (displaySales.length - 1).toDouble(),
             minY: 0,
             maxY: adjustedMaxY > 0 ? adjustedMaxY : 10,
             lineTouchData: LineTouchData(
               touchTooltipData: LineTouchTooltipData(
                 getTooltipItems: (touchedSpots) {
                   return touchedSpots.map((spot) {
-                    final record = displayRecords[spot.x.toInt()];
+                    final sale = displaySales[spot.x.toInt()];
                     return LineTooltipItem(
-                      '€${record.revenue.toStringAsFixed(2)}\n',
+                      '€${sale.totalAmount.toStringAsFixed(2)}\n',
                       const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -117,7 +114,7 @@ class RevenueChart extends StatelessWidget {
                       ),
                       children: [
                         TextSpan(
-                          text: _formatDateShort(DateTime.parse(record.date), locale),
+                          text: _formatDateShort(DateTime.parse(sale.date), locale),
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.normal,
@@ -132,8 +129,8 @@ class RevenueChart extends StatelessWidget {
             lineBarsData: [
               LineChartBarData(
                 spots: List.generate(
-                  displayRecords.length,
-                  (index) => FlSpot(index.toDouble(), displayRecords[index].revenue),
+                  displaySales.length,
+                  (index) => FlSpot(index.toDouble(), displaySales[index].totalAmount),
                 ),
                 isCurved: true,
                 gradient: LinearGradient(
