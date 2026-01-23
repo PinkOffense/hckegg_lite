@@ -313,12 +313,6 @@ class _RecordCard extends StatelessWidget {
                       label: '${record.eggsConsumed} eaten',
                       color: theme.colorScheme.tertiary,
                     ),
-                  if (record.revenue > 0)
-                    _StatChip(
-                      icon: Icons.attach_money,
-                      label: '\$${record.revenue.toStringAsFixed(2)}',
-                      color: Colors.green,
-                    ),
                   if (record.henCount != null)
                     _StatChip(
                       icon: Icons.flutter_dash,

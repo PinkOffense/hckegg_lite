@@ -3,15 +3,18 @@ import '../core/di/repository_provider.dart';
 import '../domain/repositories/egg_repository.dart';
 import '../domain/repositories/expense_repository.dart';
 import '../domain/repositories/vet_repository.dart';
+import '../domain/repositories/sale_repository.dart';
 import '../models/daily_egg_record.dart';
 import '../models/expense.dart';
 import '../models/vet_record.dart';
+import '../models/egg_sale.dart';
 
 class AppState extends ChangeNotifier {
   // Repositories
   final EggRepository _eggRepository = RepositoryProvider.instance.eggRepository;
   final ExpenseRepository _expenseRepository = RepositoryProvider.instance.expenseRepository;
   final VetRepository _vetRepository = RepositoryProvider.instance.vetRepository;
+  final SaleRepository _saleRepository = RepositoryProvider.instance.saleRepository;
 
   // State - Egg Records
   List<DailyEggRecord> _records = [];
@@ -28,6 +31,11 @@ class AppState extends ChangeNotifier {
   bool _isLoadingVetRecords = false;
   String? _vetRecordsError;
 
+  // State - Sales
+  List<EggSale> _sales = [];
+  bool _isLoadingSales = false;
+  String? _salesError;
+
   // Getters - Egg Records
   List<DailyEggRecord> get records => List.unmodifiable(_records);
   bool get isLoadingRecords => _isLoadingRecords;
@@ -43,8 +51,13 @@ class AppState extends ChangeNotifier {
   bool get isLoadingVetRecords => _isLoadingVetRecords;
   String? get vetRecordsError => _vetRecordsError;
 
+  // Getters - Sales
+  List<EggSale> get sales => List.unmodifiable(_sales);
+  bool get isLoadingSales => _isLoadingSales;
+  String? get salesError => _salesError;
+
   // Overall loading state
-  bool get isLoading => _isLoadingRecords || _isLoadingExpenses || _isLoadingVetRecords;
+  bool get isLoading => _isLoadingRecords || _isLoadingExpenses || _isLoadingVetRecords || _isLoadingSales;
 
   // ========== EGG RECORDS ==========
 
@@ -140,16 +153,21 @@ class AppState extends ChangeNotifier {
     return _records.fold<int>(0, (sum, r) => sum + r.eggsCollected);
   }
 
-  int get totalEggsSold {
-    return _records.fold<int>(0, (sum, r) => sum + r.eggsSold);
-  }
-
   int get totalEggsConsumed {
     return _records.fold<int>(0, (sum, r) => sum + r.eggsConsumed);
   }
 
+  int get totalEggsRemaining {
+    return _records.fold<int>(0, (sum, r) => sum + r.eggsRemaining);
+  }
+
+  // Estatísticas de vendas
+  int get totalEggsSold {
+    return _sales.fold<int>(0, (sum, s) => sum + s.quantitySold);
+  }
+
   double get totalRevenue {
-    return _records.fold<double>(0.0, (sum, r) => sum + r.revenue);
+    return _sales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
   }
 
   /// Estatísticas da semana
@@ -157,12 +175,13 @@ class AppState extends ChangeNotifier {
     final now = DateTime.now();
     final weekAgo = now.subtract(const Duration(days: 7));
     final weekRecords = getRecordsInRange(weekAgo, now);
+    final weekSales = getSalesInRange(weekAgo, now);
 
-    final revenue = weekRecords.fold<double>(0.0, (sum, r) => sum + r.revenue);
+    final revenue = weekSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
 
     return {
       'collected': weekRecords.fold<int>(0, (sum, r) => sum + r.eggsCollected),
-      'sold': weekRecords.fold<int>(0, (sum, r) => sum + r.eggsSold),
+      'sold': weekSales.fold<int>(0, (sum, s) => sum + s.quantitySold),
       'consumed': weekRecords.fold<int>(0, (sum, r) => sum + r.eggsConsumed),
       'revenue': revenue,
       'expenses': 0.0, // Expenses removed from daily records
@@ -313,6 +332,83 @@ class AppState extends ChangeNotifier {
 
   int get totalHensAffected => _vetRecords.fold<int>(0, (sum, r) => sum + r.hensAffected);
 
+  // ========== SALES ==========
+
+  /// Carregar todas as vendas do Supabase
+  Future<void> loadSales() async {
+    _isLoadingSales = true;
+    _salesError = null;
+    notifyListeners();
+
+    try {
+      _sales = await _saleRepository.getAll();
+    } catch (e) {
+      _salesError = e.toString();
+    } finally {
+      _isLoadingSales = false;
+      notifyListeners();
+    }
+  }
+
+  /// Guardar uma venda
+  Future<void> saveSale(EggSale sale) async {
+    try {
+      final saved = await _saleRepository.save(sale);
+
+      // Actualizar lista local
+      final existingIndex = _sales.indexWhere((s) => s.id == saved.id);
+      if (existingIndex != -1) {
+        _sales[existingIndex] = saved;
+      } else {
+        _sales.insert(0, saved);
+      }
+
+      // Ordenar por data (mais recentes primeiro)
+      _sales.sort((a, b) => b.date.compareTo(a.date));
+
+      notifyListeners();
+    } catch (e) {
+      _salesError = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Eliminar uma venda
+  Future<void> deleteSale(String id) async {
+    try {
+      await _saleRepository.delete(id);
+      _sales.removeWhere((s) => s.id == id);
+      notifyListeners();
+    } catch (e) {
+      _salesError = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Obter vendas num intervalo de datas
+  List<EggSale> getSalesInRange(DateTime start, DateTime end) {
+    final startStr = _dateToString(start);
+    final endStr = _dateToString(end);
+
+    return _sales.where((s) {
+      return s.date.compareTo(startStr) >= 0 && s.date.compareTo(endStr) <= 0;
+    }).toList();
+  }
+
+  /// Obter vendas por cliente
+  List<EggSale> getSalesByCustomer(String customerName) {
+    return _sales.where((s) =>
+      s.customerName?.toLowerCase().contains(customerName.toLowerCase()) ?? false
+    ).toList();
+  }
+
+  /// Obter últimas N vendas
+  List<EggSale> getRecentSales(int count) {
+    return _sales.take(count).toList();
+  }
+
   // ========== LOAD ALL DATA ==========
 
   /// Carregar todos os dados ao iniciar a app
@@ -321,6 +417,7 @@ class AppState extends ChangeNotifier {
       loadRecords(),
       loadExpenses(),
       loadVetRecords(),
+      loadSales(),
     ]);
   }
 

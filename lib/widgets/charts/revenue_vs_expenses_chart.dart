@@ -1,14 +1,14 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import '../../models/daily_egg_record.dart';
+import '../../models/egg_sale.dart';
 
 class RevenueVsExpensesChart extends StatelessWidget {
-  final List<DailyEggRecord> records;
+  final List<EggSale> sales;
   final String locale;
 
   const RevenueVsExpensesChart({
     super.key,
-    required this.records,
+    required this.sales,
     required this.locale,
   });
 
@@ -16,7 +16,7 @@ class RevenueVsExpensesChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (records.isEmpty) {
+    if (sales.isEmpty) {
       return SizedBox(
         height: 200,
         child: Center(
@@ -30,20 +30,20 @@ class RevenueVsExpensesChart extends StatelessWidget {
       );
     }
 
-    // Sort records by date
-    final sortedRecords = List<DailyEggRecord>.from(records)
+    // Sort sales by date
+    final sortedSales = List<EggSale>.from(sales)
       ..sort((a, b) => a.date.compareTo(b.date));
 
-    // Get last 7 records
-    final displayRecords = sortedRecords.length > 7
-        ? sortedRecords.sublist(sortedRecords.length - 7)
-        : sortedRecords;
+    // Get last 7 sales
+    final displaySales = sortedSales.length > 7
+        ? sortedSales.sublist(sortedSales.length - 7)
+        : sortedSales;
 
     // Calculate max value for Y axis
     double maxRevenue = 0;
 
-    for (var record in displayRecords) {
-      if (record.revenue > maxRevenue) maxRevenue = record.revenue;
+    for (var sale in displaySales) {
+      if (sale.totalAmount > maxRevenue) maxRevenue = sale.totalAmount;
     }
 
     final maxY = maxRevenue * 1.2;
@@ -61,9 +61,9 @@ class RevenueVsExpensesChart extends StatelessWidget {
               enabled: true,
               touchTooltipData: BarTouchTooltipData(
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                  final record = displayRecords[groupIndex];
-                  final value = record.revenue;
-                  final label = locale == 'pt' ? 'Receita' : 'Revenue';
+                  final sale = displaySales[groupIndex];
+                  final value = sale.totalAmount;
+                  final label = locale == 'pt' ? 'Venda' : 'Sale';
 
                   return BarTooltipItem(
                     '$label\n',
@@ -81,7 +81,7 @@ class RevenueVsExpensesChart extends StatelessWidget {
                         ),
                       ),
                       TextSpan(
-                        text: _formatDateShort(DateTime.parse(record.date), locale),
+                        text: _formatDateShort(DateTime.parse(sale.date), locale),
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.normal,
@@ -98,9 +98,9 @@ class RevenueVsExpensesChart extends StatelessWidget {
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 && value.toInt() < displayRecords.length) {
-                      final record = displayRecords[value.toInt()];
-                      final date = DateTime.parse(record.date);
+                    if (value.toInt() >= 0 && value.toInt() < displaySales.length) {
+                      final sale = displaySales[value.toInt()];
+                      final date = DateTime.parse(sale.date);
                       return Padding(
                         padding: const EdgeInsets.only(top: 8.0),
                         child: Text(
@@ -141,15 +141,15 @@ class RevenueVsExpensesChart extends StatelessWidget {
             ),
             borderData: FlBorderData(show: false),
             barGroups: List.generate(
-              displayRecords.length,
+              displaySales.length,
               (index) {
-                final record = displayRecords[index];
+                final sale = displaySales[index];
                 return BarChartGroupData(
                   x: index,
                   barRods: [
                     // Revenue bar
                     BarChartRodData(
-                      toY: record.revenue,
+                      toY: sale.totalAmount,
                       color: Colors.green,
                       width: 16,
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),

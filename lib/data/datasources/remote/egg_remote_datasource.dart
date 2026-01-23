@@ -146,17 +146,13 @@ class EggRemoteDatasource {
 
     // Calcular estatísticas
     final totalCollected = records.fold<int>(0, (sum, r) => sum + r.eggsCollected);
-    final totalSold = records.fold<int>(0, (sum, r) => sum + r.eggsSold);
     final totalConsumed = records.fold<int>(0, (sum, r) => sum + r.eggsConsumed);
-    final totalRevenue = records.fold<double>(0.0, (sum, r) => sum + r.revenue);
+    final totalRemaining = records.fold<int>(0, (sum, r) => sum + r.eggsRemaining);
 
     return {
       'collected': totalCollected,
-      'sold': totalSold,
       'consumed': totalConsumed,
-      'revenue': totalRevenue,
-      'expenses': 0.0, // Expenses removed from daily records
-      'net_profit': totalRevenue,
+      'remaining': totalRemaining,
     };
   }
 
@@ -166,9 +162,7 @@ class EggRemoteDatasource {
       id: json['id'] as String,
       date: json['date'] as String,
       eggsCollected: json['eggs_collected'] as int,
-      eggsSold: json['eggs_sold'] as int,
-      eggsConsumed: json['eggs_consumed'] as int,
-      pricePerEgg: (json['price_per_egg'] as num).toDouble(),
+      eggsConsumed: json['eggs_consumed'] as int? ?? 0,
       notes: json['notes'] as String?,
       henCount: json['hen_count'] as int?,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -182,9 +176,7 @@ class EggRemoteDatasource {
     return {
       'date': record.date,
       'eggs_collected': record.eggsCollected,
-      'eggs_sold': record.eggsSold,
       'eggs_consumed': record.eggsConsumed,
-      'price_per_egg': record.pricePerEgg,
       'notes': record.notes,
       'hen_count': record.henCount,
       // Adicionar user_id explicitamente (também validado pelo RLS)
