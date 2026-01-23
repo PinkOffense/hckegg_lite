@@ -23,7 +23,6 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
   final _priceController = TextEditingController();
   final _henCountController = TextEditingController();
   final _feedExpenseController = TextEditingController();
-  final _vetExpenseController = TextEditingController();
   final _otherExpenseController = TextEditingController();
   final _notesController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -41,7 +40,6 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
       _priceController.text = record.pricePerEgg?.toStringAsFixed(2) ?? '';
       _henCountController.text = record.henCount?.toString() ?? '';
       _feedExpenseController.text = record.feedExpense?.toStringAsFixed(2) ?? '';
-      _vetExpenseController.text = record.vetExpense?.toStringAsFixed(2) ?? '';
       _otherExpenseController.text = record.otherExpense?.toStringAsFixed(2) ?? '';
       _notesController.text = record.notes ?? '';
     } else {
@@ -61,7 +59,6 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     _priceController.dispose();
     _henCountController.dispose();
     _feedExpenseController.dispose();
-    _vetExpenseController.dispose();
     _otherExpenseController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -89,7 +86,6 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     final price = double.tryParse(_priceController.text);
     final henCount = int.tryParse(_henCountController.text);
     final feedExpense = double.tryParse(_feedExpenseController.text);
-    final vetExpense = double.tryParse(_vetExpenseController.text);
     final otherExpense = double.tryParse(_otherExpenseController.text);
     final notes = _notesController.text.trim();
 
@@ -102,7 +98,6 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
       pricePerEgg: price,
       henCount: henCount,
       feedExpense: feedExpense,
-      vetExpense: vetExpense,
       otherExpense: otherExpense,
       notes: notes.isEmpty ? null : notes,
     );
@@ -300,22 +295,6 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                     labelText: '${t('feed_expense')} (${t('optional')})',
                     hintText: '15.00',
                     prefixIcon: const Icon(Icons.grass),
-                    suffixText: '€',
-                  ),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Vet Expense
-                TextFormField(
-                  controller: _vetExpenseController,
-                  decoration: InputDecoration(
-                    labelText: '${t('vet_expense')} (${t('optional')})',
-                    hintText: '25.00',
-                    prefixIcon: const Icon(Icons.medical_services),
                     suffixText: '€',
                   ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),

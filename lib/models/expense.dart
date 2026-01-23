@@ -2,7 +2,6 @@
 
 enum ExpenseCategory {
   feed,
-  veterinary,
   maintenance,
   equipment,
   utilities,
@@ -14,8 +13,6 @@ extension ExpenseCategoryExtension on ExpenseCategory {
     switch (this) {
       case ExpenseCategory.feed:
         return locale == 'pt' ? 'Ração' : 'Feed';
-      case ExpenseCategory.veterinary:
-        return locale == 'pt' ? 'Veterinária' : 'Veterinary';
       case ExpenseCategory.maintenance:
         return locale == 'pt' ? 'Manutenção' : 'Maintenance';
       case ExpenseCategory.equipment:

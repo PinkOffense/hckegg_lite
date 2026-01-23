@@ -8,7 +8,6 @@ class DailyEggRecord {
   final String? notes;
   final int? henCount;
   final double? feedExpense;      // Despesa com ração
-  final double? vetExpense;       // Despesa veterinária
   final double? otherExpense;     // Outras despesas
   final DateTime createdAt;
 
@@ -22,7 +21,6 @@ class DailyEggRecord {
     this.notes,
     this.henCount,
     this.feedExpense,
-    this.vetExpense,
     this.otherExpense,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
@@ -34,7 +32,7 @@ class DailyEggRecord {
   double get revenue => (pricePerEgg ?? 0) * eggsSold;
 
   // Calculate total expenses for this day
-  double get totalExpenses => (feedExpense ?? 0) + (vetExpense ?? 0) + (otherExpense ?? 0);
+  double get totalExpenses => (feedExpense ?? 0) + (otherExpense ?? 0);
 
   // Calculate net profit (revenue - expenses)
   double get netProfit => revenue - totalExpenses;
@@ -49,7 +47,6 @@ class DailyEggRecord {
     String? notes,
     int? henCount,
     double? feedExpense,
-    double? vetExpense,
     double? otherExpense,
     DateTime? createdAt,
   }) {
@@ -63,7 +60,6 @@ class DailyEggRecord {
       notes: notes ?? this.notes,
       henCount: henCount ?? this.henCount,
       feedExpense: feedExpense ?? this.feedExpense,
-      vetExpense: vetExpense ?? this.vetExpense,
       otherExpense: otherExpense ?? this.otherExpense,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -80,7 +76,6 @@ class DailyEggRecord {
       'notes': notes,
       'hen_count': henCount,
       'feed_expense': feedExpense,
-      'vet_expense': vetExpense,
       'other_expense': otherExpense,
       'created_at': createdAt.toIso8601String(),
     };
@@ -100,9 +95,6 @@ class DailyEggRecord {
       henCount: json['hen_count'] as int?,
       feedExpense: json['feed_expense'] != null
           ? (json['feed_expense'] as num).toDouble()
-          : null,
-      vetExpense: json['vet_expense'] != null
-          ? (json['vet_expense'] as num).toDouble()
           : null,
       otherExpense: json['other_expense'] != null
           ? (json['other_expense'] as num).toDouble()

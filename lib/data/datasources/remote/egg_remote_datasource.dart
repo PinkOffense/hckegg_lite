@@ -173,7 +173,6 @@ class EggRemoteDatasource {
       notes: json['notes'] as String?,
       henCount: json['hen_count'] as int?,
       feedExpense: json['feed_expense'] != null ? (json['feed_expense'] as num).toDouble() : null,
-      vetExpense: json['vet_expense'] != null ? (json['vet_expense'] as num).toDouble() : null,
       otherExpense: json['other_expense'] != null ? (json['other_expense'] as num).toDouble() : null,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
@@ -192,7 +191,6 @@ class EggRemoteDatasource {
       'notes': record.notes,
       'hen_count': record.henCount,
       'feed_expense': record.feedExpense,
-      'vet_expense': record.vetExpense,
       'other_expense': record.otherExpense,
       // Adicionar user_id explicitamente (também validado pelo RLS)
       if (userId != null) 'user_id': userId,
