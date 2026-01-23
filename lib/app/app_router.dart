@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../pages/dashboard_page.dart';
 import '../pages/egg_list_page.dart';
+import '../pages/sales_page.dart';
 import '../pages/expenses_page.dart';
 import '../pages/settings_page.dart';
 import '../pages/hen_health_page.dart';
@@ -9,6 +10,7 @@ import '../pages/hen_health_page.dart';
 class AppRouter {
   static const String home = '/';
   static const String eggs = '/eggs';
+  static const String sales = '/sales';
   static const String expenses = '/expenses';
   static const String settings = '/settings';
   static const String health = '/health';
@@ -24,6 +26,12 @@ class AppRouter {
       case AppRouter.eggs:
         return MaterialPageRoute(
           builder: (_) => const EggListPage(),
+          settings: settings,
+        );
+
+      case AppRouter.sales:
+        return MaterialPageRoute(
+          builder: (_) => const SalesPage(),
           settings: settings,
         );
 
