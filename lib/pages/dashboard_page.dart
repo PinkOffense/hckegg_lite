@@ -543,32 +543,12 @@ class _DayRecordCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        if (record.eggsSold > 0) ...[
-                          Icon(Icons.sell, size: 14, color: theme.textTheme.bodySmall?.color),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${record.eggsSold} ${locale == 'pt' ? 'vendidos' : 'sold'}',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                        ],
-                        if (record.eggsSold > 0 && record.eggsConsumed > 0)
-                          const Text(' • ', style: TextStyle(fontSize: 12)),
                         if (record.eggsConsumed > 0) ...[
                           Icon(Icons.restaurant, size: 14, color: theme.textTheme.bodySmall?.color),
                           const SizedBox(width: 4),
                           Text(
                             '${record.eggsConsumed} ${locale == 'pt' ? 'consumidos' : 'eaten'}',
                             style: theme.textTheme.bodySmall,
-                          ),
-                        ],
-                        if (record.revenue > 0) ...[
-                          const Text(' • ', style: TextStyle(fontSize: 12)),
-                          Text(
-                            '€${record.revenue.toStringAsFixed(2)}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.green,
-                              fontWeight: FontWeight.w600,
-                            ),
                           ),
                         ],
                       ],

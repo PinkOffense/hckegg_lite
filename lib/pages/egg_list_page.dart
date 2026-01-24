@@ -301,12 +301,6 @@ class _RecordCard extends StatelessWidget {
                 spacing: 16,
                 runSpacing: 8,
                 children: [
-                  if (record.eggsSold > 0)
-                    _StatChip(
-                      icon: Icons.sell,
-                      label: '${record.eggsSold} sold',
-                      color: theme.colorScheme.secondary,
-                    ),
                   if (record.eggsConsumed > 0)
                     _StatChip(
                       icon: Icons.restaurant,
