@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import '../models/daily_egg_record.dart';
 import '../state/app_state.dart';
 import '../l10n/locale_provider.dart';
@@ -72,7 +73,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     final notes = _notesController.text.trim();
 
     final record = DailyEggRecord(
-      id: widget.existingRecord?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: widget.existingRecord?.id ?? const Uuid().v4(),
       date: _dateToString(_selectedDate),
       eggsCollected: collected,
       eggsConsumed: consumed,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import '../models/vet_record.dart';
 import '../state/app_state.dart';
 import '../l10n/locale_provider.dart';
@@ -96,7 +97,7 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
     final notes = _notesController.text.trim();
 
     final record = VetRecord(
-      id: widget.existingRecord?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: widget.existingRecord?.id ?? const Uuid().v4(),
       date: _dateToString(_selectedDate),
       type: _selectedType,
       hensAffected: hensAffected,
