@@ -2,16 +2,18 @@
 import 'package:flutter/material.dart';
 import '../pages/dashboard_page.dart';
 import '../pages/egg_list_page.dart';
-import '../pages/egg_detail_page.dart';
-import '../pages/sync_page.dart';
+import '../pages/sales_page.dart';
+import '../pages/expenses_page.dart';
 import '../pages/settings_page.dart';
+import '../pages/hen_health_page.dart';
 
 class AppRouter {
   static const String home = '/';
   static const String eggs = '/eggs';
-  static const String eggDetail = '/detail';
-  static const String sync = '/sync';
+  static const String sales = '/sales';
+  static const String expenses = '/expenses';
   static const String settings = '/settings';
+  static const String health = '/health';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -27,26 +29,27 @@ class AppRouter {
           settings: settings,
         );
 
-      case AppRouter.eggDetail:
-        final args = settings.arguments;
-        if (args is int) {
-          return MaterialPageRoute(
-            builder: (_) => EggDetailPage(eggId: args),
-            settings: settings,
-          );
-        }
-        // Fallback if no argument provided
-        return _errorRoute(settings);
-
-      case AppRouter.sync:
+      case AppRouter.sales:
         return MaterialPageRoute(
-          builder: (_) => const SyncPage(),
+          builder: (_) => const SalesPage(),
+          settings: settings,
+        );
+
+      case AppRouter.expenses:
+        return MaterialPageRoute(
+          builder: (_) => const ExpensesPage(),
           settings: settings,
         );
 
       case AppRouter.settings:
         return MaterialPageRoute(
           builder: (_) => const SettingsPage(),
+          settings: settings,
+        );
+
+      case AppRouter.health:
+        return MaterialPageRoute(
+          builder: (_) => const HenHealthPage(),
           settings: settings,
         );
 

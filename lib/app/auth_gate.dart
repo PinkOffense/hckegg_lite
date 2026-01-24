@@ -1,10 +1,12 @@
 // lib/app/auth_gate.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../pages/login_page.dart';
 import '../pages/dashboard_page.dart';
+import '../state/app_state.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -17,6 +19,7 @@ class _AuthGateState extends State<AuthGate> {
   late final StreamSubscription<AuthState> _sub;
   bool signedIn = false;
   bool ready = false;
+  bool _dataLoaded = false;
 
   @override
   void initState() {
@@ -27,11 +30,37 @@ class _AuthGateState extends State<AuthGate> {
     signedIn = client.auth.currentUser != null;
     ready = true;
 
+    // Carregar dados se já estiver autenticado
+    if (signedIn) {
+      _loadData();
+    }
+
     _sub = client.auth.onAuthStateChange.listen((data) {
+      final wasSignedIn = signedIn;
+      final isSignedIn = data.session != null;
+
       setState(() {
-        signedIn = data.session != null;
+        signedIn = isSignedIn;
       });
+
+      // Carregar dados quando faz login
+      if (!wasSignedIn && isSignedIn) {
+        _loadData();
+      }
+
+      // Limpar dados quando faz logout
+      if (wasSignedIn && !isSignedIn) {
+        _dataLoaded = false;
+      }
     });
+  }
+
+  Future<void> _loadData() async {
+    if (_dataLoaded) return;
+
+    final appState = Provider.of<AppState>(context, listen: false);
+    await appState.loadAllData();
+    _dataLoaded = true;
   }
 
   @override

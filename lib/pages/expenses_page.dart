@@ -5,9 +5,7 @@ import '../state/app_state.dart';
 import '../widgets/app_scaffold.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
-import '../models/daily_egg_record.dart';
 import '../models/expense.dart';
-import '../dialogs/daily_record_dialog.dart';
 import '../dialogs/expense_dialog.dart';
 
 class ExpensesPage extends StatelessWidget {
@@ -35,7 +33,6 @@ class ExpensesPage extends StatelessWidget {
 
           // Calculate totals from standalone expenses
           double totalFeedStandalone = 0;
-          double totalVetStandalone = 0;
           double totalMaintenanceStandalone = 0;
           double totalEquipmentStandalone = 0;
           double totalUtilitiesStandalone = 0;
@@ -45,9 +42,6 @@ class ExpensesPage extends StatelessWidget {
             switch (expense.category) {
               case ExpenseCategory.feed:
                 totalFeedStandalone += expense.amount;
-                break;
-              case ExpenseCategory.veterinary:
-                totalVetStandalone += expense.amount;
                 break;
               case ExpenseCategory.maintenance:
                 totalMaintenanceStandalone += expense.amount;
@@ -74,7 +68,7 @@ class ExpensesPage extends StatelessWidget {
 
           // Combined totals
           final totalFeed = totalFeedStandalone;
-          final totalVet = totalVetCosts + totalVetStandalone;
+          final totalVet = totalVetCosts;
           final totalOther = totalOtherStandalone +
               totalMaintenanceStandalone + totalEquipmentStandalone + totalUtilitiesStandalone;
           final totalExpenses = totalFeed + totalVet + totalOther;
@@ -355,63 +349,6 @@ class ExpensesPage extends StatelessWidget {
                             ),
                             onDelete: () => _deleteExpense(context, expense, t),
                           )),
-
-                    const SizedBox(height: 24),
-
-                    // Daily Record Expenses
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          locale == 'pt' ? 'Despesas dos Registos Diários' : 'Daily Record Expenses',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '€${(totalFeedFromRecords + totalVetFromRecords + totalOtherFromRecords).toStringAsFixed(2)}',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    if (recordsWithExpenses.isEmpty)
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.receipt_long,
-                                  size: 64,
-                                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.3),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  t('no_expenses'),
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      ...recordsWithExpenses.map((record) => _ExpenseRecordCard(
-                            record: record,
-                            locale: locale,
-                            onTap: () => showDialog(
-                              context: context,
-                              builder: (_) => DailyRecordDialog(existingRecord: record),
-                            ),
-                          )),
                   ],
                 ),
               ),
@@ -586,8 +523,6 @@ class _StandaloneExpenseCard extends StatelessWidget {
     switch (expense.category) {
       case ExpenseCategory.feed:
         return Icons.grass;
-      case ExpenseCategory.veterinary:
-        return Icons.medical_services;
       case ExpenseCategory.maintenance:
         return Icons.build;
       case ExpenseCategory.equipment:
@@ -603,8 +538,6 @@ class _StandaloneExpenseCard extends StatelessWidget {
     switch (expense.category) {
       case ExpenseCategory.feed:
         return Colors.green;
-      case ExpenseCategory.veterinary:
-        return Colors.blue;
       case ExpenseCategory.maintenance:
         return Colors.orange;
       case ExpenseCategory.equipment:
@@ -697,128 +630,6 @@ class _StandaloneExpenseCard extends StatelessWidget {
                   ),
                 ),
               ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ExpenseRecordCard extends StatelessWidget {
-  final DailyEggRecord record;
-  final String locale;
-  final VoidCallback onTap;
-
-  const _ExpenseRecordCard({
-    required this.record,
-    required this.locale,
-    required this.onTap,
-  });
-
-  String _formatDate(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    if (locale == 'pt') {
-      final months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      return '${date.day} ${months[date.month - 1]} ${date.year}';
-    } else {
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return '${months[date.month - 1]} ${date.day}, ${date.year}';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final t = (String k) => Translations.of(locale, k);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _formatDate(record.date),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '€${record.totalExpenses.toStringAsFixed(2)}',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red.shade700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (record.feedExpense != null && record.feedExpense! > 0)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      Icon(Icons.grass, size: 16, color: Colors.green),
-                      const SizedBox(width: 8),
-                      Text('${t('feed')}: ', style: theme.textTheme.bodySmall),
-                      Text(
-                        '€${record.feedExpense!.toStringAsFixed(2)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (record.vetExpense != null && record.vetExpense! > 0)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      Icon(Icons.medical_services, size: 16, color: Colors.blue),
-                      const SizedBox(width: 8),
-                      Text('${t('veterinary')}: ', style: theme.textTheme.bodySmall),
-                      Text(
-                        '€${record.vetExpense!.toStringAsFixed(2)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (record.otherExpense != null && record.otherExpense! > 0)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      Icon(Icons.build, size: 16, color: Colors.orange),
-                      const SizedBox(width: 8),
-                      Text('${t('other')}: ', style: theme.textTheme.bodySmall),
-                      Text(
-                        '€${record.otherExpense!.toStringAsFixed(2)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
             ],
           ),
         ),

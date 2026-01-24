@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../state/theme_provider.dart';
@@ -22,6 +23,45 @@ class AppScaffold extends StatelessWidget {
         title: Text(title),
         elevation: 0,
         actions: [
+          // Language Selector
+          PopupMenuButton<String>(
+            tooltip: 'Language',
+            icon: const Icon(Icons.language),
+            onSelected: (String languageCode) {
+              final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+              localeProvider.setLocale(languageCode);
+            },
+            itemBuilder: (BuildContext context) {
+              final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+              return [
+                PopupMenuItem<String>(
+                  value: 'en',
+                  child: Row(
+                    children: [
+                      if (localeProvider.code == 'en')
+                        const Icon(Icons.check, size: 20),
+                      if (localeProvider.code == 'en')
+                        const SizedBox(width: 8),
+                      const Text('English'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'pt',
+                  child: Row(
+                    children: [
+                      if (localeProvider.code == 'pt')
+                        const Icon(Icons.check, size: 20),
+                      if (localeProvider.code == 'pt')
+                        const SizedBox(width: 8),
+                      const Text('Português'),
+                    ],
+                  ),
+                ),
+              ];
+            },
+          ),
+          // Theme Toggle
           IconButton(
             tooltip: themeProvider.isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
             icon: Icon(
@@ -29,14 +69,18 @@ class AppScaffold extends StatelessWidget {
             ),
             onPressed: () => themeProvider.toggleTheme(),
           ),
+          // Logout
           IconButton(
-            tooltip: Translations.of(locale, 'open_sync_tooltip'),
-            icon: const Icon(Icons.sync),
-            onPressed: () => Navigator.pushNamed(context, '/sync'),
+            tooltip: 'Logout',
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
+            },
           ),
+          // Profile
           IconButton(
-            tooltip: Translations.of(locale, 'open_settings_tooltip'),
-            icon: const Icon(Icons.settings),
+            tooltip: 'Profile',
+            icon: const Icon(Icons.account_circle),
             onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),
         ],

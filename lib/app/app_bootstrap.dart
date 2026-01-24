@@ -1,6 +1,7 @@
 // lib/app/app_bootstrap.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/di/repository_provider.dart';
 
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,4 +28,7 @@ Future<void> bootstrap() async {
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
   );
+
+  // Inicializar repositories após Supabase estar pronto
+  RepositoryProvider.instance.initialize();
 }
