@@ -151,29 +151,47 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
     return Dialog(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 550, maxHeight: 850),
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(widget.existingRecord != null ? t('edit_vet_record') : t('add_vet_record')),
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            actions: [
-              TextButton(
-                onPressed: _save,
-                child: Text(
-                  t('save').toUpperCase(),
-                  style: TextStyle(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w600,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                border: Border(
+                  bottom: BorderSide(
+                    color: theme.colorScheme.outline.withOpacity(0.2),
                   ),
                 ),
               ),
-            ],
-          ),
-          body: Form(
-            key: _formKey,
-            child: ListView(
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.medical_services,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.existingRecord != null ? t('edit_vet_record') : t('add_vet_record'),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            // Body
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
                 // Date Selector
@@ -416,9 +434,38 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
                   maxLines: 3,
                   maxLength: 500,
                 ),
-              ],
+                  ],
+                ),
+              ),
             ),
-          ),
+            // Footer with buttons
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(
+                  top: BorderSide(
+                    color: theme.colorScheme.outline.withOpacity(0.2),
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(t('cancel')),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton.icon(
+                    onPressed: _save,
+                    icon: const Icon(Icons.check),
+                    label: Text(t('save')),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
