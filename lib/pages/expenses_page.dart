@@ -23,6 +23,7 @@ class ExpensesPage extends StatelessWidget {
         builder: (context, state, _) {
           final sales = state.sales;
           final standaloneExpenses = state.expenses;
+          final vetRecords = state.vetRecords;
 
           // Calculate total revenue from egg sales
           double totalRevenue = 0;
@@ -57,11 +58,20 @@ class ExpensesPage extends StatelessWidget {
             }
           }
 
+          // Calculate veterinary costs from vet_records
+          double totalVetCosts = 0;
+          for (var vetRecord in vetRecords) {
+            if (vetRecord.cost != null) {
+              totalVetCosts += vetRecord.cost!;
+            }
+          }
+
           // Combined totals
           final totalFeed = totalFeedStandalone;
+          final totalVet = totalVetCosts;
           final totalOther = totalOtherStandalone +
               totalMaintenanceStandalone + totalEquipmentStandalone + totalUtilitiesStandalone;
-          final totalExpenses = totalFeed + totalOther;
+          final totalExpenses = totalFeed + totalVet + totalOther;
           final netProfit = totalRevenue - totalExpenses;
 
           // Sort standalone expenses
@@ -220,6 +230,18 @@ class ExpensesPage extends StatelessWidget {
                                             color: Colors.white,
                                           ),
                                         ),
+                                      if (totalVet > 0)
+                                        PieChartSectionData(
+                                          value: totalVet,
+                                          title: '${(totalVet / totalExpenses * 100).toStringAsFixed(1)}%',
+                                          color: Colors.red,
+                                          radius: 50,
+                                          titleStyle: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                       if (totalOther > 0)
                                         PieChartSectionData(
                                           value: totalOther,
@@ -241,6 +263,12 @@ class ExpensesPage extends StatelessWidget {
                                 color: Colors.green,
                                 label: t('feed'),
                                 value: '€${totalFeed.toStringAsFixed(2)}',
+                              ),
+                              const SizedBox(height: 8),
+                              _ExpenseLegendItem(
+                                color: Colors.red,
+                                label: locale == 'pt' ? 'Veterinário' : 'Veterinary',
+                                value: '€${totalVet.toStringAsFixed(2)}',
                               ),
                               const SizedBox(height: 8),
                               _ExpenseLegendItem(
