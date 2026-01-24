@@ -58,172 +58,200 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
 
     return Dialog(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 500),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 800),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                border: Border(
+                  bottom: BorderSide(
+                    color: theme.colorScheme.outline.withOpacity(0.2),
+                  ),
+                ),
+              ),
+              child: Row(
                 children: [
-                  // Title
-                  Text(
-                    widget.existingExpense != null
-                        ? t('edit_expense')
-                        : t('add_expense'),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Icon(
+                    Icons.account_balance_wallet,
+                    color: theme.colorScheme.primary,
                   ),
-                  const SizedBox(height: 24),
-
-                  // Date
-                  InkWell(
-                    onTap: () => _selectDate(context, locale),
-                    borderRadius: BorderRadius.circular(8),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: t('date'),
-                        prefixIcon: const Icon(Icons.calendar_today),
-                        border: const OutlineInputBorder(),
-                      ),
-                      child: Text(
-                        _formatDate(_selectedDate, locale),
-                        style: theme.textTheme.bodyLarge,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.existingExpense != null ? t('edit_expense') : t('add_expense'),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Category
-                  DropdownButtonFormField<ExpenseCategory>(
-                    value: _selectedCategory,
-                    decoration: InputDecoration(
-                      labelText: t('expense_category'),
-                      prefixIcon: const Icon(Icons.category),
-                      border: const OutlineInputBorder(),
-                    ),
-                    items: ExpenseCategory.values.map((category) {
-                      IconData icon;
-                      Color color;
-                      switch (category) {
-                        case ExpenseCategory.feed:
-                          icon = Icons.grass;
-                          color = Colors.green;
-                          break;
-                        case ExpenseCategory.maintenance:
-                          icon = Icons.build;
-                          color = Colors.orange;
-                          break;
-                        case ExpenseCategory.equipment:
-                          icon = Icons.hardware;
-                          color = Colors.purple;
-                          break;
-                        case ExpenseCategory.utilities:
-                          icon = Icons.electrical_services;
-                          color = Colors.amber;
-                          break;
-                        case ExpenseCategory.other:
-                          icon = Icons.more_horiz;
-                          color = Colors.grey;
-                          break;
-                      }
-                      return DropdownMenuItem(
-                        value: category,
-                        child: Row(
-                          children: [
-                            Icon(icon, size: 20, color: color),
-                            const SizedBox(width: 12),
-                            Text(category.displayName(locale)),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedCategory = value);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Amount
-                  TextFormField(
-                    controller: _amountController,
-                    decoration: InputDecoration(
-                      labelText: '${t('amount')} *',
-                      prefixIcon: const Icon(Icons.euro),
-                      suffixText: '€',
-                      border: const OutlineInputBorder(),
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
-                      }
-                      if (double.tryParse(value) == null) {
-                        return locale == 'pt' ? 'Valor inválido' : 'Invalid value';
-                      }
-                      if (double.parse(value) <= 0) {
-                        return locale == 'pt' ? 'Deve ser maior que zero' : 'Must be greater than zero';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Description
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(
-                      labelText: '${t('description')} *',
-                      prefixIcon: const Icon(Icons.description),
-                      border: const OutlineInputBorder(),
-                    ),
-                    maxLines: 2,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Notes (optional)
-                  TextFormField(
-                    controller: _notesController,
-                    decoration: InputDecoration(
-                      labelText: '${t('notes')} (${t('optional')})',
-                      prefixIcon: const Icon(Icons.note),
-                      border: const OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(t('cancel')),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton.icon(
-                        onPressed: _saveExpense,
-                        icon: const Icon(Icons.check),
-                        label: Text(t('save')),
-                      ),
-                    ],
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
             ),
-          ),
+            // Body
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    // Date
+                    InkWell(
+                      onTap: () => _selectDate(context, locale),
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: t('date'),
+                          suffixIcon: const Icon(Icons.calendar_today),
+                        ),
+                        child: Text(
+                          _formatDate(_selectedDate, locale),
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Category
+                    DropdownButtonFormField<ExpenseCategory>(
+                      value: _selectedCategory,
+                      decoration: InputDecoration(
+                        labelText: t('expense_category'),
+                        prefixIcon: const Icon(Icons.category),
+                      ),
+                      items: ExpenseCategory.values.map((category) {
+                        IconData icon;
+                        Color color;
+                        switch (category) {
+                          case ExpenseCategory.feed:
+                            icon = Icons.grass;
+                            color = Colors.green;
+                            break;
+                          case ExpenseCategory.maintenance:
+                            icon = Icons.build;
+                            color = Colors.orange;
+                            break;
+                          case ExpenseCategory.equipment:
+                            icon = Icons.hardware;
+                            color = Colors.purple;
+                            break;
+                          case ExpenseCategory.utilities:
+                            icon = Icons.electrical_services;
+                            color = Colors.amber;
+                            break;
+                          case ExpenseCategory.other:
+                            icon = Icons.more_horiz;
+                            color = Colors.grey;
+                            break;
+                        }
+                        return DropdownMenuItem(
+                          value: category,
+                          child: Row(
+                            children: [
+                              Icon(icon, size: 20, color: color),
+                              const SizedBox(width: 12),
+                              Text(category.displayName(locale)),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _selectedCategory = value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Amount
+                    TextFormField(
+                      controller: _amountController,
+                      decoration: InputDecoration(
+                        labelText: '${t('amount')} *',
+                        prefixIcon: const Icon(Icons.euro),
+                        suffixText: '€',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return locale == 'pt' ? 'Valor inválido' : 'Invalid value';
+                        }
+                        if (double.parse(value) <= 0) {
+                          return locale == 'pt' ? 'Deve ser maior que zero' : 'Must be greater than zero';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Description
+                    TextFormField(
+                      controller: _descriptionController,
+                      decoration: InputDecoration(
+                        labelText: '${t('description')} *',
+                        prefixIcon: const Icon(Icons.description),
+                      ),
+                      maxLines: 2,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Notes (optional)
+                    TextFormField(
+                      controller: _notesController,
+                      decoration: InputDecoration(
+                        labelText: '${t('notes')} (${t('optional')})',
+                        prefixIcon: const Icon(Icons.note),
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Footer with buttons
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(
+                  top: BorderSide(
+                    color: theme.colorScheme.outline.withOpacity(0.2),
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(t('cancel')),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton.icon(
+                    onPressed: _saveExpense,
+                    icon: const Icon(Icons.check),
+                    label: Text(t('save')),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
