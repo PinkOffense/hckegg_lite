@@ -30,6 +30,7 @@ class _SaleDialogState extends State<SaleDialog> {
   late PaymentStatus _paymentStatus;
   DateTime? _paymentDate;
   bool _isReservation = false;
+  bool _updatingPrices = false;
 
   @override
   void initState() {
@@ -57,7 +58,39 @@ class _SaleDialogState extends State<SaleDialog> {
       _paymentStatus = PaymentStatus.pending;
       // Set default prices (can be changed by user)
       _pricePerEggController.text = '0.50';
-      _pricePerDozenController.text = '5.50';
+      _pricePerDozenController.text = '6.00'; // 0.50 * 12 = 6.00
+    }
+
+    // Add listeners to sync price fields
+    _pricePerEggController.addListener(_onPricePerEggChanged);
+    _pricePerDozenController.addListener(_onPricePerDozenChanged);
+  }
+
+  void _onPricePerEggChanged() {
+    if (_updatingPrices) return;
+
+    final text = _pricePerEggController.text;
+    final price = double.tryParse(text);
+
+    if (price != null && price > 0) {
+      _updatingPrices = true;
+      final dozenPrice = price * 12;
+      _pricePerDozenController.text = dozenPrice.toStringAsFixed(2);
+      _updatingPrices = false;
+    }
+  }
+
+  void _onPricePerDozenChanged() {
+    if (_updatingPrices) return;
+
+    final text = _pricePerDozenController.text;
+    final price = double.tryParse(text);
+
+    if (price != null && price > 0) {
+      _updatingPrices = true;
+      final eggPrice = price / 12;
+      _pricePerEggController.text = eggPrice.toStringAsFixed(2);
+      _updatingPrices = false;
     }
   }
 
