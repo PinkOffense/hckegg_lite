@@ -179,7 +179,7 @@ class _SaleDialogState extends State<SaleDialog> {
                           controller: _pricePerDozenController,
                           decoration: InputDecoration(
                             labelText: '${locale == 'pt' ? 'Preço/Dúzia' : 'Price/Dozen'} *',
-                            prefixIcon: const Icon(Icons.attach_money),
+                            prefixIcon: const Icon(Icons.euro),
                             suffixText: '€',
                             border: const OutlineInputBorder(),
                           ),
