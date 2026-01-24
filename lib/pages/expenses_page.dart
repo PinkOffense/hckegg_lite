@@ -23,20 +23,14 @@ class ExpensesPage extends StatelessWidget {
       title: t('expenses'),
       body: Consumer<AppState>(
         builder: (context, state, _) {
-          final records = state.records;
+          final sales = state.sales;
           final standaloneExpenses = state.expenses;
+          final vetRecords = state.vetRecords;
 
-          // Calculate totals from daily records
-          double totalFeedFromRecords = 0;
-          double totalVetFromRecords = 0;
-          double totalOtherFromRecords = 0;
+          // Calculate total revenue from egg sales
           double totalRevenue = 0;
-
-          for (var record in records) {
-            totalFeedFromRecords += record.feedExpense ?? 0;
-            totalVetFromRecords += record.vetExpense ?? 0;
-            totalOtherFromRecords += record.otherExpense ?? 0;
-            totalRevenue += record.revenue;
+          for (var sale in sales) {
+            totalRevenue += sale.totalAmount;
           }
 
           // Calculate totals from standalone expenses
@@ -70,17 +64,21 @@ class ExpensesPage extends StatelessWidget {
             }
           }
 
+          // Calculate veterinary costs from vet_records
+          double totalVetCosts = 0;
+          for (var vetRecord in vetRecords) {
+            if (vetRecord.cost != null) {
+              totalVetCosts += vetRecord.cost!;
+            }
+          }
+
           // Combined totals
-          final totalFeed = totalFeedFromRecords + totalFeedStandalone;
-          final totalVet = totalVetFromRecords + totalVetStandalone;
-          final totalOther = totalOtherFromRecords + totalOtherStandalone +
+          final totalFeed = totalFeedStandalone;
+          final totalVet = totalVetCosts + totalVetStandalone;
+          final totalOther = totalOtherStandalone +
               totalMaintenanceStandalone + totalEquipmentStandalone + totalUtilitiesStandalone;
           final totalExpenses = totalFeed + totalVet + totalOther;
           final netProfit = totalRevenue - totalExpenses;
-
-          // Get records with expenses
-          final recordsWithExpenses = records.where((r) => r.totalExpenses > 0).toList()
-            ..sort((a, b) => b.date.compareTo(a.date));
 
           // Sort standalone expenses
           final sortedStandaloneExpenses = List<Expense>.from(standaloneExpenses)
@@ -242,7 +240,7 @@ class ExpensesPage extends StatelessWidget {
                                         PieChartSectionData(
                                           value: totalVet,
                                           title: '${(totalVet / totalExpenses * 100).toStringAsFixed(1)}%',
-                                          color: Colors.blue,
+                                          color: Colors.red,
                                           radius: 50,
                                           titleStyle: const TextStyle(
                                             fontSize: 14,
@@ -274,8 +272,8 @@ class ExpensesPage extends StatelessWidget {
                               ),
                               const SizedBox(height: 8),
                               _ExpenseLegendItem(
-                                color: Colors.blue,
-                                label: t('veterinary'),
+                                color: Colors.red,
+                                label: locale == 'pt' ? 'Veterinário' : 'Veterinary',
                                 value: '€${totalVet.toStringAsFixed(2)}',
                               ),
                               const SizedBox(height: 8),
