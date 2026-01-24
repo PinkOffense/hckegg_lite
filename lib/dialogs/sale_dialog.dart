@@ -31,6 +31,7 @@ class _SaleDialogState extends State<SaleDialog> {
   DateTime? _paymentDate;
   bool _isReservation = false;
   bool _updatingPrices = false;
+  final _totalPriceController = TextEditingController();
 
   @override
   void initState() {
@@ -61,9 +62,13 @@ class _SaleDialogState extends State<SaleDialog> {
       _pricePerDozenController.text = '6.00'; // 0.50 * 12 = 6.00
     }
 
-    // Add listeners to sync price fields
+    // Add listeners to sync price fields and calculate total
     _pricePerEggController.addListener(_onPricePerEggChanged);
     _pricePerDozenController.addListener(_onPricePerDozenChanged);
+    _quantityController.addListener(_calculateTotal);
+
+    // Calculate initial total
+    _calculateTotal();
   }
 
   void _onPricePerEggChanged() {
@@ -77,6 +82,7 @@ class _SaleDialogState extends State<SaleDialog> {
       final dozenPrice = price * 12;
       _pricePerDozenController.text = dozenPrice.toStringAsFixed(2);
       _updatingPrices = false;
+      _calculateTotal();
     }
   }
 
@@ -91,6 +97,24 @@ class _SaleDialogState extends State<SaleDialog> {
       final eggPrice = price / 12;
       _pricePerEggController.text = eggPrice.toStringAsFixed(2);
       _updatingPrices = false;
+      _calculateTotal();
+    }
+  }
+
+  void _calculateTotal() {
+    final quantity = int.tryParse(_quantityController.text);
+    final pricePerEgg = double.tryParse(_pricePerEggController.text);
+    final pricePerDozen = double.tryParse(_pricePerDozenController.text);
+
+    if (quantity != null && quantity > 0 && pricePerEgg != null && pricePerEgg > 0 && pricePerDozen != null && pricePerDozen > 0) {
+      // Calculate using dozen + individual eggs for better pricing
+      final dozens = quantity ~/ 12;
+      final individualEggs = quantity % 12;
+      final total = (dozens * pricePerDozen) + (individualEggs * pricePerEgg);
+
+      _totalPriceController.text = total.toStringAsFixed(2);
+    } else {
+      _totalPriceController.text = '0.00';
     }
   }
 
@@ -99,6 +123,7 @@ class _SaleDialogState extends State<SaleDialog> {
     _quantityController.dispose();
     _pricePerEggController.dispose();
     _pricePerDozenController.dispose();
+    _totalPriceController.dispose();
     _customerNameController.dispose();
     _customerEmailController.dispose();
     _customerPhoneController.dispose();
@@ -229,6 +254,50 @@ class _SaleDialogState extends State<SaleDialog> {
                             }
                             return null;
                           },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Total Price (calculated automatically)
+                  TextFormField(
+                    controller: _totalPriceController,
+                    decoration: InputDecoration(
+                      labelText: locale == 'pt' ? 'Preço Total' : 'Total Price',
+                      prefixIcon: const Icon(Icons.euro, color: Colors.green),
+                      suffixText: '€',
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.green.withOpacity(0.05),
+                      labelStyle: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                    readOnly: true,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Explanation text
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 16, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          locale == 'pt'
+                              ? 'Calculado automaticamente: (dúzias × preço/dúzia) + (ovos individuais × preço/ovo)'
+                              : 'Calculated automatically: (dozens × price/dozen) + (individual eggs × price/egg)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                     ],
