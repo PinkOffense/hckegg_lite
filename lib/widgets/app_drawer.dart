@@ -85,6 +85,14 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.payment),
+              title: Text(locale == 'pt' ? 'Pagamentos' : 'Payments'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/payments');
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.account_balance_wallet),
               title: Text(t('expenses')),
               onTap: () {

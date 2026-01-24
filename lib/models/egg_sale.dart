@@ -1,3 +1,30 @@
+enum PaymentStatus {
+  paid,
+  pending,
+  overdue,
+  advance; // Paid in advance
+
+  String get displayName {
+    switch (this) {
+      case PaymentStatus.paid:
+        return 'Pago';
+      case PaymentStatus.pending:
+        return 'Pendente';
+      case PaymentStatus.overdue:
+        return 'Atrasado';
+      case PaymentStatus.advance:
+        return 'Adiantado';
+    }
+  }
+
+  static PaymentStatus fromString(String value) {
+    return PaymentStatus.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => PaymentStatus.pending,
+    );
+  }
+}
+
 class EggSale {
   final String id;
   final String date; // Format: "YYYY-MM-DD"
@@ -8,6 +35,10 @@ class EggSale {
   final String? customerEmail;
   final String? customerPhone;
   final String? notes;
+  final PaymentStatus paymentStatus;
+  final String? paymentDate; // Format: "YYYY-MM-DD"
+  final bool isReservation;
+  final String? reservationNotes;
   final DateTime createdAt;
 
   EggSale({
@@ -20,6 +51,10 @@ class EggSale {
     this.customerEmail,
     this.customerPhone,
     this.notes,
+    this.paymentStatus = PaymentStatus.pending,
+    this.paymentDate,
+    this.isReservation = false,
+    this.reservationNotes,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -43,6 +78,10 @@ class EggSale {
     String? customerEmail,
     String? customerPhone,
     String? notes,
+    PaymentStatus? paymentStatus,
+    String? paymentDate,
+    bool? isReservation,
+    String? reservationNotes,
     DateTime? createdAt,
   }) {
     return EggSale(
@@ -55,6 +94,10 @@ class EggSale {
       customerEmail: customerEmail ?? this.customerEmail,
       customerPhone: customerPhone ?? this.customerPhone,
       notes: notes ?? this.notes,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      paymentDate: paymentDate ?? this.paymentDate,
+      isReservation: isReservation ?? this.isReservation,
+      reservationNotes: reservationNotes ?? this.reservationNotes,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -70,6 +113,10 @@ class EggSale {
       'customer_email': customerEmail,
       'customer_phone': customerPhone,
       'notes': notes,
+      'payment_status': paymentStatus.name,
+      'payment_date': paymentDate,
+      'is_reservation': isReservation,
+      'reservation_notes': reservationNotes,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -85,6 +132,12 @@ class EggSale {
       customerEmail: json['customer_email'] as String?,
       customerPhone: json['customer_phone'] as String?,
       notes: json['notes'] as String?,
+      paymentStatus: json['payment_status'] != null
+          ? PaymentStatus.fromString(json['payment_status'] as String)
+          : PaymentStatus.pending,
+      paymentDate: json['payment_date'] as String?,
+      isReservation: json['is_reservation'] as bool? ?? false,
+      reservationNotes: json['reservation_notes'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
