@@ -280,7 +280,7 @@ class _ReservationCard extends StatelessWidget {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
     final theme = Theme.of(context);
 
-    // Ask for payment status
+    // Ask for payment status - only Pending and Advance make sense for conversions
     final paymentStatus = await showDialog<PaymentStatus>(
       context: context,
       builder: (context) => AlertDialog(
@@ -295,41 +295,27 @@ class _ReservationCard extends StatelessWidget {
                   : 'Customer picked up the eggs. How was the payment?',
             ),
             const SizedBox(height: 16),
-            ...PaymentStatus.values.map((status) {
-              IconData icon;
-              Color color;
-              String description;
-
-              switch (status) {
-                case PaymentStatus.paid:
-                  icon = Icons.check_circle;
-                  color = Colors.green;
-                  description = locale == 'pt' ? 'Cliente pagou' : 'Customer paid';
-                  break;
-                case PaymentStatus.pending:
-                  icon = Icons.hourglass_empty;
-                  color = Colors.orange;
-                  description = locale == 'pt' ? 'Cliente levou mas não pagou' : 'Customer took but didn\'t pay';
-                  break;
-                case PaymentStatus.overdue:
-                  icon = Icons.error;
-                  color = Colors.red;
-                  description = locale == 'pt' ? 'Pagamento atrasado' : 'Payment overdue';
-                  break;
-                case PaymentStatus.advance:
-                  icon = Icons.account_balance_wallet;
-                  color = Colors.blue;
-                  description = locale == 'pt' ? 'Já tinha pago adiantado' : 'Already paid in advance';
-                  break;
-              }
-
-              return ListTile(
-                leading: Icon(icon, color: color),
-                title: Text(status.displayName),
-                subtitle: Text(description),
-                onTap: () => Navigator.pop(context, status),
-              );
-            }),
+            // Only show Pending and Advance options
+            ListTile(
+              leading: const Icon(Icons.hourglass_empty, color: Colors.orange),
+              title: Text(PaymentStatus.pending.displayName),
+              subtitle: Text(
+                locale == 'pt'
+                    ? 'Cliente levou mas não pagou'
+                    : 'Customer took but didn\'t pay',
+              ),
+              onTap: () => Navigator.pop(context, PaymentStatus.pending),
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet, color: Colors.blue),
+              title: Text(PaymentStatus.advance.displayName),
+              subtitle: Text(
+                locale == 'pt'
+                    ? 'Cliente já tinha pago adiantado'
+                    : 'Customer already paid in advance',
+              ),
+              onTap: () => Navigator.pop(context, PaymentStatus.advance),
+            ),
           ],
         ),
         actions: [

@@ -224,6 +224,30 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                   const SizedBox(height: 12),
 
+                  // Inventory Stats (Available for Sale & Reserved)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.inventory,
+                          label: locale == 'pt' ? 'Disponíveis' : 'Available',
+                          value: '${state.totalEggsCollected - state.totalEggsConsumed - state.totalEggsSold}',
+                          color: Colors.purple,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.bookmark,
+                          label: locale == 'pt' ? 'Reservados' : 'Reserved',
+                          value: '${state.reservations.fold<int>(0, (sum, r) => sum + r.quantity)}',
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
                   // Financial Stats (Expenses & Net Profit)
                   Row(
                     children: [
