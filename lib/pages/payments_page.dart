@@ -118,33 +118,20 @@ class PaymentsPage extends StatelessWidget {
                   const SizedBox(height: 24),
                 ],
 
-                // Paid Sales (Last 10)
-                _SectionHeader(
-                  icon: Icons.check_circle,
-                  title: locale == 'pt' ? 'Pagamentos Recentes (Pagos)' : 'Recent Payments (Paid)',
-                  color: Colors.grey,
-                ),
-                const SizedBox(height: 12),
-                if (paidSales.isEmpty)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Center(
-                        child: Text(
-                          locale == 'pt' ? 'Nenhum pagamento registado' : 'No payments registered',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  ...paidSales.take(10).map((sale) => _PaymentCard(
+                // Paid Sales (All - Permanent Record)
+                if (paidSales.isNotEmpty) ...[
+                  _SectionHeader(
+                    icon: Icons.check_circle,
+                    title: locale == 'pt' ? 'Pagamentos Realizados' : 'Completed Payments',
+                    color: Colors.green,
+                  ),
+                  const SizedBox(height: 12),
+                  ...paidSales.map((sale) => _PaymentCard(
                         sale: sale,
                         locale: locale,
                         onTap: () => _showSaleDialog(context, sale),
                       )),
+                ],
               ],
             ),
           );
