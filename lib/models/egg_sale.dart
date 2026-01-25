@@ -39,6 +39,7 @@ class EggSale {
   final String? paymentDate; // Format: "YYYY-MM-DD"
   final bool isReservation;
   final String? reservationNotes;
+  final bool isLost; // Mark sale as lost (customer never paid)
   final DateTime createdAt;
 
   EggSale({
@@ -55,6 +56,7 @@ class EggSale {
     this.paymentDate,
     this.isReservation = false,
     this.reservationNotes,
+    this.isLost = false,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -82,6 +84,7 @@ class EggSale {
     String? paymentDate,
     bool? isReservation,
     String? reservationNotes,
+    bool? isLost,
     DateTime? createdAt,
   }) {
     return EggSale(
@@ -98,6 +101,7 @@ class EggSale {
       paymentDate: paymentDate ?? this.paymentDate,
       isReservation: isReservation ?? this.isReservation,
       reservationNotes: reservationNotes ?? this.reservationNotes,
+      isLost: isLost ?? this.isLost,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -117,6 +121,7 @@ class EggSale {
       'payment_date': paymentDate,
       'is_reservation': isReservation,
       'reservation_notes': reservationNotes,
+      'is_lost': isLost,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -138,6 +143,7 @@ class EggSale {
       paymentDate: json['payment_date'] as String?,
       isReservation: json['is_reservation'] as bool? ?? false,
       reservationNotes: json['reservation_notes'] as String?,
+      isLost: json['is_lost'] as bool? ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),

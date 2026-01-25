@@ -24,12 +24,10 @@ class _SaleDialogState extends State<SaleDialog> {
   final _customerEmailController = TextEditingController();
   final _customerPhoneController = TextEditingController();
   final _notesController = TextEditingController();
-  final _reservationNotesController = TextEditingController();
 
   late DateTime _selectedDate;
   late PaymentStatus _paymentStatus;
   DateTime? _paymentDate;
-  bool _isReservation = false;
   bool _updatingPrices = false;
   final _totalPriceController = TextEditingController();
 
@@ -51,8 +49,6 @@ class _SaleDialogState extends State<SaleDialog> {
       _paymentDate = widget.existingSale!.paymentDate != null
           ? DateTime.parse(widget.existingSale!.paymentDate!)
           : null;
-      _isReservation = widget.existingSale!.isReservation;
-      _reservationNotesController.text = widget.existingSale!.reservationNotes ?? '';
     } else {
       // New sale
       _selectedDate = DateTime.now();
@@ -128,7 +124,6 @@ class _SaleDialogState extends State<SaleDialog> {
     _customerEmailController.dispose();
     _customerPhoneController.dispose();
     _notesController.dispose();
-    _reservationNotesController.dispose();
     super.dispose();
   }
 
@@ -383,13 +378,13 @@ class _SaleDialogState extends State<SaleDialog> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Payment and Reservation Section
+                    // Payment Section
                     Row(
                       children: [
                         Icon(Icons.payment, size: 20, color: theme.colorScheme.primary),
                         const SizedBox(width: 8),
                         Text(
-                          locale == 'pt' ? 'Pagamento e Reserva' : 'Payment & Reservation',
+                          locale == 'pt' ? 'Pagamento' : 'Payment',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
@@ -405,6 +400,9 @@ class _SaleDialogState extends State<SaleDialog> {
                       decoration: InputDecoration(
                         labelText: locale == 'pt' ? 'Estado do Pagamento' : 'Payment Status',
                         prefixIcon: const Icon(Icons.account_balance_wallet),
+                        helperText: locale == 'pt'
+                            ? 'Pago = cliente levou e pagou, Pendente = cliente levou mas não pagou'
+                            : 'Paid = customer took and paid, Pending = customer took but didn\'t pay',
                       ),
                       items: PaymentStatus.values.map((status) {
                         return DropdownMenuItem(
@@ -424,44 +422,6 @@ class _SaleDialogState extends State<SaleDialog> {
                         }
                       },
                     ),
-                    const SizedBox(height: 16),
-
-                    // Is Reservation
-                    Card(
-                      child: SwitchListTile(
-                        title: Text(locale == 'pt' ? 'Esta é uma reserva' : 'This is a reservation'),
-                        subtitle: Text(
-                          locale == 'pt'
-                              ? 'Marque se os ovos foram reservados para entrega futura'
-                              : 'Check if eggs are reserved for future delivery',
-                        ),
-                        value: _isReservation,
-                        onChanged: (value) {
-                          setState(() => _isReservation = value);
-                        },
-                        secondary: Icon(
-                          Icons.bookmark,
-                          color: _isReservation ? theme.colorScheme.primary : Colors.grey,
-                        ),
-                      ),
-                    ),
-
-                    // Reservation Notes (shown only if is reservation)
-                    if (_isReservation) ...[
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _reservationNotesController,
-                        decoration: InputDecoration(
-                          labelText: locale == 'pt' ? 'Notas da Reserva' : 'Reservation Notes',
-                          prefixIcon: const Icon(Icons.event_note),
-                          hintText: locale == 'pt'
-                              ? 'Ex: Recolher no sábado, embalagem especial, etc.'
-                              : 'Ex: Pick up on Saturday, special packaging, etc.',
-                          alignLabelWithHint: true,
-                        ),
-                        maxLines: 2,
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -539,7 +499,6 @@ class _SaleDialogState extends State<SaleDialog> {
     final customerEmail = _customerEmailController.text.trim();
     final customerPhone = _customerPhoneController.text.trim();
     final notes = _notesController.text.trim();
-    final reservationNotes = _reservationNotesController.text.trim();
 
     final sale = EggSale(
       id: widget.existingSale?.id ?? const Uuid().v4(),
@@ -553,8 +512,9 @@ class _SaleDialogState extends State<SaleDialog> {
       notes: notes.isEmpty ? null : notes,
       paymentStatus: _paymentStatus,
       paymentDate: _paymentDate != null ? _dateToString(_paymentDate!) : null,
-      isReservation: _isReservation,
-      reservationNotes: reservationNotes.isEmpty ? null : reservationNotes,
+      isReservation: false, // Sales are never reservations (reservations are separate)
+      reservationNotes: null,
+      isLost: false, // New sales are never marked as lost initially
       createdAt: widget.existingSale?.createdAt ?? DateTime.now(),
     );
 
