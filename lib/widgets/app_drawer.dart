@@ -93,6 +93,14 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.bookmark),
+              title: Text(locale == 'pt' ? 'Reservas' : 'Reservations'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/reservations');
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.account_balance_wallet),
               title: Text(t('expenses')),
               onTap: () {

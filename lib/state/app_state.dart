@@ -8,6 +8,7 @@ import '../models/daily_egg_record.dart';
 import '../models/expense.dart';
 import '../models/vet_record.dart';
 import '../models/egg_sale.dart';
+import '../models/egg_reservation.dart';
 
 class AppState extends ChangeNotifier {
   // Repositories
@@ -36,6 +37,11 @@ class AppState extends ChangeNotifier {
   bool _isLoadingSales = false;
   String? _salesError;
 
+  // State - Reservations (local storage for now)
+  List<EggReservation> _reservations = [];
+  bool _isLoadingReservations = false;
+  String? _reservationsError;
+
   // Getters - Egg Records
   List<DailyEggRecord> get records => List.unmodifiable(_records);
   bool get isLoadingRecords => _isLoadingRecords;
@@ -56,8 +62,13 @@ class AppState extends ChangeNotifier {
   bool get isLoadingSales => _isLoadingSales;
   String? get salesError => _salesError;
 
+  // Getters - Reservations
+  List<EggReservation> get reservations => List.unmodifiable(_reservations);
+  bool get isLoadingReservations => _isLoadingReservations;
+  String? get reservationsError => _reservationsError;
+
   // Overall loading state
-  bool get isLoading => _isLoadingRecords || _isLoadingExpenses || _isLoadingVetRecords || _isLoadingSales;
+  bool get isLoading => _isLoadingRecords || _isLoadingExpenses || _isLoadingVetRecords || _isLoadingSales || _isLoadingReservations;
 
   // ========== EGG RECORDS ==========
 
@@ -407,6 +418,114 @@ class AppState extends ChangeNotifier {
   /// Obter últimas N vendas
   List<EggSale> getRecentSales(int count) {
     return _sales.take(count).toList();
+  }
+
+  // ========== RESERVATIONS ==========
+
+  /// Carregar todas as reservas (local storage for now)
+  Future<void> loadReservations() async {
+    _isLoadingReservations = true;
+    _reservationsError = null;
+    notifyListeners();
+
+    try {
+      // TODO: Implement Supabase storage when ready
+      // For now, reservations are stored in memory only
+      await Future.delayed(const Duration(milliseconds: 100));
+    } catch (e) {
+      _reservationsError = e.toString();
+    } finally {
+      _isLoadingReservations = false;
+      notifyListeners();
+    }
+  }
+
+  /// Guardar uma reserva
+  Future<void> saveReservation(EggReservation reservation) async {
+    try {
+      // TODO: Implement Supabase storage when ready
+      // For now, use local storage only
+
+      // Actualizar lista local
+      final existingIndex = _reservations.indexWhere((r) => r.id == reservation.id);
+      if (existingIndex != -1) {
+        _reservations[existingIndex] = reservation;
+      } else {
+        _reservations.insert(0, reservation);
+      }
+
+      // Ordenar por data (mais recentes primeiro)
+      _reservations.sort((a, b) => b.date.compareTo(a.date));
+
+      notifyListeners();
+    } catch (e) {
+      _reservationsError = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Eliminar uma reserva
+  Future<void> deleteReservation(String id) async {
+    try {
+      // TODO: Implement Supabase storage when ready
+      _reservations.removeWhere((r) => r.id == id);
+      notifyListeners();
+    } catch (e) {
+      _reservationsError = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Converter reserva em venda
+  Future<void> convertReservationToSale(EggReservation reservation, PaymentStatus paymentStatus) async {
+    try {
+      // Create a new sale from the reservation
+      final sale = EggSale(
+        id: reservation.id, // Use same ID for tracking
+        date: _dateToString(DateTime.now()), // Sale date is today
+        quantitySold: reservation.quantity,
+        pricePerEgg: reservation.pricePerEgg ?? 0.50, // Use reserved price or default
+        pricePerDozen: reservation.pricePerDozen ?? 6.00,
+        customerName: reservation.customerName,
+        customerEmail: reservation.customerEmail,
+        customerPhone: reservation.customerPhone,
+        notes: reservation.notes != null
+          ? 'Converted from reservation on ${reservation.date}. ${reservation.notes}'
+          : 'Converted from reservation on ${reservation.date}',
+        paymentStatus: paymentStatus,
+        paymentDate: paymentStatus == PaymentStatus.paid || paymentStatus == PaymentStatus.advance
+          ? _dateToString(DateTime.now())
+          : null,
+        isReservation: false,
+        reservationNotes: null,
+        createdAt: DateTime.now(),
+        isLost: false,
+      );
+
+      // Save the sale
+      await saveSale(sale);
+
+      // Remove the reservation
+      await deleteReservation(reservation.id);
+
+      notifyListeners();
+    } catch (e) {
+      _reservationsError = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Obter reservas num intervalo de datas
+  List<EggReservation> getReservationsInRange(DateTime start, DateTime end) {
+    final startStr = _dateToString(start);
+    final endStr = _dateToString(end);
+
+    return _reservations.where((r) {
+      return r.date.compareTo(startStr) >= 0 && r.date.compareTo(endStr) <= 0;
+    }).toList();
   }
 
   // ========== LOAD ALL DATA ==========

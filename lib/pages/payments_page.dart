@@ -22,12 +22,12 @@ class PaymentsPage extends StatelessWidget {
         builder: (context, state, _) {
           final sales = state.sales;
 
-          // Categorize sales
-          final paidSales = sales.where((s) => s.paymentStatus == PaymentStatus.paid).toList();
-          final pendingSales = sales.where((s) => s.paymentStatus == PaymentStatus.pending).toList();
-          final overdueSales = sales.where((s) => s.paymentStatus == PaymentStatus.overdue).toList();
-          final advanceSales = sales.where((s) => s.paymentStatus == PaymentStatus.advance).toList();
-          final reservations = sales.where((s) => s.isReservation).toList();
+          // Categorize sales (excluding lost sales from payment views)
+          final paidSales = sales.where((s) => !s.isLost && s.paymentStatus == PaymentStatus.paid).toList();
+          final pendingSales = sales.where((s) => !s.isLost && s.paymentStatus == PaymentStatus.pending).toList();
+          final overdueSales = sales.where((s) => !s.isLost && s.paymentStatus == PaymentStatus.overdue).toList();
+          final advanceSales = sales.where((s) => !s.isLost && s.paymentStatus == PaymentStatus.advance).toList();
+          final lostSales = sales.where((s) => s.isLost).toList();
 
           // Calculate totals
           final totalPaid = paidSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
@@ -63,6 +63,7 @@ class PaymentsPage extends StatelessWidget {
                         locale: locale,
                         onTap: () => _showSaleDialog(context, sale),
                         onMarkPaid: () => _markAsPaid(context, sale),
+                        onMarkLost: () => _markAsLost(context, sale),
                       )),
                   const SizedBox(height: 24),
                 ],
@@ -80,6 +81,7 @@ class PaymentsPage extends StatelessWidget {
                         locale: locale,
                         onTap: () => _showSaleDialog(context, sale),
                         onMarkPaid: () => _markAsPaid(context, sale),
+                        onMarkLost: () => _markAsLost(context, sale),
                       )),
                   const SizedBox(height: 24),
                 ],
@@ -100,21 +102,18 @@ class PaymentsPage extends StatelessWidget {
                   const SizedBox(height: 24),
                 ],
 
-                // Reservations
-                if (reservations.isNotEmpty) ...[
+                // Lost Sales (customer never paid)
+                if (lostSales.isNotEmpty) ...[
                   _SectionHeader(
-                    icon: Icons.bookmark,
-                    title: locale == 'pt' ? 'Reservas de Ovos' : 'Egg Reservations',
-                    color: Colors.blue,
+                    icon: Icons.cancel,
+                    title: locale == 'pt' ? 'Vendas Perdidas' : 'Lost Sales',
+                    color: Colors.grey.shade700,
                   ),
                   const SizedBox(height: 12),
-                  ...reservations.map((sale) => _ReservationCard(
+                  ...lostSales.map((sale) => _PaymentCard(
                         sale: sale,
                         locale: locale,
                         onTap: () => _showSaleDialog(context, sale),
-                        onMarkPaid: sale.paymentStatus != PaymentStatus.paid
-                            ? () => _markAsPaid(context, sale)
-                            : null,
                       )),
                   const SizedBox(height: 24),
                 ],
@@ -178,6 +177,66 @@ class PaymentsPage extends StatelessWidget {
           const SnackBar(
             content: Text('Pagamento marcado como pago'),
             backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _markAsLost(BuildContext context, EggSale sale) async {
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(locale == 'pt' ? 'Marcar como Perdida?' : 'Mark as Lost?'),
+        content: Text(
+          locale == 'pt'
+              ? 'Esta venda será marcada como perdida (cliente nunca pagará). Esta ação não pode ser desfeita. Continuar?'
+              : 'This sale will be marked as lost (customer will never pay). This action cannot be undone. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: Text(locale == 'pt' ? 'Marcar como Perdida' : 'Mark as Lost'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final appState = Provider.of<AppState>(context, listen: false);
+
+    final updatedSale = sale.copyWith(
+      isLost: true,
+      paymentStatus: PaymentStatus.overdue, // Keep status to show it was unpaid
+    );
+
+    try {
+      await appState.saveSale(updatedSale);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(locale == 'pt' ? 'Venda marcada como perdida' : 'Sale marked as lost'),
+            backgroundColor: Colors.grey.shade700,
           ),
         );
       }
@@ -347,12 +406,14 @@ class _PaymentCard extends StatelessWidget {
   final String locale;
   final VoidCallback onTap;
   final VoidCallback? onMarkPaid;
+  final VoidCallback? onMarkLost;
 
   const _PaymentCard({
     required this.sale,
     required this.locale,
     required this.onTap,
     this.onMarkPaid,
+    this.onMarkLost,
   });
 
   String _formatDate(String dateStr) {
@@ -456,19 +517,60 @@ class _PaymentCard extends StatelessWidget {
                   ),
                 ),
               ],
-              if (onMarkPaid != null) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: onMarkPaid,
-                    icon: const Icon(Icons.check, size: 18),
-                    label: Text(locale == 'pt' ? 'Marcar como Pago' : 'Mark as Paid'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
+              if (sale.isLost) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.cancel, size: 16, color: Colors.grey.shade700),
+                      const SizedBox(width: 8),
+                      Text(
+                        locale == 'pt' ? 'Venda perdida - cliente nunca pagou' : 'Lost sale - customer never paid',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade700,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (onMarkPaid != null || onMarkLost != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    if (onMarkPaid != null)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: onMarkPaid,
+                          icon: const Icon(Icons.check, size: 18),
+                          label: Text(locale == 'pt' ? 'Pago' : 'Paid'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    if (onMarkPaid != null && onMarkLost != null) const SizedBox(width: 12),
+                    if (onMarkLost != null)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: onMarkLost,
+                          icon: const Icon(Icons.cancel, size: 18),
+                          label: Text(locale == 'pt' ? 'Perdida' : 'Lost'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey.shade700,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ],
