@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/egg_reservation.dart';
+import '../models/egg_sale.dart';
 import '../state/app_state.dart';
 import '../dialogs/reservation_dialog.dart';
 import '../l10n/locale_provider.dart';
@@ -275,41 +276,99 @@ class _ReservationCard extends StatelessWidget {
     );
   }
 
-  void _convertToSale(BuildContext context) {
+  void _convertToSale(BuildContext context) async {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    final theme = Theme.of(context);
 
-    showDialog(
+    // Ask for payment status
+    final paymentStatus = await showDialog<PaymentStatus>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(locale == 'pt' ? 'Converter em Venda?' : 'Convert to Sale?'),
-        content: Text(
-          locale == 'pt'
-              ? 'Esta reserva será removida e uma nova venda será criada. Continuar?'
-              : 'This reservation will be removed and a new sale will be created. Continue?',
+        title: Text(locale == 'pt' ? 'Converter em Venda' : 'Convert to Sale'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              locale == 'pt'
+                  ? 'O cliente levantou os ovos. Como foi o pagamento?'
+                  : 'Customer picked up the eggs. How was the payment?',
+            ),
+            const SizedBox(height: 16),
+            ...PaymentStatus.values.map((status) {
+              IconData icon;
+              Color color;
+              String description;
+
+              switch (status) {
+                case PaymentStatus.paid:
+                  icon = Icons.check_circle;
+                  color = Colors.green;
+                  description = locale == 'pt' ? 'Cliente pagou' : 'Customer paid';
+                  break;
+                case PaymentStatus.pending:
+                  icon = Icons.hourglass_empty;
+                  color = Colors.orange;
+                  description = locale == 'pt' ? 'Cliente levou mas não pagou' : 'Customer took but didn\'t pay';
+                  break;
+                case PaymentStatus.overdue:
+                  icon = Icons.error;
+                  color = Colors.red;
+                  description = locale == 'pt' ? 'Pagamento atrasado' : 'Payment overdue';
+                  break;
+                case PaymentStatus.advance:
+                  icon = Icons.account_balance_wallet;
+                  color = Colors.blue;
+                  description = locale == 'pt' ? 'Já tinha pago adiantado' : 'Already paid in advance';
+                  break;
+              }
+
+              return ListTile(
+                leading: Icon(icon, color: color),
+                title: Text(status.displayName),
+                subtitle: Text(description),
+                onTap: () => Navigator.pop(context, status),
+              );
+            }),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
           ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement conversion to sale
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    locale == 'pt'
-                        ? 'Funcionalidade em desenvolvimento'
-                        : 'Feature under development',
-                  ),
-                ),
-              );
-            },
-            child: Text(locale == 'pt' ? 'Converter' : 'Convert'),
-          ),
         ],
       ),
     );
+
+    if (paymentStatus == null || !context.mounted) return;
+
+    // Convert to sale
+    try {
+      final appState = Provider.of<AppState>(context, listen: false);
+      await appState.convertReservationToSale(reservation, paymentStatus);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              locale == 'pt'
+                  ? 'Reserva convertida em venda com sucesso!'
+                  : 'Reservation converted to sale successfully!',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
