@@ -167,6 +167,13 @@ class SaleRemoteDatasource {
       customerEmail: json['customer_email'] as String?,
       customerPhone: json['customer_phone'] as String?,
       notes: json['notes'] as String?,
+      paymentStatus: json['payment_status'] != null
+          ? PaymentStatus.fromString(json['payment_status'] as String)
+          : PaymentStatus.pending,
+      paymentDate: json['payment_date'] as String?,
+      isReservation: json['is_reservation'] as bool? ?? false,
+      reservationNotes: json['reservation_notes'] as String?,
+      isLost: json['is_lost'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -184,6 +191,11 @@ class SaleRemoteDatasource {
       'customer_email': sale.customerEmail,
       'customer_phone': sale.customerPhone,
       'notes': sale.notes,
+      'payment_status': sale.paymentStatus.name,
+      'payment_date': sale.paymentDate,
+      'is_reservation': sale.isReservation,
+      'reservation_notes': sale.reservationNotes,
+      'is_lost': sale.isLost,
       // Adicionar user_id explicitamente (também validado pelo RLS)
       if (userId != null) 'user_id': userId,
     };
