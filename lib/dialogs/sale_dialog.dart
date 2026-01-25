@@ -140,335 +140,360 @@ class _SaleDialogState extends State<SaleDialog> {
 
     return Dialog(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 500),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 850),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                border: Border(
+                  bottom: BorderSide(
+                    color: theme.colorScheme.outline.withOpacity(0.2),
+                  ),
+                ),
+              ),
+              child: Row(
                 children: [
-                  // Title
-                  Text(
-                    widget.existingSale != null
-                        ? (locale == 'pt' ? 'Editar Venda' : 'Edit Sale')
-                        : (locale == 'pt' ? 'Nova Venda' : 'New Sale'),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Icon(
+                    Icons.point_of_sale,
+                    color: theme.colorScheme.primary,
                   ),
-                  const SizedBox(height: 24),
-
-                  // Date
-                  InkWell(
-                    onTap: () => _selectDate(context, locale),
-                    borderRadius: BorderRadius.circular(8),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: t('date'),
-                        prefixIcon: const Icon(Icons.calendar_today),
-                        border: const OutlineInputBorder(),
-                      ),
-                      child: Text(
-                        _formatDate(_selectedDate, locale),
-                        style: theme.textTheme.bodyLarge,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Quantity
-                  TextFormField(
-                    controller: _quantityController,
-                    decoration: InputDecoration(
-                      labelText: '${locale == 'pt' ? 'Quantidade de Ovos' : 'Quantity of Eggs'} *',
-                      prefixIcon: const Icon(Icons.egg),
-                      suffixText: locale == 'pt' ? 'ovos' : 'eggs',
-                      border: const OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
-                      }
-                      if (int.tryParse(value) == null) {
-                        return locale == 'pt' ? 'Valor inválido' : 'Invalid value';
-                      }
-                      if (int.parse(value) <= 0) {
-                        return locale == 'pt' ? 'Deve ser maior que zero' : 'Must be greater than zero';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Price per egg and dozen
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _pricePerEggController,
-                          decoration: InputDecoration(
-                            labelText: '${locale == 'pt' ? 'Preço/Ovo' : 'Price/Egg'} *',
-                            prefixIcon: const Icon(Icons.euro),
-                            suffixText: '€',
-                            border: const OutlineInputBorder(),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return locale == 'pt' ? 'Obrigatório' : 'Required';
-                            }
-                            if (double.tryParse(value) == null) {
-                              return locale == 'pt' ? 'Inválido' : 'Invalid';
-                            }
-                            if (double.parse(value) <= 0) {
-                              return locale == 'pt' ? '> 0' : '> 0';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _pricePerDozenController,
-                          decoration: InputDecoration(
-                            labelText: '${locale == 'pt' ? 'Preço/Dúzia' : 'Price/Dozen'} *',
-                            prefixIcon: const Icon(Icons.euro),
-                            suffixText: '€',
-                            border: const OutlineInputBorder(),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return locale == 'pt' ? 'Obrigatório' : 'Required';
-                            }
-                            if (double.tryParse(value) == null) {
-                              return locale == 'pt' ? 'Inválido' : 'Invalid';
-                            }
-                            if (double.parse(value) <= 0) {
-                              return locale == 'pt' ? '> 0' : '> 0';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Total Price (calculated automatically)
-                  TextFormField(
-                    controller: _totalPriceController,
-                    decoration: InputDecoration(
-                      labelText: locale == 'pt' ? 'Preço Total' : 'Total Price',
-                      prefixIcon: const Icon(Icons.euro, color: Colors.green),
-                      suffixText: '€',
-                      border: const OutlineInputBorder(),
-                      filled: true,
-                      fillColor: Colors.green.withOpacity(0.05),
-                      labelStyle: TextStyle(
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.existingSale != null
+                          ? (locale == 'pt' ? 'Editar Venda' : 'Edit Sale')
+                          : (locale == 'pt' ? 'Nova Venda' : 'New Sale'),
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
-                      ),
-                    ),
-                    readOnly: true,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Explanation text
-                  Row(
-                    children: [
-                      Icon(Icons.info_outline, size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          locale == 'pt'
-                              ? 'Calculado automaticamente: (dúzias × preço/dúzia) + (ovos individuais × preço/ovo)'
-                              : 'Calculated automatically: (dozens × price/dozen) + (individual eggs × price/egg)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Customer Information Section
-                  Row(
-                    children: [
-                      Icon(Icons.person, size: 20, color: theme.colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        locale == 'pt' ? 'Informação do Cliente (opcional)' : 'Customer Information (optional)',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Customer Name
-                  TextFormField(
-                    controller: _customerNameController,
-                    decoration: InputDecoration(
-                      labelText: locale == 'pt' ? 'Nome do Cliente' : 'Customer Name',
-                      prefixIcon: const Icon(Icons.person_outline),
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Customer Email
-                  TextFormField(
-                    controller: _customerEmailController,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      border: const OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Customer Phone
-                  TextFormField(
-                    controller: _customerPhoneController,
-                    decoration: InputDecoration(
-                      labelText: locale == 'pt' ? 'Telefone' : 'Phone',
-                      prefixIcon: const Icon(Icons.phone_outlined),
-                      border: const OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.phone,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Notes (optional)
-                  TextFormField(
-                    controller: _notesController,
-                    decoration: InputDecoration(
-                      labelText: '${t('notes')} (${t('optional')})',
-                      prefixIcon: const Icon(Icons.note),
-                      border: const OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Payment and Reservation Section
-                  Row(
-                    children: [
-                      Icon(Icons.payment, size: 20, color: theme.colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        locale == 'pt' ? 'Pagamento e Reserva' : 'Payment & Reservation',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Payment Status
-                  DropdownButtonFormField<PaymentStatus>(
-                    value: _paymentStatus,
-                    decoration: InputDecoration(
-                      labelText: locale == 'pt' ? 'Estado do Pagamento' : 'Payment Status',
-                      prefixIcon: const Icon(Icons.account_balance_wallet),
-                      border: const OutlineInputBorder(),
-                    ),
-                    items: PaymentStatus.values.map((status) {
-                      return DropdownMenuItem(
-                        value: status,
-                        child: Text(status.displayName),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _paymentStatus = value;
-                          // If marking as paid, set payment date to today
-                          if (value == PaymentStatus.paid || value == PaymentStatus.advance) {
-                            _paymentDate = DateTime.now();
-                          }
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Is Reservation
-                  Card(
-                    child: SwitchListTile(
-                      title: Text(locale == 'pt' ? 'Esta é uma reserva' : 'This is a reservation'),
-                      subtitle: Text(
-                        locale == 'pt'
-                            ? 'Marque se os ovos foram reservados para entrega futura'
-                            : 'Check if eggs are reserved for future delivery',
-                      ),
-                      value: _isReservation,
-                      onChanged: (value) {
-                        setState(() => _isReservation = value);
-                      },
-                      secondary: Icon(
-                        Icons.bookmark,
-                        color: _isReservation ? theme.colorScheme.primary : Colors.grey,
                       ),
                     ),
                   ),
-
-                  // Reservation Notes (shown only if is reservation)
-                  if (_isReservation) ...[
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _reservationNotesController,
-                      decoration: InputDecoration(
-                        labelText: locale == 'pt' ? 'Notas da Reserva' : 'Reservation Notes',
-                        prefixIcon: const Icon(Icons.event_note),
-                        border: const OutlineInputBorder(),
-                        hintText: locale == 'pt'
-                            ? 'Ex: Recolher no sábado, embalagem especial, etc.'
-                            : 'Ex: Pick up on Saturday, special packaging, etc.',
-                      ),
-                      maxLines: 2,
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-
-                  // Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(t('cancel')),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton.icon(
-                        onPressed: _saveSale,
-                        icon: const Icon(Icons.check),
-                        label: Text(t('save')),
-                      ),
-                    ],
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
             ),
-          ),
+            // Body
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    // Date
+                    InkWell(
+                      onTap: () => _selectDate(context, locale),
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: t('date'),
+                          suffixIcon: const Icon(Icons.calendar_today),
+                        ),
+                        child: Text(
+                          _formatDate(_selectedDate, locale),
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Quantity
+                    TextFormField(
+                      controller: _quantityController,
+                      decoration: InputDecoration(
+                        labelText: '${locale == 'pt' ? 'Quantidade de Ovos' : 'Quantity of Eggs'} *',
+                        prefixIcon: const Icon(Icons.egg),
+                        suffixText: locale == 'pt' ? 'ovos' : 'eggs',
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
+                        }
+                        if (int.tryParse(value) == null) {
+                          return locale == 'pt' ? 'Valor inválido' : 'Invalid value';
+                        }
+                        if (int.parse(value) <= 0) {
+                          return locale == 'pt' ? 'Deve ser maior que zero' : 'Must be greater than zero';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Price per egg and dozen
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _pricePerEggController,
+                            decoration: InputDecoration(
+                              labelText: '${locale == 'pt' ? 'Preço/Ovo' : 'Price/Egg'} *',
+                              prefixIcon: const Icon(Icons.euro),
+                              suffixText: '€',
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return locale == 'pt' ? 'Obrigatório' : 'Required';
+                              }
+                              if (double.tryParse(value) == null) {
+                                return locale == 'pt' ? 'Inválido' : 'Invalid';
+                              }
+                              if (double.parse(value) <= 0) {
+                                return locale == 'pt' ? '> 0' : '> 0';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _pricePerDozenController,
+                            decoration: InputDecoration(
+                              labelText: '${locale == 'pt' ? 'Preço/Dúzia' : 'Price/Dozen'} *',
+                              prefixIcon: const Icon(Icons.euro),
+                              suffixText: '€',
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return locale == 'pt' ? 'Obrigatório' : 'Required';
+                              }
+                              if (double.tryParse(value) == null) {
+                                return locale == 'pt' ? 'Inválido' : 'Invalid';
+                              }
+                              if (double.parse(value) <= 0) {
+                                return locale == 'pt' ? '> 0' : '> 0';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Total Price (calculated automatically)
+                    TextFormField(
+                      controller: _totalPriceController,
+                      decoration: InputDecoration(
+                        labelText: locale == 'pt' ? 'Preço Total' : 'Total Price',
+                        prefixIcon: const Icon(Icons.euro, color: Colors.green),
+                        suffixText: '€',
+                        filled: true,
+                        fillColor: Colors.green.withOpacity(0.05),
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                      readOnly: true,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Explanation text
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 16, color: Colors.grey.shade600),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            locale == 'pt'
+                                ? 'Calculado automaticamente: (dúzias × preço/dúzia) + (ovos individuais × preço/ovo)'
+                                : 'Calculated automatically: (dozens × price/dozen) + (individual eggs × price/egg)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Customer Information Section
+                    Row(
+                      children: [
+                        Icon(Icons.person, size: 20, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          locale == 'pt' ? 'Informação do Cliente (opcional)' : 'Customer Information (optional)',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Customer Name
+                    TextFormField(
+                      controller: _customerNameController,
+                      decoration: InputDecoration(
+                        labelText: locale == 'pt' ? 'Nome do Cliente' : 'Customer Name',
+                        prefixIcon: const Icon(Icons.person_outline),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Customer Email
+                    TextFormField(
+                      controller: _customerEmailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Customer Phone
+                    TextFormField(
+                      controller: _customerPhoneController,
+                      decoration: InputDecoration(
+                        labelText: locale == 'pt' ? 'Telefone' : 'Phone',
+                        prefixIcon: const Icon(Icons.phone_outlined),
+                      ),
+                      keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Notes (optional)
+                    TextFormField(
+                      controller: _notesController,
+                      decoration: InputDecoration(
+                        labelText: '${t('notes')} (${t('optional')})',
+                        prefixIcon: const Icon(Icons.note),
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Payment and Reservation Section
+                    Row(
+                      children: [
+                        Icon(Icons.payment, size: 20, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          locale == 'pt' ? 'Pagamento e Reserva' : 'Payment & Reservation',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Payment Status
+                    DropdownButtonFormField<PaymentStatus>(
+                      value: _paymentStatus,
+                      decoration: InputDecoration(
+                        labelText: locale == 'pt' ? 'Estado do Pagamento' : 'Payment Status',
+                        prefixIcon: const Icon(Icons.account_balance_wallet),
+                      ),
+                      items: PaymentStatus.values.map((status) {
+                        return DropdownMenuItem(
+                          value: status,
+                          child: Text(status.displayName),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _paymentStatus = value;
+                            // If marking as paid, set payment date to today
+                            if (value == PaymentStatus.paid || value == PaymentStatus.advance) {
+                              _paymentDate = DateTime.now();
+                            }
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Is Reservation
+                    Card(
+                      child: SwitchListTile(
+                        title: Text(locale == 'pt' ? 'Esta é uma reserva' : 'This is a reservation'),
+                        subtitle: Text(
+                          locale == 'pt'
+                              ? 'Marque se os ovos foram reservados para entrega futura'
+                              : 'Check if eggs are reserved for future delivery',
+                        ),
+                        value: _isReservation,
+                        onChanged: (value) {
+                          setState(() => _isReservation = value);
+                        },
+                        secondary: Icon(
+                          Icons.bookmark,
+                          color: _isReservation ? theme.colorScheme.primary : Colors.grey,
+                        ),
+                      ),
+                    ),
+
+                    // Reservation Notes (shown only if is reservation)
+                    if (_isReservation) ...[
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _reservationNotesController,
+                        decoration: InputDecoration(
+                          labelText: locale == 'pt' ? 'Notas da Reserva' : 'Reservation Notes',
+                          prefixIcon: const Icon(Icons.event_note),
+                          hintText: locale == 'pt'
+                              ? 'Ex: Recolher no sábado, embalagem especial, etc.'
+                              : 'Ex: Pick up on Saturday, special packaging, etc.',
+                          alignLabelWithHint: true,
+                        ),
+                        maxLines: 2,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            // Footer with buttons
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(
+                  top: BorderSide(
+                    color: theme.colorScheme.outline.withOpacity(0.2),
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(t('cancel')),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton.icon(
+                    onPressed: _saveSale,
+                    icon: const Icon(Icons.check),
+                    label: Text(t('save')),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
