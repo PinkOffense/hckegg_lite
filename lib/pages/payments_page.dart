@@ -148,27 +148,59 @@ class PaymentsPage extends StatelessWidget {
   }
 
   Future<void> _markAsPaid(BuildContext context, EggSale sale) async {
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
     final appState = Provider.of<AppState>(context, listen: false);
     final now = DateTime.now();
     final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
+    // Show loading
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(locale == 'pt' ? 'Atualizando...' : 'Updating...'),
+            ],
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+
     final updatedSale = sale.copyWith(
       paymentStatus: PaymentStatus.paid,
       paymentDate: dateStr,
+      isLost: false, // Ensure it's not marked as lost
     );
 
     try {
       await appState.saveSale(updatedSale);
       if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pagamento marcado como pago'),
+          SnackBar(
+            content: Text(
+              locale == 'pt'
+                  ? '✓ Pagamento marcado como pago'
+                  : '✓ Payment marked as paid',
+            ),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
       if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro: ${e.toString()}'),
@@ -212,6 +244,29 @@ class PaymentsPage extends StatelessWidget {
 
     final appState = Provider.of<AppState>(context, listen: false);
 
+    // Show loading
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(locale == 'pt' ? 'Atualizando...' : 'Updating...'),
+            ],
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+
     final updatedSale = sale.copyWith(
       isLost: true,
       paymentStatus: PaymentStatus.overdue, // Keep status to show it was unpaid
@@ -220,15 +275,22 @@ class PaymentsPage extends StatelessWidget {
     try {
       await appState.saveSale(updatedSale);
       if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(locale == 'pt' ? 'Venda marcada como perdida' : 'Sale marked as lost'),
+            content: Text(
+              locale == 'pt'
+                  ? '✗ Venda marcada como perdida'
+                  : '✗ Sale marked as lost',
+            ),
             backgroundColor: Colors.grey.shade700,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
       if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro: ${e.toString()}'),
