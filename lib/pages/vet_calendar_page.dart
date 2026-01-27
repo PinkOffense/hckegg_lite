@@ -5,6 +5,7 @@ import '../state/app_state.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../dialogs/vet_record_dialog.dart';
+import '../dialogs/schedule_vet_visit_dialog.dart';
 import '../widgets/app_scaffold.dart';
 
 class VetCalendarPage extends StatefulWidget {
@@ -404,10 +405,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
   void _scheduleVisit(BuildContext context, DateTime? date) {
     showDialog(
       context: context,
-      builder: (context) => VetRecordDialog(
-        initialDate: date,
-        initialType: VetRecordType.checkup,
-      ),
+      builder: (context) => ScheduleVetVisitDialog(initialDate: date),
     );
   }
 
