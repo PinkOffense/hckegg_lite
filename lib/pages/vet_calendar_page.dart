@@ -18,11 +18,34 @@ class VetCalendarPage extends StatefulWidget {
 class _VetCalendarPageState extends State<VetCalendarPage> {
   late DateTime _currentMonth;
   DateTime? _selectedDate;
+  bool _reminderShown = false;
 
   @override
   void initState() {
     super.initState();
     _currentMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
+    // Show reminder popup after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showTodayReminder();
+    });
+  }
+
+  void _showTodayReminder() {
+    if (_reminderShown) return;
+    final appState = Provider.of<AppState>(context, listen: false);
+    final todayAppointments = appState.getTodayAppointments();
+    if (todayAppointments.isEmpty) return;
+
+    _reminderShown = true;
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+
+    showDialog(
+      context: context,
+      builder: (context) => _TodayReminderDialog(
+        appointments: todayAppointments,
+        locale: locale,
+      ),
+    );
   }
 
   @override
@@ -344,6 +367,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                       record: record,
                       locale: locale,
                       onTap: () => _editRecord(context, record),
+                      onDelete: () => _deleteRecord(context, record),
                     );
                   },
                 ),
@@ -407,6 +431,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                       locale: locale,
                       showDate: true,
                       onTap: () => _editRecord(context, record),
+                      onDelete: () => _deleteRecord(context, record),
                     );
                   },
                 ),
@@ -426,6 +451,35 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
     showDialog(
       context: context,
       builder: (context) => VetRecordDialog(existingRecord: record),
+    );
+  }
+
+  void _deleteRecord(BuildContext context, VetRecord record) {
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(locale == 'pt' ? 'Eliminar Agendamento' : 'Delete Appointment'),
+        content: Text(
+          locale == 'pt'
+              ? 'Tem certeza que deseja eliminar este agendamento?'
+              : 'Are you sure you want to delete this appointment?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Provider.of<AppState>(context, listen: false).deleteVetRecord(record.id);
+              Navigator.pop(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(locale == 'pt' ? 'Eliminar' : 'Delete'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -476,12 +530,14 @@ class _EventCard extends StatelessWidget {
   final String locale;
   final bool showDate;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   const _EventCard({
     required this.record,
     required this.locale,
     this.showDate = false,
     required this.onTap,
+    required this.onDelete,
   });
 
   // Extract time from notes field (format: "Hora: HH:MM" or "Time: HH:MM")
@@ -730,6 +786,15 @@ class _EventCard extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 20),
+                color: Colors.red.withOpacity(0.7),
+                tooltip: locale == 'pt' ? 'Eliminar' : 'Delete',
+                onPressed: onDelete,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
             ],
           ),
         ),
@@ -746,5 +811,150 @@ class _EventCard extends StatelessWidget {
     } else {
       return '${months[date.month - 1]} ${date.day}';
     }
+  }
+}
+
+class _TodayReminderDialog extends StatelessWidget {
+  final List<VetRecord> appointments;
+  final String locale;
+
+  const _TodayReminderDialog({
+    required this.appointments,
+    required this.locale,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.notifications_active, color: Colors.orange),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              locale == 'pt' ? 'Lembrete de Hoje' : "Today's Reminder",
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              locale == 'pt'
+                  ? 'Tem ${appointments.length} agendamento${appointments.length > 1 ? 's' : ''} para hoje:'
+                  : 'You have ${appointments.length} appointment${appointments.length > 1 ? 's' : ''} today:',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            ...appointments.map((record) => _buildAppointmentTile(context, record)),
+          ],
+        ),
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(locale == 'pt' ? 'Entendido' : 'Got it'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAppointmentTile(BuildContext context, VetRecord record) {
+    final theme = Theme.of(context);
+
+    IconData typeIcon;
+    Color typeColor;
+    switch (record.type) {
+      case VetRecordType.vaccine:
+        typeIcon = Icons.vaccines;
+        typeColor = Colors.green;
+        break;
+      case VetRecordType.disease:
+        typeIcon = Icons.sick;
+        typeColor = Colors.red;
+        break;
+      case VetRecordType.treatment:
+        typeIcon = Icons.healing;
+        typeColor = Colors.blue;
+        break;
+      case VetRecordType.death:
+        typeIcon = Icons.warning;
+        typeColor = Colors.black;
+        break;
+      case VetRecordType.checkup:
+        typeIcon = Icons.health_and_safety;
+        typeColor = Colors.teal;
+        break;
+    }
+
+    // Extract time from notes
+    String? time;
+    if (record.notes != null) {
+      final ptMatch = RegExp(r'Hora:\s*(\d{1,2}:\d{2})').firstMatch(record.notes!);
+      if (ptMatch != null) {
+        time = ptMatch.group(1);
+      } else {
+        final enMatch = RegExp(r'Time:\s*(\d{1,2}:\d{2})').firstMatch(record.notes!);
+        if (enMatch != null) time = enMatch.group(1);
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: typeColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: typeColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(typeIcon, color: typeColor, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  record.type.displayName(locale),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (time != null)
+                  Text(
+                    '${locale == 'pt' ? 'Hora' : 'Time'}: $time',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                    ),
+                  ),
+                Text(
+                  record.description,
+                  style: theme.textTheme.bodySmall,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

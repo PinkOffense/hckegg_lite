@@ -267,12 +267,42 @@ class AppState extends ChangeNotifier {
 
     try {
       _vetRecords = await _vetRepository.getAll();
+      // Auto-remove past appointments (before today)
+      await _cleanupPastAppointments();
     } catch (e) {
       _vetRecordsError = e.toString();
     } finally {
       _isLoadingVetRecords = false;
       notifyListeners();
     }
+  }
+
+  /// Remove appointments scheduled for before today
+  Future<void> _cleanupPastAppointments() async {
+    final today = DateTime.now();
+    final todayStr = _dateToString(today);
+
+    final pastRecords = _vetRecords.where((r) {
+      if (r.nextActionDate == null) return false;
+      return r.nextActionDate!.compareTo(todayStr) < 0;
+    }).toList();
+
+    for (final record in pastRecords) {
+      try {
+        await _vetRepository.delete(record.id);
+        _vetRecords.removeWhere((r) => r.id == record.id);
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
+    }
+  }
+
+  /// Get today's appointments for reminder popup
+  List<VetRecord> getTodayAppointments() {
+    final todayStr = _dateToString(DateTime.now());
+    return _vetRecords
+        .where((r) => r.nextActionDate == todayStr)
+        .toList();
   }
 
   /// Obter registos veterinários (ordenados)
