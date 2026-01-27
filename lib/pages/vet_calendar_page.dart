@@ -471,6 +471,38 @@ class _EventCard extends StatelessWidget {
     required this.onTap,
   });
 
+  // Extract time from notes field (format: "Hora: HH:MM" or "Time: HH:MM")
+  String? _extractTime() {
+    final notes = record.notes;
+    if (notes == null) return null;
+
+    // Try Portuguese format
+    final ptMatch = RegExp(r'Hora:\s*(\d{1,2}:\d{2})').firstMatch(notes);
+    if (ptMatch != null) return ptMatch.group(1);
+
+    // Try English format
+    final enMatch = RegExp(r'Time:\s*(\d{1,2}:\d{2})').firstMatch(notes);
+    if (enMatch != null) return enMatch.group(1);
+
+    return null;
+  }
+
+  // Extract vet name from notes field
+  String? _extractVetName() {
+    final notes = record.notes;
+    if (notes == null) return null;
+
+    // Try Portuguese format
+    final ptMatch = RegExp(r'Veterinário:\s*([^|]+)').firstMatch(notes);
+    if (ptMatch != null) return ptMatch.group(1)?.trim();
+
+    // Try English format
+    final enMatch = RegExp(r'Vet:\s*([^|]+)').firstMatch(notes);
+    if (enMatch != null) return enMatch.group(1)?.trim();
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -520,6 +552,9 @@ class _EventCard extends StatelessWidget {
       daysColor = Colors.green;
     }
 
+    final appointmentTime = _extractTime();
+    final vetName = _extractVetName();
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
@@ -542,11 +577,44 @@ class _EventCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      record.type.displayName(locale),
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          record.type.displayName(locale),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (appointmentTime != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.secondaryContainer,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.access_time,
+                                  size: 12,
+                                  color: theme.colorScheme.onSecondaryContainer,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  appointmentTime,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: theme.colorScheme.onSecondaryContainer,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -557,6 +625,30 @@ class _EventCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (vetName != null) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.local_hospital,
+                            size: 12,
+                            color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              vetName,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     if (showDate) ...[
                       const SizedBox(height: 4),
                       Text(
@@ -567,9 +659,49 @@ class _EventCard extends StatelessWidget {
                         ),
                       ),
                     ],
+                    // Show cost and hens if available
+                    if (record.cost != null || record.hensAffected > 1) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          if (record.hensAffected > 1) ...[
+                            Icon(
+                              Icons.egg_alt,
+                              size: 12,
+                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${record.hensAffected}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          if (record.cost != null) ...[
+                            Icon(
+                              Icons.euro,
+                              size: 12,
+                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              record.cost!.toStringAsFixed(2),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
