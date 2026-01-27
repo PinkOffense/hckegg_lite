@@ -51,11 +51,12 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
       id: const Uuid().v4(),
       date: _dateToString(DateTime.now()),
       type: VetRecordType.checkup,
-      hensAffected: 0,
-      description: locale == 'pt' ? 'Visita veterinária agendada' : 'Scheduled vet visit',
+      hensAffected: 1,
+      description: notes.isEmpty
+          ? (locale == 'pt' ? 'Visita veterinária agendada' : 'Scheduled vet visit')
+          : notes,
       severity: VetRecordSeverity.low,
       nextActionDate: _dateToString(_selectedDate),
-      notes: notes.isEmpty ? null : notes,
     );
 
     final appState = Provider.of<AppState>(context, listen: false);
@@ -177,15 +178,15 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
             ),
             const SizedBox(height: 16),
 
-            // Notes (optional)
+            // Reason (optional)
             TextField(
               controller: _notesController,
               decoration: InputDecoration(
-                labelText: locale == 'pt' ? 'Notas (opcional)' : 'Notes (optional)',
+                labelText: locale == 'pt' ? 'Motivo (opcional)' : 'Reason (optional)',
                 hintText: locale == 'pt'
                     ? 'Ex: Vacinação anual, checkup...'
                     : 'Ex: Annual vaccination, checkup...',
-                prefixIcon: const Icon(Icons.notes),
+                prefixIcon: const Icon(Icons.medical_services),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

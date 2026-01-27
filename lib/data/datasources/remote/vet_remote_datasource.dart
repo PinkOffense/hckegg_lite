@@ -205,6 +205,7 @@ class VetRemoteDatasource {
     final userId = _client.auth.currentUser?.id;
 
     return {
+      'id': record.id,
       'date': record.date,
       'type': record.type.name,
       'hens_affected': record.hensAffected,
