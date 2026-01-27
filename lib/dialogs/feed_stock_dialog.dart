@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +29,9 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
   bool _isProcessingOcr = false;
   String? _ocrError;
 
+  // Check if running on mobile (not web)
+  bool get _isMobile => !kIsWeb;
+
   @override
   void initState() {
     super.initState();
@@ -57,11 +59,11 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
   }
 
   Future<void> _scanFeedBag(String locale) async {
-    if (kIsWeb) {
+    if (!_isMobile) {
       setState(() {
         _ocrError = locale == 'pt'
-            ? 'OCR não disponível na versão web'
-            : 'OCR not available on web version';
+            ? 'A digitalização OCR só está disponível na app móvel (iOS/Android)'
+            : 'OCR scanning is only available on the mobile app (iOS/Android)';
       });
       return;
     }
@@ -257,18 +259,32 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
     final theme = Theme.of(context);
     final locale = Provider.of<LocaleProvider>(context).code;
     final isEditing = widget.existingStock != null;
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+
+    // Responsive constraints
+    final dialogWidth = isSmallScreen ? screenSize.width * 0.95 : 500.0;
+    final dialogHeight = isSmallScreen ? screenSize.height * 0.85 : 750.0;
 
     return Dialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 10 : 40,
+        vertical: isSmallScreen ? 24 : 40,
+      ),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 750),
+        constraints: BoxConstraints(
+          maxWidth: dialogWidth,
+          maxHeight: dialogHeight,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
               decoration: BoxDecoration(
                 color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 border: Border(
                   bottom: BorderSide(
                     color: theme.colorScheme.outline.withOpacity(0.2),
@@ -280,6 +296,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
                   Icon(
                     Icons.inventory_2,
                     color: theme.colorScheme.primary,
+                    size: isSmallScreen ? 22 : 24,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -289,11 +306,12 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
                           : (locale == 'pt' ? 'Novo Stock de Ração' : 'New Feed Stock'),
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
+                        fontSize: isSmallScreen ? 18 : 22,
                       ),
                     ),
                   ),
-                  // Scan button
-                  if (!isEditing)
+                  // Scan button - only show on mobile and when not editing
+                  if (!isEditing && _isMobile)
                     IconButton(
                       onPressed: _isProcessingOcr ? null : () => _scanFeedBag(locale),
                       icon: _isProcessingOcr
@@ -304,6 +322,9 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
                             )
                           : const Icon(Icons.camera_alt),
                       tooltip: locale == 'pt' ? 'Digitalizar Saco' : 'Scan Bag',
+                      style: IconButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                      ),
                     ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -312,44 +333,53 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
                 ],
               ),
             ),
-            // OCR hint or error
-            if (!isEditing && _ocrError == null && !_isProcessingOcr)
+            // OCR hint - only show on mobile when not editing
+            if (!isEditing && _isMobile && _ocrError == null && !_isProcessingOcr)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                color: theme.colorScheme.primaryContainer.withOpacity(0.2),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.lightbulb_outline,
-                      size: 16,
-                      color: theme.colorScheme.primary,
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.camera_alt,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         locale == 'pt'
-                            ? 'Dica: Use a câmera para ler automaticamente os dados do saco de ração'
-                            : 'Tip: Use the camera to automatically read data from the feed bag',
+                            ? 'Toque na câmera para digitalizar o saco de ração'
+                            : 'Tap the camera to scan the feed bag',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+            // Error message
             if (_ocrError != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 color: theme.colorScheme.errorContainer,
                 child: Row(
                   children: [
                     Icon(
                       Icons.error_outline,
-                      size: 16,
+                      size: 18,
                       color: theme.colorScheme.error,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         _ocrError!,
@@ -359,7 +389,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, size: 16),
+                      icon: const Icon(Icons.close, size: 18),
                       onPressed: () => setState(() => _ocrError = null),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -372,7 +402,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
               child: Form(
                 key: _formKey,
                 child: ListView(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
                   children: [
                     // Type dropdown
                     DropdownButtonFormField<FeedType>(
@@ -473,9 +503,10 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
             ),
             // Footer with buttons
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
                 border: Border(
                   top: BorderSide(
                     color: theme.colorScheme.outline.withOpacity(0.2),
