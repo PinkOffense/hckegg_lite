@@ -45,6 +45,12 @@ class _HenHealthPageState extends State<HenHealthPage> {
     return AppScaffold(
       title: t('hen_health'),
       additionalActions: [
+        // Calendar button
+        IconButton(
+          icon: const Icon(Icons.calendar_month),
+          tooltip: locale == 'pt' ? 'Calendário' : 'Calendar',
+          onPressed: () => Navigator.pushNamed(context, '/vet-calendar'),
+        ),
         // Filter button
         PopupMenuButton<VetRecordType?>(
           icon: Icon(
@@ -151,11 +157,15 @@ class _HenHealthPageState extends State<HenHealthPage> {
                       value: '€${totalVetCosts.toStringAsFixed(2)}',
                       color: Colors.orange,
                     ),
-                    _HealthStat(
-                      icon: Icons.event,
-                      label: locale == 'pt' ? 'Ações Agendadas' : 'Upcoming Actions',
-                      value: upcomingActions.toString(),
-                      color: Colors.purple,
+                    GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, '/vet-calendar'),
+                      child: _HealthStat(
+                        icon: Icons.event,
+                        label: locale == 'pt' ? 'Ações Agendadas' : 'Upcoming Actions',
+                        value: upcomingActions.toString(),
+                        color: Colors.purple,
+                        showArrow: true,
+                      ),
                     ),
                   ],
                 ),
@@ -263,12 +273,14 @@ class _HealthStat extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
+  final bool showArrow;
 
   const _HealthStat({
     required this.icon,
     required this.label,
     required this.value,
     required this.color,
+    this.showArrow = false,
   });
 
   @override
@@ -303,6 +315,10 @@ class _HealthStat extends StatelessWidget {
               ),
             ],
           ),
+          if (showArrow) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, color: color, size: 20),
+          ],
         ],
       ),
     );

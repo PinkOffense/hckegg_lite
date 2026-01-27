@@ -9,8 +9,15 @@ import '../l10n/translations.dart';
 
 class VetRecordDialog extends StatefulWidget {
   final VetRecord? existingRecord;
+  final DateTime? initialDate;
+  final VetRecordType? initialType;
 
-  const VetRecordDialog({super.key, this.existingRecord});
+  const VetRecordDialog({
+    super.key,
+    this.existingRecord,
+    this.initialDate,
+    this.initialType,
+  });
 
   @override
   State<VetRecordDialog> createState() => _VetRecordDialogState();
@@ -48,6 +55,12 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
           : null;
     } else {
       _selectedDate = DateTime.now();
+      if (widget.initialType != null) {
+        _selectedType = widget.initialType!;
+      }
+      if (widget.initialDate != null) {
+        _nextActionDate = widget.initialDate;
+      }
     }
   }
 
