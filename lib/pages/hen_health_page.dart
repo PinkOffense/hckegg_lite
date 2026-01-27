@@ -91,7 +91,11 @@ class _HenHealthPageState extends State<HenHealthPage> {
                       color: Colors.orange,
                     ),
                     GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, '/vet-calendar'),
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        '/vet-calendar',
+                        arguments: {'fromHenHealth': true},
+                      ),
                       child: _HealthStat(
                         icon: Icons.event,
                         label: locale == 'pt' ? 'Ações Agendadas' : 'Upcoming Actions',
