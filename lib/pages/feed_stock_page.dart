@@ -6,6 +6,7 @@ import '../state/app_state.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../widgets/app_scaffold.dart';
+import '../dialogs/feed_stock_dialog.dart';
 
 class FeedStockPage extends StatefulWidget {
   const FeedStockPage({super.key});
@@ -141,7 +142,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
   void _addStock(BuildContext context, String locale) {
     showDialog(
       context: context,
-      builder: (context) => _FeedStockDialog(locale: locale),
+      builder: (context) => const FeedStockDialog(),
     );
   }
 
@@ -555,8 +556,7 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                       Navigator.pop(context);
                       showDialog(
                         context: context,
-                        builder: (context) => _FeedStockDialog(
-                          locale: widget.locale,
+                        builder: (context) => FeedStockDialog(
                           existingStock: widget.stock,
                         ),
                       );
@@ -727,200 +727,6 @@ class _MovementTile extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _FeedStockDialog extends StatefulWidget {
-  final String locale;
-  final FeedStock? existingStock;
-
-  const _FeedStockDialog({
-    required this.locale,
-    this.existingStock,
-  });
-
-  @override
-  State<_FeedStockDialog> createState() => _FeedStockDialogState();
-}
-
-class _FeedStockDialogState extends State<_FeedStockDialog> {
-  final _formKey = GlobalKey<FormState>();
-  late FeedType _type;
-  final _brandController = TextEditingController();
-  final _quantityController = TextEditingController();
-  final _minQuantityController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _notesController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.existingStock != null) {
-      _type = widget.existingStock!.type;
-      _brandController.text = widget.existingStock!.brand ?? '';
-      _quantityController.text = widget.existingStock!.currentQuantityKg.toString();
-      _minQuantityController.text = widget.existingStock!.minimumQuantityKg.toString();
-      _priceController.text = widget.existingStock!.pricePerKg?.toString() ?? '';
-      _notesController.text = widget.existingStock!.notes ?? '';
-    } else {
-      _type = FeedType.layer;
-      _minQuantityController.text = '10';
-    }
-  }
-
-  @override
-  void dispose() {
-    _brandController.dispose();
-    _quantityController.dispose();
-    _minQuantityController.dispose();
-    _priceController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isEditing = widget.existingStock != null;
-
-    return AlertDialog(
-      title: Text(
-        isEditing
-            ? (widget.locale == 'pt' ? 'Editar Stock' : 'Edit Stock')
-            : (widget.locale == 'pt' ? 'Novo Stock' : 'New Stock'),
-      ),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Type dropdown
-              DropdownButtonFormField<FeedType>(
-                value: _type,
-                decoration: InputDecoration(
-                  labelText: widget.locale == 'pt' ? 'Tipo de Ração' : 'Feed Type',
-                  border: const OutlineInputBorder(),
-                ),
-                items: FeedType.values.map((type) {
-                  return DropdownMenuItem(
-                    value: type,
-                    child: Row(
-                      children: [
-                        Text(type.icon),
-                        const SizedBox(width: 8),
-                        Text(type.displayName(widget.locale)),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) setState(() => _type = value);
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Brand
-              TextFormField(
-                controller: _brandController,
-                decoration: InputDecoration(
-                  labelText: widget.locale == 'pt' ? 'Marca (opcional)' : 'Brand (optional)',
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Quantity
-              TextFormField(
-                controller: _quantityController,
-                decoration: InputDecoration(
-                  labelText: widget.locale == 'pt' ? 'Quantidade (kg)' : 'Quantity (kg)',
-                  border: const OutlineInputBorder(),
-                  suffixText: 'kg',
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return widget.locale == 'pt' ? 'Obrigatório' : 'Required';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return widget.locale == 'pt' ? 'Número inválido' : 'Invalid number';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Min quantity
-              TextFormField(
-                controller: _minQuantityController,
-                decoration: InputDecoration(
-                  labelText: widget.locale == 'pt' ? 'Quantidade Mínima (kg)' : 'Minimum Quantity (kg)',
-                  border: const OutlineInputBorder(),
-                  suffixText: 'kg',
-                  helperText: widget.locale == 'pt'
-                      ? 'Alerta quando abaixo deste valor'
-                      : 'Alert when below this value',
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              ),
-              const SizedBox(height: 16),
-
-              // Price per kg
-              TextFormField(
-                controller: _priceController,
-                decoration: InputDecoration(
-                  labelText: widget.locale == 'pt' ? 'Preço por kg (opcional)' : 'Price per kg (optional)',
-                  border: const OutlineInputBorder(),
-                  prefixText: '€ ',
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              ),
-              const SizedBox(height: 16),
-
-              // Notes
-              TextFormField(
-                controller: _notesController,
-                decoration: InputDecoration(
-                  labelText: widget.locale == 'pt' ? 'Notas (opcional)' : 'Notes (optional)',
-                  border: const OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(widget.locale == 'pt' ? 'Cancelar' : 'Cancel'),
-        ),
-        FilledButton(
-          onPressed: _save,
-          child: Text(widget.locale == 'pt' ? 'Guardar' : 'Save'),
-        ),
-      ],
-    );
-  }
-
-  void _save() {
-    if (!_formKey.currentState!.validate()) return;
-
-    final now = DateTime.now();
-    final stock = FeedStock(
-      id: widget.existingStock?.id ?? const Uuid().v4(),
-      type: _type,
-      brand: _brandController.text.isEmpty ? null : _brandController.text,
-      currentQuantityKg: double.parse(_quantityController.text),
-      minimumQuantityKg: double.tryParse(_minQuantityController.text) ?? 10.0,
-      pricePerKg: double.tryParse(_priceController.text),
-      notes: _notesController.text.isEmpty ? null : _notesController.text,
-      lastUpdated: now,
-      createdAt: widget.existingStock?.createdAt ?? now,
-    );
-
-    Provider.of<AppState>(context, listen: false).saveFeedStock(stock);
-    Navigator.pop(context);
   }
 }
 
