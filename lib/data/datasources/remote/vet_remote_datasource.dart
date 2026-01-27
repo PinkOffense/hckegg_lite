@@ -1,6 +1,8 @@
 // lib/data/datasources/remote/vet_remote_datasource.dart
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/exceptions.dart';
+import '../../../core/json_utils.dart';
 import '../../../models/vet_record.dart';
 
 /// Datasource remoto para registos veterinários (Supabase)
@@ -178,26 +180,26 @@ class VetRemoteDatasource {
   }
 
   /// Converter de JSON do Supabase para VetRecord
+  /// Usa parsing seguro com tratamento de erros adequado
   VetRecord _fromSupabaseJson(Map<String, dynamic> json) {
-    return VetRecord(
-      id: json['id'] as String,
-      date: json['date'] as String,
-      type: VetRecordType.values.firstWhere(
-        (e) => e.name == json['type'],
-        orElse: () => VetRecordType.checkup,
-      ),
-      hensAffected: json['hens_affected'] as int,
-      description: json['description'] as String,
-      medication: json['medication'] as String?,
-      cost: json['cost'] != null ? (json['cost'] as num).toDouble() : null,
-      nextActionDate: json['next_action_date'] as String?,
-      notes: json['notes'] as String?,
-      severity: VetRecordSeverity.values.firstWhere(
-        (e) => e.name == json['severity'],
-        orElse: () => VetRecordSeverity.low,
-      ),
-      createdAt: DateTime.parse(json['created_at'] as String),
-    );
+    try {
+      return VetRecord(
+        id: json.requireString('id'),
+        date: json.requireString('date'),
+        type: json.enumValue('type', VetRecordType.values, VetRecordType.checkup),
+        hensAffected: json.requireInt('hens_affected'),
+        description: json.requireString('description'),
+        medication: json.optionalString('medication'),
+        cost: json.optionalDouble('cost'),
+        nextActionDate: json.optionalString('next_action_date'),
+        notes: json.optionalString('notes'),
+        severity: json.enumValue('severity', VetRecordSeverity.values, VetRecordSeverity.low),
+        createdAt: json.requireDateTime('created_at'),
+      );
+    } catch (e) {
+      if (e is ValidationException) rethrow;
+      throw ValidationException.parseError('VetRecord', json);
+    }
   }
 
   /// Converter de VetRecord para JSON do Supabase

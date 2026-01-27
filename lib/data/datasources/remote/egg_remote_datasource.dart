@@ -1,6 +1,8 @@
 // lib/data/datasources/remote/egg_remote_datasource.dart
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/exceptions.dart';
+import '../../../core/json_utils.dart';
 import '../../../models/daily_egg_record.dart';
 
 /// Datasource remoto para registos de ovos (Supabase)
@@ -109,12 +111,20 @@ class EggRemoteDatasource {
         .eq('id', id);
   }
 
-  /// Pesquisar registos
+  /// Pesquisar registos (com sanitização para prevenir SQL injection)
   Future<List<DailyEggRecord>> search(String query) async {
+    // Sanitize input to prevent SQL injection
+    final sanitizedQuery = JsonUtils.sanitizeForQuery(query);
+
+    // Validate query is safe
+    if (sanitizedQuery.isEmpty || !JsonUtils.isSafeForQuery(sanitizedQuery)) {
+      return []; // Return empty list for potentially malicious queries
+    }
+
     final response = await _client
         .from(_tableName)
         .select()
-        .or('notes.ilike.%$query%,date.ilike.%$query%')
+        .or('notes.ilike.%$sanitizedQuery%,date.ilike.%$sanitizedQuery%')
         .order('date', ascending: false);
 
     return (response as List)
@@ -157,16 +167,22 @@ class EggRemoteDatasource {
   }
 
   /// Converter de JSON do Supabase para DailyEggRecord
+  /// Usa parsing seguro com tratamento de erros adequado
   DailyEggRecord _fromSupabaseJson(Map<String, dynamic> json) {
-    return DailyEggRecord(
-      id: json['id'] as String,
-      date: json['date'] as String,
-      eggsCollected: json['eggs_collected'] as int,
-      eggsConsumed: json['eggs_consumed'] as int? ?? 0,
-      notes: json['notes'] as String?,
-      henCount: json['hen_count'] as int?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-    );
+    try {
+      return DailyEggRecord(
+        id: json.requireString('id'),
+        date: json.requireString('date'),
+        eggsCollected: json.requireInt('eggs_collected'),
+        eggsConsumed: json.intOrDefault('eggs_consumed', 0),
+        notes: json.optionalString('notes'),
+        henCount: json.optionalInt('hen_count'),
+        createdAt: json.requireDateTime('created_at'),
+      );
+    } catch (e) {
+      if (e is ValidationException) rethrow;
+      throw ValidationException.parseError('DailyEggRecord', json);
+    }
   }
 
   /// Converter de DailyEggRecord para JSON do Supabase
