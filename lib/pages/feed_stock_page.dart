@@ -126,8 +126,9 @@ class _FeedStockPageState extends State<FeedStockPage> {
                       return _FeedStockCard(
                         stock: stock,
                         locale: locale,
-                        onTap: () => _editStock(context, locale, stock),
-                        onAddMovement: () => _addMovement(context, locale, stock),
+                        onTap: () => _showStockDetails(context, locale, stock),
+                        onQuickPurchase: () => _quickPurchase(context, locale, stock),
+                        onQuickConsume: () => _quickConsume(context, locale, stock),
                         onDelete: () => _deleteStock(context, locale, stock),
                       );
                     },
@@ -145,17 +146,36 @@ class _FeedStockPageState extends State<FeedStockPage> {
     );
   }
 
-  void _editStock(BuildContext context, String locale, FeedStock stock) {
-    showDialog(
+  void _showStockDetails(BuildContext context, String locale, FeedStock stock) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => _FeedStockDialog(locale: locale, existingStock: stock),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _StockDetailsSheet(stock: stock, locale: locale),
     );
   }
 
-  void _addMovement(BuildContext context, String locale, FeedStock stock) {
+  void _quickPurchase(BuildContext context, String locale, FeedStock stock) {
     showDialog(
       context: context,
-      builder: (context) => _MovementDialog(locale: locale, stock: stock),
+      builder: (context) => _MovementDialog(
+        locale: locale,
+        stock: stock,
+        initialType: StockMovementType.purchase,
+      ),
+    );
+  }
+
+  void _quickConsume(BuildContext context, String locale, FeedStock stock) {
+    showDialog(
+      context: context,
+      builder: (context) => _MovementDialog(
+        locale: locale,
+        stock: stock,
+        initialType: StockMovementType.consumption,
+      ),
     );
   }
 
@@ -166,8 +186,8 @@ class _FeedStockPageState extends State<FeedStockPage> {
         title: Text(locale == 'pt' ? 'Eliminar Stock' : 'Delete Stock'),
         content: Text(
           locale == 'pt'
-              ? 'Tem certeza que deseja eliminar este stock?'
-              : 'Are you sure you want to delete this stock?',
+              ? 'Tem certeza que deseja eliminar este stock? Todo o histórico de movimentos será perdido.'
+              : 'Are you sure you want to delete this stock? All movement history will be lost.',
         ),
         actions: [
           TextButton(
@@ -243,14 +263,16 @@ class _FeedStockCard extends StatelessWidget {
   final FeedStock stock;
   final String locale;
   final VoidCallback onTap;
-  final VoidCallback onAddMovement;
+  final VoidCallback onQuickPurchase;
+  final VoidCallback onQuickConsume;
   final VoidCallback onDelete;
 
   const _FeedStockCard({
     required this.stock,
     required this.locale,
     required this.onTap,
-    required this.onAddMovement,
+    required this.onQuickPurchase,
+    required this.onQuickConsume,
     required this.onDelete,
   });
 
@@ -375,18 +397,44 @@ class _FeedStockCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              // Actions
+              // Quick Actions
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton.icon(
-                    onPressed: onAddMovement,
-                    icon: const Icon(Icons.add_circle_outline, size: 18),
-                    label: Text(locale == 'pt' ? 'Movimento' : 'Movement'),
+                  // Quick Purchase Button
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onQuickPurchase,
+                      icon: const Icon(Icons.add_shopping_cart, size: 18),
+                      label: Text(locale == 'pt' ? 'Comprar' : 'Purchase'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.green,
+                        side: const BorderSide(color: Colors.green),
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  // Quick Consume Button
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: stock.currentQuantityKg > 0 ? onQuickConsume : null,
+                      icon: const Icon(Icons.restaurant, size: 18),
+                      label: Text(locale == 'pt' ? 'Consumir' : 'Consume'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.orange,
+                        side: BorderSide(
+                          color: stock.currentQuantityKg > 0
+                              ? Colors.orange
+                              : Colors.grey.withOpacity(0.3),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Delete Button
                   IconButton(
                     onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    icon: const Icon(Icons.delete_outline),
+                    color: Colors.red.withOpacity(0.7),
                     tooltip: locale == 'pt' ? 'Eliminar' : 'Delete',
                   ),
                 ],
@@ -394,6 +442,338 @@ class _FeedStockCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Stock Details Bottom Sheet
+class _StockDetailsSheet extends StatefulWidget {
+  final FeedStock stock;
+  final String locale;
+
+  const _StockDetailsSheet({
+    required this.stock,
+    required this.locale,
+  });
+
+  @override
+  State<_StockDetailsSheet> createState() => _StockDetailsSheetState();
+}
+
+class _StockDetailsSheetState extends State<_StockDetailsSheet> {
+  List<FeedMovement> _movements = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMovements();
+  }
+
+  Future<void> _loadMovements() async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    final movements = await appState.getFeedMovements(widget.stock.id);
+    if (mounted) {
+      setState(() {
+        _movements = movements;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Text(
+                    widget.stock.type.icon,
+                    style: const TextStyle(fontSize: 32),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.stock.type.displayName(widget.locale),
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (widget.stock.brand != null)
+                          Text(
+                            widget.stock.brand!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: widget.stock.isLowStock ? Colors.red : Colors.green,
+                        ),
+                      ),
+                      Text(
+                        widget.locale == 'pt' ? 'em stock' : 'in stock',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            // Actions
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        showDialog(
+                          context: context,
+                          builder: (context) => _MovementDialog(
+                            locale: widget.locale,
+                            stock: widget.stock,
+                            initialType: StockMovementType.purchase,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add_shopping_cart),
+                      label: Text(widget.locale == 'pt' ? 'Comprar' : 'Purchase'),
+                      style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: widget.stock.currentQuantityKg > 0
+                          ? () {
+                              Navigator.pop(context);
+                              showDialog(
+                                context: context,
+                                builder: (context) => _MovementDialog(
+                                  locale: widget.locale,
+                                  stock: widget.stock,
+                                  initialType: StockMovementType.consumption,
+                                ),
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.restaurant),
+                      label: Text(widget.locale == 'pt' ? 'Consumir' : 'Consume'),
+                      style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      showDialog(
+                        context: context,
+                        builder: (context) => _FeedStockDialog(
+                          locale: widget.locale,
+                          existingStock: widget.stock,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.edit),
+                    tooltip: widget.locale == 'pt' ? 'Editar' : 'Edit',
+                  ),
+                ],
+              ),
+            ),
+            // Movement History
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.history, size: 20, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.locale == 'pt' ? 'Histórico de Movimentos' : 'Movement History',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _movements.isEmpty
+                      ? Center(
+                          child: Text(
+                            widget.locale == 'pt'
+                                ? 'Nenhum movimento registado'
+                                : 'No movements recorded',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: _movements.length,
+                          itemBuilder: (context, index) {
+                            final movement = _movements[index];
+                            return _MovementTile(
+                              movement: movement,
+                              locale: widget.locale,
+                            );
+                          },
+                        ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MovementTile extends StatelessWidget {
+  final FeedMovement movement;
+  final String locale;
+
+  const _MovementTile({
+    required this.movement,
+    required this.locale,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    IconData icon;
+    Color color;
+    String sign;
+
+    switch (movement.movementType) {
+      case StockMovementType.purchase:
+        icon = Icons.add_shopping_cart;
+        color = Colors.green;
+        sign = '+';
+        break;
+      case StockMovementType.consumption:
+        icon = Icons.restaurant;
+        color = Colors.orange;
+        sign = '-';
+        break;
+      case StockMovementType.adjustment:
+        icon = Icons.tune;
+        color = Colors.blue;
+        sign = '';
+        break;
+      case StockMovementType.loss:
+        icon = Icons.warning;
+        color = Colors.red;
+        sign = '-';
+        break;
+    }
+
+    final date = DateTime.parse(movement.date);
+    final formattedDate = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  movement.movementType.displayName(locale),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  formattedDate,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                  ),
+                ),
+                if (movement.notes != null)
+                  Text(
+                    movement.notes!,
+                    style: theme.textTheme.bodySmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '$sign${movement.quantityKg.toStringAsFixed(1)} kg',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              if (movement.cost != null)
+                Text(
+                  '€${movement.cost!.toStringAsFixed(2)}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -596,10 +976,12 @@ class _FeedStockDialogState extends State<_FeedStockDialog> {
 class _MovementDialog extends StatefulWidget {
   final String locale;
   final FeedStock stock;
+  final StockMovementType initialType;
 
   const _MovementDialog({
     required this.locale,
     required this.stock,
+    this.initialType = StockMovementType.purchase,
   });
 
   @override
@@ -607,10 +989,17 @@ class _MovementDialog extends StatefulWidget {
 }
 
 class _MovementDialogState extends State<_MovementDialog> {
-  StockMovementType _movementType = StockMovementType.purchase;
+  late StockMovementType _movementType;
   final _quantityController = TextEditingController();
   final _costController = TextEditingController();
   final _notesController = TextEditingController();
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _movementType = widget.initialType;
+  }
 
   @override
   void dispose() {
@@ -620,34 +1009,102 @@ class _MovementDialogState extends State<_MovementDialog> {
     super.dispose();
   }
 
+  double get _enteredQuantity => double.tryParse(_quantityController.text) ?? 0;
+
+  double get _newStock {
+    if (_movementType == StockMovementType.purchase) {
+      return widget.stock.currentQuantityKg + _enteredQuantity;
+    } else {
+      return widget.stock.currentQuantityKg - _enteredQuantity;
+    }
+  }
+
+  bool get _isValid {
+    if (_enteredQuantity <= 0) return false;
+    if (_movementType != StockMovementType.purchase && _newStock < 0) return false;
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isPurchase = _movementType == StockMovementType.purchase;
+
     return AlertDialog(
-      title: Text(
-        widget.locale == 'pt' ? 'Registar Movimento' : 'Record Movement',
+      title: Row(
+        children: [
+          Icon(
+            isPurchase ? Icons.add_shopping_cart : Icons.restaurant,
+            color: isPurchase ? Colors.green : Colors.orange,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            isPurchase
+                ? (widget.locale == 'pt' ? 'Registar Compra' : 'Record Purchase')
+                : (widget.locale == 'pt' ? 'Registar Consumo' : 'Record Consumption'),
+          ),
+        ],
       ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Movement type
-            DropdownButtonFormField<StockMovementType>(
-              value: _movementType,
-              decoration: InputDecoration(
-                labelText: widget.locale == 'pt' ? 'Tipo de Movimento' : 'Movement Type',
-                border: const OutlineInputBorder(),
+            // Current Stock Info
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(8),
               ),
-              items: StockMovementType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(type.displayName(widget.locale)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) setState(() => _movementType = value);
-              },
+              child: Row(
+                children: [
+                  Text(widget.stock.type.icon, style: const TextStyle(fontSize: 24)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.stock.type.displayName(widget.locale),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${widget.locale == 'pt' ? 'Stock actual' : 'Current stock'}: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
+
+            // Movement type (only show if not pre-selected)
+            if (widget.initialType == StockMovementType.purchase || widget.initialType == StockMovementType.consumption) ...[
+              // Show other options in dropdown
+            ] else ...[
+              DropdownButtonFormField<StockMovementType>(
+                value: _movementType,
+                decoration: InputDecoration(
+                  labelText: widget.locale == 'pt' ? 'Tipo de Movimento' : 'Movement Type',
+                  border: const OutlineInputBorder(),
+                ),
+                items: StockMovementType.values.map((type) {
+                  return DropdownMenuItem(
+                    value: type,
+                    child: Text(type.displayName(widget.locale)),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) setState(() => _movementType = value);
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // Quantity
             TextFormField(
@@ -656,9 +1113,57 @@ class _MovementDialogState extends State<_MovementDialog> {
                 labelText: widget.locale == 'pt' ? 'Quantidade (kg)' : 'Quantity (kg)',
                 border: const OutlineInputBorder(),
                 suffixText: 'kg',
+                errorText: _errorMessage,
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              onChanged: (_) => setState(() {
+                _errorMessage = null;
+              }),
             ),
+            const SizedBox(height: 12),
+
+            // Preview of new stock
+            if (_enteredQuantity > 0)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: (_newStock < 0 ? Colors.red : (isPurchase ? Colors.green : Colors.orange)).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: (_newStock < 0 ? Colors.red : (isPurchase ? Colors.green : Colors.orange)).withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      widget.locale == 'pt' ? 'Stock após movimento:' : 'Stock after movement:',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    Text(
+                      '${_newStock.toStringAsFixed(1)} kg',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: _newStock < 0
+                            ? Colors.red
+                            : (_newStock <= widget.stock.minimumQuantityKg ? Colors.orange : Colors.green),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            if (_newStock < 0 && _enteredQuantity > 0) ...[
+              const SizedBox(height: 8),
+              Text(
+                widget.locale == 'pt'
+                    ? 'Stock insuficiente! Máximo: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg'
+                    : 'Insufficient stock! Maximum: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
+                style: const TextStyle(color: Colors.red, fontSize: 12),
+              ),
+            ],
+
             const SizedBox(height: 16),
 
             // Cost (for purchases)
@@ -666,9 +1171,12 @@ class _MovementDialogState extends State<_MovementDialog> {
               TextFormField(
                 controller: _costController,
                 decoration: InputDecoration(
-                  labelText: widget.locale == 'pt' ? 'Custo (opcional)' : 'Cost (optional)',
+                  labelText: widget.locale == 'pt' ? 'Custo total (opcional)' : 'Total cost (optional)',
                   border: const OutlineInputBorder(),
                   prefixText: '€ ',
+                  helperText: widget.locale == 'pt'
+                      ? 'Custo total da compra'
+                      : 'Total purchase cost',
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
@@ -693,8 +1201,11 @@ class _MovementDialogState extends State<_MovementDialog> {
           child: Text(widget.locale == 'pt' ? 'Cancelar' : 'Cancel'),
         ),
         FilledButton(
-          onPressed: _save,
-          child: Text(widget.locale == 'pt' ? 'Guardar' : 'Save'),
+          onPressed: _isValid ? _save : null,
+          style: FilledButton.styleFrom(
+            backgroundColor: isPurchase ? Colors.green : Colors.orange,
+          ),
+          child: Text(widget.locale == 'pt' ? 'Confirmar' : 'Confirm'),
         ),
       ],
     );
@@ -702,7 +1213,19 @@ class _MovementDialogState extends State<_MovementDialog> {
 
   void _save() {
     final quantity = double.tryParse(_quantityController.text);
-    if (quantity == null || quantity <= 0) return;
+    if (quantity == null || quantity <= 0) {
+      setState(() {
+        _errorMessage = widget.locale == 'pt' ? 'Quantidade inválida' : 'Invalid quantity';
+      });
+      return;
+    }
+
+    if (_movementType != StockMovementType.purchase && quantity > widget.stock.currentQuantityKg) {
+      setState(() {
+        _errorMessage = widget.locale == 'pt' ? 'Stock insuficiente' : 'Insufficient stock';
+      });
+      return;
+    }
 
     final now = DateTime.now();
     final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
@@ -720,5 +1243,18 @@ class _MovementDialogState extends State<_MovementDialog> {
 
     Provider.of<AppState>(context, listen: false).addFeedMovement(movement, widget.stock);
     Navigator.pop(context);
+
+    // Show confirmation snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _movementType == StockMovementType.purchase
+              ? (widget.locale == 'pt' ? 'Compra registada com sucesso!' : 'Purchase recorded successfully!')
+              : (widget.locale == 'pt' ? 'Consumo registado com sucesso!' : 'Consumption recorded successfully!'),
+        ),
+        backgroundColor: _movementType == StockMovementType.purchase ? Colors.green : Colors.orange,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 }
