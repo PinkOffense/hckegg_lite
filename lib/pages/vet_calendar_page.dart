@@ -62,8 +62,21 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
     }).toList()
       ..sort((a, b) => a.nextActionDate!.compareTo(b.nextActionDate!));
 
+    // Check if coming from hen health page
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final fromHenHealth = args?['fromHenHealth'] == true;
+
     return AppScaffold(
       title: locale == 'pt' ? 'Calendário Veterinário' : 'Vet Calendar',
+      additionalActions: fromHenHealth
+          ? [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                tooltip: locale == 'pt' ? 'Voltar à Saúde' : 'Back to Health',
+                onPressed: () => Navigator.pop(context),
+              ),
+            ]
+          : null,
       fab: FloatingActionButton.extended(
         onPressed: () => _scheduleVisit(context, _selectedDate),
         icon: const Icon(Icons.add),
