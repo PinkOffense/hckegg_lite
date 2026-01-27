@@ -1,5 +1,6 @@
 // lib/pages/login_page.dart
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
@@ -22,14 +23,18 @@ class _LoginPageState extends State<LoginPage>
   final _formKey = GlobalKey<FormState>();
   final _emailCtl = TextEditingController();
   final _passCtl = TextEditingController();
+  final _confirmPassCtl = TextEditingController();
   final _emailFocus = FocusNode();
   final _passFocus = FocusNode();
+  final _confirmPassFocus = FocusNode();
 
   bool _loading = false;
   bool _googleLoading = false;
   bool _isSignup = false;
+  bool _acceptedTerms = false;
   String? _emailError;
   String? _passError;
+  String? _confirmPassError;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -57,6 +62,9 @@ class _LoginPageState extends State<LoginPage>
     ));
 
     _animationController.forward();
+
+    // Listen to password changes for strength indicator
+    _passCtl.addListener(() => setState(() {}));
   }
 
   @override
@@ -64,8 +72,10 @@ class _LoginPageState extends State<LoginPage>
     _animationController.dispose();
     _emailCtl.dispose();
     _passCtl.dispose();
+    _confirmPassCtl.dispose();
     _emailFocus.dispose();
     _passFocus.dispose();
+    _confirmPassFocus.dispose();
     super.dispose();
   }
 
@@ -96,15 +106,48 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
+  // Password strength calculation
+  _PasswordStrength _getPasswordStrength(String password) {
+    if (password.isEmpty) return _PasswordStrength.none;
+
+    int score = 0;
+
+    // Length checks
+    if (password.length >= 6) score++;
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+
+    // Character type checks
+    if (password.contains(RegExp(r'[a-z]'))) score++;
+    if (password.contains(RegExp(r'[A-Z]'))) score++;
+    if (password.contains(RegExp(r'[0-9]'))) score++;
+    if (password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) score++;
+
+    if (score <= 2) return _PasswordStrength.weak;
+    if (score <= 4) return _PasswordStrength.medium;
+    if (score <= 5) return _PasswordStrength.strong;
+    return _PasswordStrength.veryStrong;
+  }
+
+  // Password requirement checks
+  bool _hasMinLength(String password) => password.length >= 8;
+  bool _hasUppercase(String password) => password.contains(RegExp(r'[A-Z]'));
+  bool _hasLowercase(String password) => password.contains(RegExp(r'[a-z]'));
+  bool _hasNumber(String password) => password.contains(RegExp(r'[0-9]'));
+  bool _hasSpecialChar(String password) =>
+      password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
   bool _validateForm() {
     setState(() {
       _emailError = null;
       _passError = null;
+      _confirmPassError = null;
     });
 
     bool isValid = true;
     final email = _emailCtl.text.trim();
     final pass = _passCtl.text;
+    final confirmPass = _confirmPassCtl.text;
 
     // Email validation
     if (email.isEmpty) {
@@ -119,9 +162,34 @@ class _LoginPageState extends State<LoginPage>
     if (pass.isEmpty) {
       setState(() => _passError = 'Please enter your password');
       isValid = false;
-    } else if (_isSignup && pass.length < 6) {
-      setState(() => _passError = 'Password must be at least 6 characters');
-      isValid = false;
+    } else if (_isSignup) {
+      if (pass.length < 8) {
+        setState(() => _passError = 'Password must be at least 8 characters');
+        isValid = false;
+      } else if (!_hasUppercase(pass) || !_hasLowercase(pass)) {
+        setState(() => _passError = 'Password must contain upper and lowercase letters');
+        isValid = false;
+      } else if (!_hasNumber(pass)) {
+        setState(() => _passError = 'Password must contain at least one number');
+        isValid = false;
+      }
+    }
+
+    // Confirm password validation (signup only)
+    if (_isSignup) {
+      if (confirmPass.isEmpty) {
+        setState(() => _confirmPassError = 'Please confirm your password');
+        isValid = false;
+      } else if (confirmPass != pass) {
+        setState(() => _confirmPassError = 'Passwords do not match');
+        isValid = false;
+      }
+
+      // Terms validation
+      if (!_acceptedTerms) {
+        _showMessage('Please accept the Terms of Service', isError: true);
+        isValid = false;
+      }
     }
 
     return isValid;
@@ -130,8 +198,6 @@ class _LoginPageState extends State<LoginPage>
   Future<void> _submit() async {
     // Validate form
     if (!_validateForm()) {
-      // Announce error for screen readers
-      _showMessage('Please correct the errors in the form', isError: true);
       return;
     }
 
@@ -202,11 +268,68 @@ class _LoginPageState extends State<LoginPage>
       _isSignup = !_isSignup;
       _emailError = null;
       _passError = null;
+      _confirmPassError = null;
+      _acceptedTerms = false;
+      _confirmPassCtl.clear();
     });
 
     // Replay animation when switching modes
     _animationController.reset();
     _animationController.forward();
+  }
+
+  void _showTermsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Terms of Service'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'By creating an account, you agree to:\n\n'
+            '1. Use this application responsibly\n'
+            '2. Keep your login credentials secure\n'
+            '3. Not share your account with others\n'
+            '4. Respect the privacy of other users\n'
+            '5. Report any security issues immediately\n\n'
+            'Your data will be stored securely and used only for the purpose of managing your poultry records.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Privacy Policy'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'Your privacy is important to us.\n\n'
+            'We collect:\n'
+            '• Email address (for authentication)\n'
+            '• Poultry management data you enter\n\n'
+            'We do NOT:\n'
+            '• Sell your data to third parties\n'
+            '• Share your data without consent\n'
+            '• Use your data for advertising\n\n'
+            'Your data is stored securely using Supabase infrastructure with encryption at rest and in transit.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -217,6 +340,8 @@ class _LoginPageState extends State<LoginPage>
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final password = _passCtl.text;
+    final strength = _getPasswordStrength(password);
 
     return Scaffold(
       body: SafeArea(
@@ -270,26 +395,84 @@ class _LoginPageState extends State<LoginPage>
 
                         // Title
                         Text(
-                          _isSignup ? t('join_us') : t('welcome_back'),
+                          t('app_title'),
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: colorScheme.onSurface,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 32),
 
-                        // Subtitle
-                        Text(
-                          _isSignup
-                              ? t('create_account_to_start')
-                              : t('sign_in_to_continue'),
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.6),
+                        // Login / Create Account toggle
+                        Container(
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          textAlign: TextAlign.center,
+                          padding: const EdgeInsets.all(4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: _isSignup ? _toggleMode : null,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: !_isSignup
+                                          ? colorScheme.primary
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      t('login'),
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: !_isSignup
+                                            ? colorScheme.onPrimary
+                                            : colorScheme.onSurface
+                                                .withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: !_isSignup ? _toggleMode : null,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _isSignup
+                                          ? colorScheme.primary
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      t('create_account'),
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: _isSignup
+                                            ? colorScheme.onPrimary
+                                            : colorScheme.onSurface
+                                                .withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 32),
 
                         // Email field
                         EmailField(
@@ -311,9 +494,10 @@ class _LoginPageState extends State<LoginPage>
                         PasswordField(
                           controller: _passCtl,
                           label: t('password'),
-                          hint: _isSignup ? 'At least 6 characters' : null,
                           errorText: _passError,
-                          textInputAction: TextInputAction.done,
+                          textInputAction: _isSignup
+                              ? TextInputAction.next
+                              : TextInputAction.done,
                           focusNode: _passFocus,
                           onChanged: (_) {
                             if (_passError != null) {
@@ -321,6 +505,89 @@ class _LoginPageState extends State<LoginPage>
                             }
                           },
                         ),
+
+                        // Password strength indicator (signup only)
+                        if (_isSignup && password.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          _PasswordStrengthIndicator(strength: strength),
+                          const SizedBox(height: 16),
+                          _PasswordRequirements(password: password),
+                        ],
+
+                        // Confirm password field (signup only)
+                        if (_isSignup) ...[
+                          const SizedBox(height: 16),
+                          PasswordField(
+                            controller: _confirmPassCtl,
+                            label: t('confirm_password'),
+                            errorText: _confirmPassError,
+                            textInputAction: TextInputAction.done,
+                            focusNode: _confirmPassFocus,
+                            onChanged: (_) {
+                              if (_confirmPassError != null) {
+                                setState(() => _confirmPassError = null);
+                              }
+                            },
+                          ),
+                        ],
+
+                        // Terms and conditions checkbox (signup only)
+                        if (_isSignup) ...[
+                          const SizedBox(height: 20),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Checkbox(
+                                  value: _acceptedTerms,
+                                  onChanged: (value) {
+                                    setState(() => _acceptedTerms = value ?? false);
+                                  },
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text.rich(
+                                  TextSpan(
+                                    text: t('accept_terms_prefix'),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurface.withOpacity(0.8),
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: t('terms_of_service'),
+                                        style: TextStyle(
+                                          color: colorScheme.primary,
+                                          fontWeight: FontWeight.w600,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = _showTermsDialog,
+                                      ),
+                                      TextSpan(text: t('and')),
+                                      TextSpan(
+                                        text: t('privacy_policy'),
+                                        style: TextStyle(
+                                          color: colorScheme.primary,
+                                          fontWeight: FontWeight.w600,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = _showPrivacyDialog,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+
                         const SizedBox(height: 32),
 
                         // Submit button
@@ -398,35 +665,6 @@ class _LoginPageState extends State<LoginPage>
                           isLoading: _googleLoading,
                           label: t('continue_with_google'),
                         ),
-                        const SizedBox(height: 24),
-
-                        // Toggle mode button
-                        TextButton(
-                          onPressed: _loading || _googleLoading
-                              ? null
-                              : _toggleMode,
-                          child: Text.rich(
-                            TextSpan(
-                              text: _isSignup
-                                  ? 'Already have an account? '
-                                  : 'Don\'t have an account? ',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurface.withOpacity(0.7),
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: _isSignup
-                                      ? t('login')
-                                      : t('create_account'),
-                                  style: TextStyle(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -435,6 +673,164 @@ class _LoginPageState extends State<LoginPage>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Password strength enum
+enum _PasswordStrength { none, weak, medium, strong, veryStrong }
+
+// Password strength indicator widget
+class _PasswordStrengthIndicator extends StatelessWidget {
+  final _PasswordStrength strength;
+
+  const _PasswordStrengthIndicator({required this.strength});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Color getColor() {
+      switch (strength) {
+        case _PasswordStrength.none:
+          return colorScheme.outline;
+        case _PasswordStrength.weak:
+          return Colors.red;
+        case _PasswordStrength.medium:
+          return Colors.orange;
+        case _PasswordStrength.strong:
+          return Colors.lightGreen;
+        case _PasswordStrength.veryStrong:
+          return Colors.green;
+      }
+    }
+
+    String getLabel() {
+      switch (strength) {
+        case _PasswordStrength.none:
+          return '';
+        case _PasswordStrength.weak:
+          return 'Weak';
+        case _PasswordStrength.medium:
+          return 'Medium';
+        case _PasswordStrength.strong:
+          return 'Strong';
+        case _PasswordStrength.veryStrong:
+          return 'Very Strong';
+      }
+    }
+
+    int getFilledBars() {
+      switch (strength) {
+        case _PasswordStrength.none:
+          return 0;
+        case _PasswordStrength.weak:
+          return 1;
+        case _PasswordStrength.medium:
+          return 2;
+        case _PasswordStrength.strong:
+          return 3;
+        case _PasswordStrength.veryStrong:
+          return 4;
+      }
+    }
+
+    final filledBars = getFilledBars();
+    final color = getColor();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: List.generate(4, (index) {
+            return Expanded(
+              child: Container(
+                height: 4,
+                margin: EdgeInsets.only(right: index < 3 ? 4 : 0),
+                decoration: BoxDecoration(
+                  color: index < filledBars ? color : colorScheme.outline.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            );
+          }),
+        ),
+        if (strength != _PasswordStrength.none) ...[
+          const SizedBox(height: 4),
+          Text(
+            getLabel(),
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// Password requirements checklist widget
+class _PasswordRequirements extends StatelessWidget {
+  final String password;
+
+  const _PasswordRequirements({required this.password});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Widget buildRequirement(String text, bool isMet) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: [
+            Icon(
+              isMet ? Icons.check_circle : Icons.circle_outlined,
+              size: 16,
+              color: isMet ? Colors.green : colorScheme.outline,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: isMet
+                    ? colorScheme.onSurface
+                    : colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Password requirements:',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface.withOpacity(0.8),
+            ),
+          ),
+          const SizedBox(height: 8),
+          buildRequirement('At least 8 characters', password.length >= 8),
+          buildRequirement('One uppercase letter (A-Z)', password.contains(RegExp(r'[A-Z]'))),
+          buildRequirement('One lowercase letter (a-z)', password.contains(RegExp(r'[a-z]'))),
+          buildRequirement('One number (0-9)', password.contains(RegExp(r'[0-9]'))),
+          buildRequirement('One special character (!@#\$%^&*)', password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))),
+        ],
       ),
     );
   }

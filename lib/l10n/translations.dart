@@ -71,6 +71,11 @@ class Translations {
       'sign_in_to_continue': 'Sign in to continue',
       'join_us': 'Join us!',
       'create_account_to_start': 'Create an account to get started',
+      'confirm_password': 'Confirm Password',
+      'accept_terms_prefix': 'I agree to the ',
+      'terms_of_service': 'Terms of Service',
+      'and': ' and ',
+      'privacy_policy': 'Privacy Policy',
       // Daily records
       'daily_records': 'Daily Records',
       'add_daily_record': 'Add Daily Record',
@@ -227,6 +232,11 @@ class Translations {
       'sign_in_to_continue': 'Inicie sessão para continuar',
       'join_us': 'Junte-se a nós!',
       'create_account_to_start': 'Crie uma conta para começar',
+      'confirm_password': 'Confirmar Palavra-passe',
+      'accept_terms_prefix': 'Aceito os ',
+      'terms_of_service': 'Termos de Serviço',
+      'and': ' e a ',
+      'privacy_policy': 'Política de Privacidade',
       // Registos diários
       'daily_records': 'Registos Diários',
       'add_daily_record': 'Adicionar Registo Diário',
