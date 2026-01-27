@@ -45,5 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Camera permissions for OCR feed bag scanning -->
+	<key>NSCameraUsageDescription</key>
+	<string>A câmera é usada para digitalizar sacos de ração e extrair informações automaticamente</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Acesso à galeria para selecionar fotos de sacos de ração</string>
 </dict>
 </plist>
