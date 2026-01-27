@@ -1,6 +1,7 @@
 // lib/pages/login_page.dart
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -290,43 +291,6 @@ class _LoginPageState extends State<LoginPage>
                         ),
                         const SizedBox(height: 40),
 
-                        // Google Sign-In Button
-                        _GoogleSignInButton(
-                          onPressed: _googleLoading || _loading
-                              ? null
-                              : _signInWithGoogle,
-                          isLoading: _googleLoading,
-                          label: t('continue_with_google'),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Divider with text
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Divider(
-                                color: colorScheme.outline.withOpacity(0.5),
-                              ),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                t('or_continue_with'),
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurface.withOpacity(0.5),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: colorScheme.outline.withOpacity(0.5),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-
                         // Email field
                         EmailField(
                           controller: _emailCtl,
@@ -396,6 +360,43 @@ class _LoginPageState extends State<LoginPage>
                                     ),
                                   ),
                           ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Divider with text
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: colorScheme.outline.withOpacity(0.5),
+                              ),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                t('or_continue_with'),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurface.withOpacity(0.5),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(
+                                color: colorScheme.outline.withOpacity(0.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Google Sign-In Button
+                        _GoogleSignInButton(
+                          onPressed: _googleLoading || _loading
+                              ? null
+                              : _signInWithGoogle,
+                          isLoading: _googleLoading,
+                          label: t('continue_with_google'),
                         ),
                         const SizedBox(height: 24),
 
@@ -487,13 +488,11 @@ class _GoogleSignInButton extends StatelessWidget {
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Google "G" logo
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CustomPaint(
-                      painter: _GoogleLogoPainter(),
-                    ),
+                  // Google icon
+                  const FaIcon(
+                    FontAwesomeIcons.google,
+                    size: 20,
+                    color: Color(0xFF4285F4),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -509,89 +508,4 @@ class _GoogleSignInButton extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Custom painter for Google "G" logo
-class _GoogleLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double w = size.width;
-    final double h = size.height;
-
-    // Blue
-    final bluePaint = Paint()
-      ..color = const Color(0xFF4285F4)
-      ..style = PaintingStyle.fill;
-
-    // Green
-    final greenPaint = Paint()
-      ..color = const Color(0xFF34A853)
-      ..style = PaintingStyle.fill;
-
-    // Yellow
-    final yellowPaint = Paint()
-      ..color = const Color(0xFFFBBC05)
-      ..style = PaintingStyle.fill;
-
-    // Red
-    final redPaint = Paint()
-      ..color = const Color(0xFFEA4335)
-      ..style = PaintingStyle.fill;
-
-    // Draw simplified Google G logo
-    final center = Offset(w / 2, h / 2);
-    final radius = w / 2;
-
-    // Blue arc (right side)
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -0.4,
-      1.2,
-      true,
-      bluePaint,
-    );
-
-    // Green arc (bottom right)
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      0.8,
-      1.0,
-      true,
-      greenPaint,
-    );
-
-    // Yellow arc (bottom left)
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      1.8,
-      1.0,
-      true,
-      yellowPaint,
-    );
-
-    // Red arc (top)
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      2.8,
-      1.0,
-      true,
-      redPaint,
-    );
-
-    // White center circle
-    canvas.drawCircle(
-      center,
-      radius * 0.55,
-      Paint()..color = Colors.white,
-    );
-
-    // Blue horizontal bar
-    canvas.drawRect(
-      Rect.fromLTWH(w * 0.48, h * 0.38, w * 0.52, h * 0.24),
-      bluePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
