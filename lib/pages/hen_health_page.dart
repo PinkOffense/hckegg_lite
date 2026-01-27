@@ -15,8 +15,6 @@ class HenHealthPage extends StatefulWidget {
 }
 
 class _HenHealthPageState extends State<HenHealthPage> {
-  VetRecordType? _filterType;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -25,9 +23,6 @@ class _HenHealthPageState extends State<HenHealthPage> {
     final appState = Provider.of<AppState>(context);
 
     final allRecords = appState.getVetRecords();
-    final filteredRecords = _filterType == null
-        ? allRecords
-        : allRecords.where((r) => r.type == _filterType).toList();
 
     // Calculate statistics
     final totalRecords = allRecords.length;
@@ -44,68 +39,6 @@ class _HenHealthPageState extends State<HenHealthPage> {
 
     return AppScaffold(
       title: t('hen_health'),
-      additionalActions: [
-        // Calendar button
-        IconButton(
-          icon: const Icon(Icons.calendar_month),
-          tooltip: locale == 'pt' ? 'Calendário' : 'Calendar',
-          onPressed: () => Navigator.pushNamed(context, '/vet-calendar'),
-        ),
-        // Filter button
-        PopupMenuButton<VetRecordType?>(
-          icon: Icon(
-            _filterType == null ? Icons.filter_list : Icons.filter_alt,
-            color: _filterType == null ? null : theme.colorScheme.primary,
-          ),
-          tooltip: locale == 'pt' ? 'Filtrar' : 'Filter',
-          onSelected: (type) {
-            setState(() => _filterType = type);
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: null,
-              child: Text(locale == 'pt' ? 'Todos' : 'All'),
-            ),
-            const PopupMenuDivider(),
-            ...VetRecordType.values.map((type) {
-              IconData icon;
-              Color color;
-              switch (type) {
-                case VetRecordType.vaccine:
-                  icon = Icons.vaccines;
-                  color = Colors.green;
-                  break;
-                case VetRecordType.disease:
-                  icon = Icons.sick;
-                  color = Colors.red;
-                  break;
-                case VetRecordType.treatment:
-                  icon = Icons.healing;
-                  color = Colors.blue;
-                  break;
-                case VetRecordType.death:
-                  icon = Icons.warning;
-                  color = Colors.black;
-                  break;
-                case VetRecordType.checkup:
-                  icon = Icons.health_and_safety;
-                  color = Colors.teal;
-                  break;
-              }
-              return PopupMenuItem(
-                value: type,
-                child: Row(
-                  children: [
-                    Icon(icon, size: 20, color: color),
-                    const SizedBox(width: 12),
-                    Text(type.displayName(locale)),
-                  ],
-                ),
-              );
-            }),
-          ],
-        ),
-      ],
       fab: FloatingActionButton.extended(
         onPressed: () => _addRecord(context),
         icon: const Icon(Icons.add),
@@ -175,7 +108,7 @@ class _HenHealthPageState extends State<HenHealthPage> {
 
           // Records List
           Expanded(
-            child: filteredRecords.isEmpty
+            child: allRecords.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -187,13 +120,9 @@ class _HenHealthPageState extends State<HenHealthPage> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          _filterType == null
-                              ? (locale == 'pt'
-                                  ? 'Nenhum registo veterinário'
-                                  : 'No veterinary records')
-                              : (locale == 'pt'
-                                  ? 'Nenhum registo deste tipo'
-                                  : 'No records of this type'),
+                          locale == 'pt'
+                              ? 'Nenhum registo veterinário'
+                              : 'No veterinary records',
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
                           ),
@@ -212,9 +141,9 @@ class _HenHealthPageState extends State<HenHealthPage> {
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: filteredRecords.length,
+                    itemCount: allRecords.length,
                     itemBuilder: (context, index) {
-                      final record = filteredRecords[index];
+                      final record = allRecords[index];
                       return _VetRecordCard(
                         record: record,
                         locale: locale,

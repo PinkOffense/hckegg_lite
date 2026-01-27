@@ -32,6 +32,12 @@ class AppScaffold extends StatelessWidget {
         actions: [
           // Additional custom actions
           if (additionalActions != null) ...additionalActions!,
+          // Calendar button
+          IconButton(
+            tooltip: locale == 'pt' ? 'Calendário' : 'Calendar',
+            icon: const Icon(Icons.calendar_month),
+            onPressed: () => Navigator.pushNamed(context, '/vet-calendar'),
+          ),
           // Language Selector
           PopupMenuButton<String>(
             tooltip: 'Language',
