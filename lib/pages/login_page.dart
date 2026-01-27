@@ -1,4 +1,5 @@
 // lib/pages/login_page.dart
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -24,6 +25,7 @@ class _LoginPageState extends State<LoginPage>
   final _passFocus = FocusNode();
 
   bool _loading = false;
+  bool _googleLoading = false;
   bool _isSignup = false;
   String? _emailError;
   String? _passError;
@@ -169,6 +171,31 @@ class _LoginPageState extends State<LoginPage>
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() => _googleLoading = true);
+
+    final supabase = Supabase.instance.client;
+    final auth = AuthService(supabase);
+
+    try {
+      await auth.signInWithGoogle();
+      // Para mobile, o login é imediato
+      // Para web, será redirecionado automaticamente
+      if (!kIsWeb) {
+        _showMessage('Welcome!');
+      }
+    } on AuthException catch (e) {
+      // Ignorar mensagem de redirect no web
+      if (!e.message.contains('Redirecting')) {
+        _showMessage(e.message, isError: true);
+      }
+    } catch (e) {
+      _showMessage('Google sign-in failed. Please try again.', isError: true);
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
+  }
+
   void _toggleMode() {
     setState(() {
       _isSignup = !_isSignup;
@@ -211,27 +238,41 @@ class _LoginPageState extends State<LoginPage>
                         Hero(
                           tag: 'app_logo',
                           child: Container(
-                            height: 80,
-                            width: 80,
-                            margin: const EdgeInsets.only(bottom: 24),
+                            height: 100,
+                            width: 100,
+                            margin: const EdgeInsets.only(bottom: 32),
                             decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer,
+                              gradient: LinearGradient(
+                                colors: [
+                                  colorScheme.primary,
+                                  colorScheme.primaryContainer,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                               shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colorScheme.primary.withOpacity(0.3),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.egg_outlined,
-                              size: 48,
-                              color: colorScheme.primary,
+                              size: 50,
+                              color: Colors.white,
                             ),
                           ),
                         ),
 
                         // Title
                         Text(
-                          t('app_title'),
+                          _isSignup ? t('join_us') : t('welcome_back'),
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: colorScheme.primary,
+                            color: colorScheme.onSurface,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -239,20 +280,59 @@ class _LoginPageState extends State<LoginPage>
 
                         // Subtitle
                         Text(
-                          _isSignup ? t('create_account') : t('login'),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.7),
+                          _isSignup
+                              ? t('create_account_to_start')
+                              : t('sign_in_to_continue'),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: colorScheme.onSurface.withOpacity(0.6),
                           ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 40),
+
+                        // Google Sign-In Button
+                        _GoogleSignInButton(
+                          onPressed: _googleLoading || _loading
+                              ? null
+                              : _signInWithGoogle,
+                          isLoading: _googleLoading,
+                          label: t('continue_with_google'),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Divider with text
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: colorScheme.outline.withOpacity(0.5),
+                              ),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                t('or_continue_with'),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurface.withOpacity(0.5),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(
+                                color: colorScheme.outline.withOpacity(0.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
 
                         // Email field
                         EmailField(
                           controller: _emailCtl,
                           label: t('email'),
                           errorText: _emailError,
-                          autofocus: true,
+                          autofocus: false,
                           textInputAction: TextInputAction.next,
                           focusNode: _emailFocus,
                           onChanged: (_) {
@@ -283,10 +363,17 @@ class _LoginPageState extends State<LoginPage>
                         SizedBox(
                           height: 52,
                           child: ElevatedButton(
-                            onPressed: _loading ? null : _submit,
+                            onPressed: _loading || _googleLoading
+                                ? null
+                                : _submit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: colorScheme.primary,
                               foregroundColor: colorScheme.onPrimary,
+                              elevation: 2,
+                              shadowColor: colorScheme.primary.withOpacity(0.3),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             child: _loading
                                 ? SizedBox(
@@ -303,41 +390,33 @@ class _LoginPageState extends State<LoginPage>
                                     _isSignup
                                         ? t('signup_button')
                                         : t('login_button'),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                           ),
                         ),
-                        const SizedBox(height: 16),
-
-                        // Divider with text
-                        Row(
-                          children: [
-                            Expanded(child: Divider(color: colorScheme.outline)),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                'OR',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurface.withOpacity(0.5),
-                                ),
-                              ),
-                            ),
-                            Expanded(child: Divider(color: colorScheme.outline)),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
 
                         // Toggle mode button
                         TextButton(
-                          onPressed: _loading ? null : _toggleMode,
+                          onPressed: _loading || _googleLoading
+                              ? null
+                              : _toggleMode,
                           child: Text.rich(
                             TextSpan(
                               text: _isSignup
                                   ? 'Already have an account? '
                                   : 'Don\'t have an account? ',
-                              style: theme.textTheme.bodyMedium,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.7),
+                              ),
                               children: [
                                 TextSpan(
-                                  text: _isSignup ? t('login') : t('create_account'),
+                                  text: _isSignup
+                                      ? t('login')
+                                      : t('create_account'),
                                   style: TextStyle(
                                     color: colorScheme.primary,
                                     fontWeight: FontWeight.bold,
@@ -358,4 +437,161 @@ class _LoginPageState extends State<LoginPage>
       ),
     );
   }
+}
+
+/// Custom Google Sign-In button following Google branding guidelines
+class _GoogleSignInButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final bool isLoading;
+  final String label;
+
+  const _GoogleSignInButton({
+    required this.onPressed,
+    required this.isLoading,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return SizedBox(
+      height: 52,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: isDark ? const Color(0xFF131314) : Colors.white,
+          side: BorderSide(
+            color: isDark
+                ? const Color(0xFF8E918F)
+                : const Color(0xFFDADCE0),
+            width: 1,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+        ),
+        child: isLoading
+            ? SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Google "G" logo
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CustomPaint(
+                      painter: _GoogleLogoPainter(),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white : const Color(0xFF1F1F1F),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// Custom painter for Google "G" logo
+class _GoogleLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double w = size.width;
+    final double h = size.height;
+
+    // Blue
+    final bluePaint = Paint()
+      ..color = const Color(0xFF4285F4)
+      ..style = PaintingStyle.fill;
+
+    // Green
+    final greenPaint = Paint()
+      ..color = const Color(0xFF34A853)
+      ..style = PaintingStyle.fill;
+
+    // Yellow
+    final yellowPaint = Paint()
+      ..color = const Color(0xFFFBBC05)
+      ..style = PaintingStyle.fill;
+
+    // Red
+    final redPaint = Paint()
+      ..color = const Color(0xFFEA4335)
+      ..style = PaintingStyle.fill;
+
+    // Draw simplified Google G logo
+    final center = Offset(w / 2, h / 2);
+    final radius = w / 2;
+
+    // Blue arc (right side)
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -0.4,
+      1.2,
+      true,
+      bluePaint,
+    );
+
+    // Green arc (bottom right)
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      0.8,
+      1.0,
+      true,
+      greenPaint,
+    );
+
+    // Yellow arc (bottom left)
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      1.8,
+      1.0,
+      true,
+      yellowPaint,
+    );
+
+    // Red arc (top)
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      2.8,
+      1.0,
+      true,
+      redPaint,
+    );
+
+    // White center circle
+    canvas.drawCircle(
+      center,
+      radius * 0.55,
+      Paint()..color = Colors.white,
+    );
+
+    // Blue horizontal bar
+    canvas.drawRect(
+      Rect.fromLTWH(w * 0.48, h * 0.38, w * 0.52, h * 0.24),
+      bluePaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
