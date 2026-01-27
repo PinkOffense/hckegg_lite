@@ -395,84 +395,26 @@ class _LoginPageState extends State<LoginPage>
 
                         // Title
                         Text(
-                          t('app_title'),
+                          _isSignup ? t('join_us') : t('welcome_back'),
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: colorScheme.onSurface,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 8),
 
-                        // Login / Create Account toggle
-                        Container(
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
+                        // Subtitle
+                        Text(
+                          _isSignup
+                              ? t('create_account_to_start')
+                              : t('sign_in_to_continue'),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: colorScheme.onSurface.withOpacity(0.6),
                           ),
-                          padding: const EdgeInsets.all(4),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: _isSignup ? _toggleMode : null,
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: !_isSignup
-                                          ? colorScheme.primary
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      t('login'),
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: !_isSignup
-                                            ? colorScheme.onPrimary
-                                            : colorScheme.onSurface
-                                                .withOpacity(0.7),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: !_isSignup ? _toggleMode : null,
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _isSignup
-                                          ? colorScheme.primary
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      t('create_account'),
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: _isSignup
-                                            ? colorScheme.onPrimary
-                                            : colorScheme.onSurface
-                                                .withOpacity(0.7),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 40),
 
                         // Email field
                         EmailField(
@@ -664,6 +606,35 @@ class _LoginPageState extends State<LoginPage>
                               : _signInWithGoogle,
                           isLoading: _googleLoading,
                           label: t('continue_with_google'),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Toggle mode link
+                        TextButton(
+                          onPressed: _loading || _googleLoading
+                              ? null
+                              : _toggleMode,
+                          child: Text.rich(
+                            TextSpan(
+                              text: _isSignup
+                                  ? 'Already have an account? '
+                                  : 'Don\'t have an account? ',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.7),
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: _isSignup
+                                      ? t('login')
+                                      : t('create_account'),
+                                  style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
