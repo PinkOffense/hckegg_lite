@@ -1,4 +1,6 @@
 // lib/services/auth_service.dart
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
@@ -27,7 +29,64 @@ class AuthService {
     );
   }
 
+  /// Login com Google
+  Future<AuthResponse> signInWithGoogle() async {
+    if (kIsWeb) {
+      // Para web, usar OAuth redirect
+      await client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: kIsWeb ? null : 'io.supabase.hckegg://login-callback/',
+      );
+      // OAuth redirect não retorna AuthResponse diretamente
+      // O utilizador será redirecionado e o estado de auth será atualizado via stream
+      throw AuthException('Redirecting to Google sign-in...');
+    } else {
+      // Para mobile, usar Google Sign-In nativo
+      const webClientId = String.fromEnvironment(
+        'GOOGLE_WEB_CLIENT_ID',
+        defaultValue: '',
+      );
+      const iosClientId = String.fromEnvironment(
+        'GOOGLE_IOS_CLIENT_ID',
+        defaultValue: '',
+      );
+
+      final googleSignIn = GoogleSignIn(
+        clientId: iosClientId.isNotEmpty ? iosClientId : null,
+        serverClientId: webClientId.isNotEmpty ? webClientId : null,
+      );
+
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        throw AuthException('Google sign-in was cancelled');
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      final accessToken = googleAuth.accessToken;
+
+      if (idToken == null) {
+        throw AuthException('Failed to get ID token from Google');
+      }
+
+      return await client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+    }
+  }
+
   Future<void> signOut() async {
+    // Sign out do Google também (se estiver logado)
+    if (!kIsWeb) {
+      try {
+        final googleSignIn = GoogleSignIn();
+        await googleSignIn.signOut();
+      } catch (_) {
+        // Ignorar erros de Google sign-out
+      }
+    }
     await client.auth.signOut();
   }
 }

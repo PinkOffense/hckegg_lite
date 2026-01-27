@@ -23,6 +23,9 @@ dependencies:
   # Supabase (Auth / Postgres / Storage)
   supabase_flutter: ^2.8.0
 
+  # Google Sign-In
+  google_sign_in: ^6.2.1
+
   # Offline local DB (Drift) - web compatible
   drift: ^2.20.3
 
