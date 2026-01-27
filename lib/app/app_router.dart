@@ -8,6 +8,7 @@ import '../pages/reservations_page.dart';
 import '../pages/expenses_page.dart';
 import '../pages/settings_page.dart';
 import '../pages/hen_health_page.dart';
+import '../pages/vet_calendar_page.dart';
 
 class AppRouter {
   static const String home = '/';
@@ -18,6 +19,7 @@ class AppRouter {
   static const String expenses = '/expenses';
   static const String settings = '/settings';
   static const String health = '/health';
+  static const String vetCalendar = '/vet-calendar';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -66,6 +68,12 @@ class AppRouter {
       case AppRouter.health:
         return MaterialPageRoute(
           builder: (_) => const HenHealthPage(),
+          settings: settings,
+        );
+
+      case AppRouter.vetCalendar:
+        return MaterialPageRoute(
+          builder: (_) => const VetCalendarPage(),
           settings: settings,
         );
 
