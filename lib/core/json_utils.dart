@@ -157,10 +157,10 @@ class JsonUtils {
   static String sanitizeForQuery(String input) {
     // Remove or escape potentially dangerous characters
     return input
-        .replaceAll(RegExp(r'[;\'"\\]'), '') // Remove SQL special chars
-        .replaceAll(RegExp(r'--'), '') // Remove SQL comments
-        .replaceAll(RegExp(r'/\*'), '') // Remove block comments
-        .replaceAll(RegExp(r'\*/'), '')
+        .replaceAll(RegExp('[;\'\"\\\\]'), '') // Remove SQL special chars
+        .replaceAll(RegExp('--'), '') // Remove SQL comments
+        .replaceAll(RegExp('/\\*'), '') // Remove block comments
+        .replaceAll(RegExp('\\*/'), '')
         .trim();
   }
 
@@ -168,7 +168,7 @@ class JsonUtils {
   static bool isSafeForQuery(String input) {
     // Check for common SQL injection patterns
     final dangerous = RegExp(
-      r"(;|'|\"|\-\-|/\*|\*/|xp_|exec|execute|insert|update|delete|drop|union|select)",
+      r"(;|--|/\*|\*/|xp_|exec|execute|insert|update|delete|drop|union|select)",
       caseSensitive: false,
     );
     return !dangerous.hasMatch(input);
