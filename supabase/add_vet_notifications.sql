@@ -9,41 +9,17 @@
 -- STEP 1: DROP EXISTING OBJECTS (IF ANY)
 -- ============================================
 
--- Drop existing policies
-DROP POLICY IF EXISTS "Users can view their own vet appointments" ON public.vet_appointments;
-DROP POLICY IF EXISTS "Users can insert their own vet appointments" ON public.vet_appointments;
-DROP POLICY IF EXISTS "Users can update their own vet appointments" ON public.vet_appointments;
-DROP POLICY IF EXISTS "Users can delete their own vet appointments" ON public.vet_appointments;
-
-DROP POLICY IF EXISTS "Users can view their own notification settings" ON public.notification_settings;
-DROP POLICY IF EXISTS "Users can insert their own notification settings" ON public.notification_settings;
-DROP POLICY IF EXISTS "Users can update their own notification settings" ON public.notification_settings;
-
-DROP POLICY IF EXISTS "Users can view their own notifications" ON public.notifications;
-DROP POLICY IF EXISTS "Users can insert their own notifications" ON public.notifications;
-DROP POLICY IF EXISTS "Users can update their own notifications" ON public.notifications;
-DROP POLICY IF EXISTS "Users can delete their own notifications" ON public.notifications;
-
-DROP POLICY IF EXISTS "Users can view their own push tokens" ON public.push_tokens;
-DROP POLICY IF EXISTS "Users can insert their own push tokens" ON public.push_tokens;
-DROP POLICY IF EXISTS "Users can update their own push tokens" ON public.push_tokens;
-DROP POLICY IF EXISTS "Users can delete their own push tokens" ON public.push_tokens;
-
--- Drop views
+-- Drop views first (depends on tables)
 DROP VIEW IF EXISTS public.upcoming_vet_appointments;
 
 -- Drop functions
 DROP FUNCTION IF EXISTS get_due_appointment_notifications(INTEGER);
 DROP FUNCTION IF EXISTS mark_notifications_as_sent(UUID[]);
+DROP FUNCTION IF EXISTS check_overdue_appointments();
+DROP FUNCTION IF EXISTS create_appointment_reminders() CASCADE;
 
--- Drop triggers
-DROP TRIGGER IF EXISTS update_vet_appointments_updated_at ON public.vet_appointments;
-DROP TRIGGER IF EXISTS update_notification_settings_updated_at ON public.notification_settings;
-DROP TRIGGER IF EXISTS update_notifications_updated_at ON public.notifications;
-DROP TRIGGER IF EXISTS update_push_tokens_updated_at ON public.push_tokens;
-DROP TRIGGER IF EXISTS create_appointment_notification ON public.vet_appointments;
-
--- Drop tables (in correct order due to foreign keys)
+-- Drop tables with CASCADE (automatically drops policies, triggers, and constraints)
+-- CASCADE handles: policies, triggers, indexes, and foreign key references
 DROP TABLE IF EXISTS public.notifications CASCADE;
 DROP TABLE IF EXISTS public.push_tokens CASCADE;
 DROP TABLE IF EXISTS public.notification_settings CASCADE;
