@@ -5,7 +5,7 @@ import '../models/egg_sale.dart';
 import '../state/app_state.dart';
 import '../dialogs/reservation_dialog.dart';
 import '../l10n/locale_provider.dart';
-import '../widgets/app_drawer.dart';
+import '../widgets/app_scaffold.dart';
 
 class ReservationsPage extends StatelessWidget {
   const ReservationsPage({super.key});
@@ -26,12 +26,18 @@ class ReservationsPage extends StatelessWidget {
       return DateTime.parse(r.pickupDate!).isBefore(DateTime.now());
     }).toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(locale == 'pt' ? 'Reservas de Ovos' : 'Egg Reservations'),
-        backgroundColor: theme.colorScheme.primaryContainer,
+    return AppScaffold(
+      title: locale == 'pt' ? 'Reservas de Ovos' : 'Egg Reservations',
+      fab: FloatingActionButton.extended(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) => const ReservationDialog(),
+          );
+        },
+        icon: const Icon(Icons.add),
+        label: Text(locale == 'pt' ? 'Nova Reserva' : 'New Reservation'),
       ),
-      drawer: const AppDrawer(),
       body: reservations.isEmpty
           ? Center(
               child: Column(
@@ -106,16 +112,6 @@ class ReservationsPage extends StatelessWidget {
                 ],
               ],
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) => const ReservationDialog(),
-          );
-        },
-        icon: const Icon(Icons.add),
-        label: Text(locale == 'pt' ? 'Nova Reserva' : 'New Reservation'),
-      ),
     );
   }
 }
