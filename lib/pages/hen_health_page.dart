@@ -5,7 +5,7 @@ import '../state/app_state.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../dialogs/vet_record_dialog.dart';
-import '../widgets/app_drawer.dart';
+import '../widgets/app_scaffold.dart';
 
 class HenHealthPage extends StatefulWidget {
   const HenHealthPage({super.key});
@@ -42,67 +42,69 @@ class _HenHealthPageState extends State<HenHealthPage> {
         })
         .length;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(t('hen_health')),
-        actions: [
-          // Filter button
-          PopupMenuButton<VetRecordType?>(
-            icon: Icon(
-              _filterType == null ? Icons.filter_list : Icons.filter_alt,
-              color: _filterType == null ? null : theme.colorScheme.primary,
-            ),
-            tooltip: locale == 'pt' ? 'Filtrar' : 'Filter',
-            onSelected: (type) {
-              setState(() => _filterType = type);
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: null,
-                child: Text(locale == 'pt' ? 'Todos' : 'All'),
-              ),
-              const PopupMenuDivider(),
-              ...VetRecordType.values.map((type) {
-                IconData icon;
-                Color color;
-                switch (type) {
-                  case VetRecordType.vaccine:
-                    icon = Icons.vaccines;
-                    color = Colors.green;
-                    break;
-                  case VetRecordType.disease:
-                    icon = Icons.sick;
-                    color = Colors.red;
-                    break;
-                  case VetRecordType.treatment:
-                    icon = Icons.healing;
-                    color = Colors.blue;
-                    break;
-                  case VetRecordType.death:
-                    icon = Icons.warning;
-                    color = Colors.black;
-                    break;
-                  case VetRecordType.checkup:
-                    icon = Icons.health_and_safety;
-                    color = Colors.teal;
-                    break;
-                }
-                return PopupMenuItem(
-                  value: type,
-                  child: Row(
-                    children: [
-                      Icon(icon, size: 20, color: color),
-                      const SizedBox(width: 12),
-                      Text(type.displayName(locale)),
-                    ],
-                  ),
-                );
-              }),
-            ],
+    return AppScaffold(
+      title: t('hen_health'),
+      additionalActions: [
+        // Filter button
+        PopupMenuButton<VetRecordType?>(
+          icon: Icon(
+            _filterType == null ? Icons.filter_list : Icons.filter_alt,
+            color: _filterType == null ? null : theme.colorScheme.primary,
           ),
-        ],
+          tooltip: locale == 'pt' ? 'Filtrar' : 'Filter',
+          onSelected: (type) {
+            setState(() => _filterType = type);
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: null,
+              child: Text(locale == 'pt' ? 'Todos' : 'All'),
+            ),
+            const PopupMenuDivider(),
+            ...VetRecordType.values.map((type) {
+              IconData icon;
+              Color color;
+              switch (type) {
+                case VetRecordType.vaccine:
+                  icon = Icons.vaccines;
+                  color = Colors.green;
+                  break;
+                case VetRecordType.disease:
+                  icon = Icons.sick;
+                  color = Colors.red;
+                  break;
+                case VetRecordType.treatment:
+                  icon = Icons.healing;
+                  color = Colors.blue;
+                  break;
+                case VetRecordType.death:
+                  icon = Icons.warning;
+                  color = Colors.black;
+                  break;
+                case VetRecordType.checkup:
+                  icon = Icons.health_and_safety;
+                  color = Colors.teal;
+                  break;
+              }
+              return PopupMenuItem(
+                value: type,
+                child: Row(
+                  children: [
+                    Icon(icon, size: 20, color: color),
+                    const SizedBox(width: 12),
+                    Text(type.displayName(locale)),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ],
+      fab: FloatingActionButton.extended(
+        onPressed: () => _addRecord(context),
+        icon: const Icon(Icons.add),
+        label: Text(t('add_vet_record')),
       ),
-      drawer: const AppDrawer(),
       body: Column(
         children: [
           // Health Overview Card
@@ -213,11 +215,6 @@ class _HenHealthPageState extends State<HenHealthPage> {
                   ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _addRecord(context),
-        icon: const Icon(Icons.add),
-        label: Text(t('add_vet_record')),
       ),
     );
   }

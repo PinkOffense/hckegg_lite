@@ -10,8 +10,15 @@ class AppScaffold extends StatelessWidget {
   final String title;
   final Widget body;
   final FloatingActionButton? fab;
+  final List<Widget>? additionalActions;
 
-  const AppScaffold({super.key, required this.title, required this.body, this.fab});
+  const AppScaffold({
+    super.key,
+    required this.title,
+    required this.body,
+    this.fab,
+    this.additionalActions,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +30,8 @@ class AppScaffold extends StatelessWidget {
         title: Text(title),
         elevation: 0,
         actions: [
+          // Additional custom actions
+          if (additionalActions != null) ...additionalActions!,
           // Language Selector
           PopupMenuButton<String>(
             tooltip: 'Language',
