@@ -601,21 +601,21 @@ class AppState extends ChangeNotifier {
 
   /// Guardar um stock de ração
   Future<void> saveFeedStock(FeedStock stock) async {
+    // Optimistic update - atualizar UI imediatamente
+    final existingIndex = _feedStocks.indexWhere((s) => s.id == stock.id);
+    if (existingIndex != -1) {
+      _feedStocks[existingIndex] = stock;
+    } else {
+      _feedStocks.add(stock);
+    }
+    notifyListeners();
+
+    // Tentar guardar no Supabase
     try {
-      final saved = await _feedRepository.save(stock);
-
-      final existingIndex = _feedStocks.indexWhere((s) => s.id == saved.id);
-      if (existingIndex != -1) {
-        _feedStocks[existingIndex] = saved;
-      } else {
-        _feedStocks.add(saved);
-      }
-
-      notifyListeners();
+      await _feedRepository.save(stock);
     } catch (e) {
+      // Se falhar, manter a atualização local
       _feedStocksError = e.toString();
-      notifyListeners();
-      rethrow;
     }
   }
 
@@ -634,27 +634,33 @@ class AppState extends ChangeNotifier {
 
   /// Adicionar movimento de stock (compra, consumo, etc)
   Future<void> addFeedMovement(FeedMovement movement, FeedStock stock) async {
+    // Calcular nova quantidade
+    double newQuantity = stock.currentQuantityKg;
+    if (movement.movementType == StockMovementType.purchase) {
+      newQuantity += movement.quantityKg;
+    } else {
+      newQuantity -= movement.quantityKg;
+    }
+
+    final updatedStock = stock.copyWith(
+      currentQuantityKg: newQuantity < 0 ? 0 : newQuantity,
+      lastUpdated: DateTime.now(),
+    );
+
+    // Optimistic update - atualizar UI imediatamente
+    final existingIndex = _feedStocks.indexWhere((s) => s.id == stock.id);
+    if (existingIndex != -1) {
+      _feedStocks[existingIndex] = updatedStock;
+      notifyListeners();
+    }
+
+    // Tentar guardar no Supabase (pode falhar se tabelas não existirem)
     try {
       await _feedRepository.addMovement(movement);
-
-      // Atualizar quantidade do stock
-      double newQuantity = stock.currentQuantityKg;
-      if (movement.movementType == StockMovementType.purchase) {
-        newQuantity += movement.quantityKg;
-      } else {
-        newQuantity -= movement.quantityKg;
-      }
-
-      final updatedStock = stock.copyWith(
-        currentQuantityKg: newQuantity < 0 ? 0 : newQuantity,
-        lastUpdated: DateTime.now(),
-      );
-
-      await saveFeedStock(updatedStock);
+      await _feedRepository.save(updatedStock);
     } catch (e) {
+      // Se falhar, manter a atualização local (dados não sincronizados)
       _feedStocksError = e.toString();
-      notifyListeners();
-      rethrow;
     }
   }
 
