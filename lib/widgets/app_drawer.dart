@@ -116,6 +116,14 @@ class AppDrawer extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, '/health');
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.inventory_2),
+              title: Text(locale == 'pt' ? 'Stock de Ração' : 'Feed Stock'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/feed-stock');
+              },
+            ),
             const Spacer(),
             const Divider(),
             ListTile(

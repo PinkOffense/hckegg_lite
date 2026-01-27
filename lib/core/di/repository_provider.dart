@@ -5,14 +5,17 @@ import '../../data/datasources/remote/egg_remote_datasource.dart';
 import '../../data/datasources/remote/expense_remote_datasource.dart';
 import '../../data/datasources/remote/vet_remote_datasource.dart';
 import '../../data/datasources/remote/sale_remote_datasource.dart';
+import '../../data/datasources/remote/feed_remote_datasource.dart';
 import '../../data/repositories/egg_repository_impl.dart';
 import '../../data/repositories/expense_repository_impl.dart';
 import '../../data/repositories/vet_repository_impl.dart';
 import '../../data/repositories/sale_repository_impl.dart';
+import '../../data/repositories/feed_repository_impl.dart';
 import '../../domain/repositories/egg_repository.dart';
 import '../../domain/repositories/expense_repository.dart';
 import '../../domain/repositories/vet_repository.dart';
 import '../../domain/repositories/sale_repository.dart';
+import '../../domain/repositories/feed_repository.dart';
 
 /// Dependency Injection Container para Repositories
 /// Usa o padrão Singleton para garantir uma única instância
@@ -33,12 +36,14 @@ class RepositoryProvider {
   late final ExpenseRemoteDatasource _expenseDatasource;
   late final VetRemoteDatasource _vetDatasource;
   late final SaleRemoteDatasource _saleDatasource;
+  late final FeedRemoteDatasource _feedDatasource;
 
   // Repositories
   late final EggRepository _eggRepository;
   late final ExpenseRepository _expenseRepository;
   late final VetRepository _vetRepository;
   late final SaleRepository _saleRepository;
+  late final FeedRepository _feedRepository;
 
   /// Inicializar todos os repositories
   void initialize() {
@@ -50,12 +55,14 @@ class RepositoryProvider {
     _expenseDatasource = ExpenseRemoteDatasource(_supabaseClient);
     _vetDatasource = VetRemoteDatasource(_supabaseClient);
     _saleDatasource = SaleRemoteDatasource(_supabaseClient);
+    _feedDatasource = FeedRemoteDatasource(_supabaseClient);
 
     // Inicializar repositories
     _eggRepository = EggRepositoryImpl(_eggDatasource);
     _expenseRepository = ExpenseRepositoryImpl(_expenseDatasource);
     _vetRepository = VetRepositoryImpl(_vetDatasource);
     _saleRepository = SaleRepositoryImpl(_saleDatasource);
+    _feedRepository = FeedRepositoryImpl(_feedDatasource);
   }
 
   // Getters para aceder aos repositories
@@ -63,4 +70,5 @@ class RepositoryProvider {
   ExpenseRepository get expenseRepository => _expenseRepository;
   VetRepository get vetRepository => _vetRepository;
   SaleRepository get saleRepository => _saleRepository;
+  FeedRepository get feedRepository => _feedRepository;
 }

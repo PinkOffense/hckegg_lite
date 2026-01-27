@@ -9,6 +9,7 @@ import '../pages/expenses_page.dart';
 import '../pages/settings_page.dart';
 import '../pages/hen_health_page.dart';
 import '../pages/vet_calendar_page.dart';
+import '../pages/feed_stock_page.dart';
 
 class AppRouter {
   static const String home = '/';
@@ -20,6 +21,7 @@ class AppRouter {
   static const String settings = '/settings';
   static const String health = '/health';
   static const String vetCalendar = '/vet-calendar';
+  static const String feedStock = '/feed-stock';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -74,6 +76,12 @@ class AppRouter {
       case AppRouter.vetCalendar:
         return MaterialPageRoute(
           builder: (_) => const VetCalendarPage(),
+          settings: settings,
+        );
+
+      case AppRouter.feedStock:
+        return MaterialPageRoute(
+          builder: (_) => const FeedStockPage(),
           settings: settings,
         );
 

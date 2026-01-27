@@ -4,11 +4,13 @@ import '../domain/repositories/egg_repository.dart';
 import '../domain/repositories/expense_repository.dart';
 import '../domain/repositories/vet_repository.dart';
 import '../domain/repositories/sale_repository.dart';
+import '../domain/repositories/feed_repository.dart';
 import '../models/daily_egg_record.dart';
 import '../models/expense.dart';
 import '../models/vet_record.dart';
 import '../models/egg_sale.dart';
 import '../models/egg_reservation.dart';
+import '../models/feed_stock.dart';
 
 class AppState extends ChangeNotifier {
   // Repositories
@@ -16,6 +18,7 @@ class AppState extends ChangeNotifier {
   final ExpenseRepository _expenseRepository = RepositoryProvider.instance.expenseRepository;
   final VetRepository _vetRepository = RepositoryProvider.instance.vetRepository;
   final SaleRepository _saleRepository = RepositoryProvider.instance.saleRepository;
+  final FeedRepository _feedRepository = RepositoryProvider.instance.feedRepository;
 
   // State - Egg Records
   List<DailyEggRecord> _records = [];
@@ -42,6 +45,11 @@ class AppState extends ChangeNotifier {
   bool _isLoadingReservations = false;
   String? _reservationsError;
 
+  // State - Feed Stock
+  List<FeedStock> _feedStocks = [];
+  bool _isLoadingFeedStocks = false;
+  String? _feedStocksError;
+
   // Getters - Egg Records
   List<DailyEggRecord> get records => List.unmodifiable(_records);
   bool get isLoadingRecords => _isLoadingRecords;
@@ -67,8 +75,13 @@ class AppState extends ChangeNotifier {
   bool get isLoadingReservations => _isLoadingReservations;
   String? get reservationsError => _reservationsError;
 
+  // Getters - Feed Stock
+  List<FeedStock> get feedStocks => List.unmodifiable(_feedStocks);
+  bool get isLoadingFeedStocks => _isLoadingFeedStocks;
+  String? get feedStocksError => _feedStocksError;
+
   // Overall loading state
-  bool get isLoading => _isLoadingRecords || _isLoadingExpenses || _isLoadingVetRecords || _isLoadingSales || _isLoadingReservations;
+  bool get isLoading => _isLoadingRecords || _isLoadingExpenses || _isLoadingVetRecords || _isLoadingSales || _isLoadingReservations || _isLoadingFeedStocks;
 
   // ========== EGG RECORDS ==========
 
@@ -558,6 +571,112 @@ class AppState extends ChangeNotifier {
     }).toList();
   }
 
+  // ========== FEED STOCK ==========
+
+  /// Carregar todos os stocks de ração
+  Future<void> loadFeedStocks() async {
+    _isLoadingFeedStocks = true;
+    _feedStocksError = null;
+    notifyListeners();
+
+    try {
+      _feedStocks = await _feedRepository.getAll();
+    } catch (e) {
+      _feedStocksError = e.toString();
+    } finally {
+      _isLoadingFeedStocks = false;
+      notifyListeners();
+    }
+  }
+
+  /// Obter todos os stocks de ração
+  List<FeedStock> getFeedStocks() {
+    return List<FeedStock>.from(_feedStocks);
+  }
+
+  /// Obter stocks com quantidade baixa
+  List<FeedStock> getLowStockFeeds() {
+    return _feedStocks.where((s) => s.isLowStock).toList();
+  }
+
+  /// Guardar um stock de ração
+  Future<void> saveFeedStock(FeedStock stock) async {
+    try {
+      final saved = await _feedRepository.save(stock);
+
+      final existingIndex = _feedStocks.indexWhere((s) => s.id == saved.id);
+      if (existingIndex != -1) {
+        _feedStocks[existingIndex] = saved;
+      } else {
+        _feedStocks.add(saved);
+      }
+
+      notifyListeners();
+    } catch (e) {
+      _feedStocksError = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Eliminar um stock de ração
+  Future<void> deleteFeedStock(String id) async {
+    try {
+      await _feedRepository.delete(id);
+      _feedStocks.removeWhere((s) => s.id == id);
+      notifyListeners();
+    } catch (e) {
+      _feedStocksError = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Adicionar movimento de stock (compra, consumo, etc)
+  Future<void> addFeedMovement(FeedMovement movement, FeedStock stock) async {
+    try {
+      await _feedRepository.addMovement(movement);
+
+      // Atualizar quantidade do stock
+      double newQuantity = stock.currentQuantityKg;
+      if (movement.movementType == StockMovementType.purchase) {
+        newQuantity += movement.quantityKg;
+      } else {
+        newQuantity -= movement.quantityKg;
+      }
+
+      final updatedStock = stock.copyWith(
+        currentQuantityKg: newQuantity < 0 ? 0 : newQuantity,
+        lastUpdated: DateTime.now(),
+      );
+
+      await saveFeedStock(updatedStock);
+    } catch (e) {
+      _feedStocksError = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Obter movimentos de um stock
+  Future<List<FeedMovement>> getFeedMovements(String feedStockId) async {
+    try {
+      return await _feedRepository.getMovements(feedStockId);
+    } catch (e) {
+      _feedStocksError = e.toString();
+      return [];
+    }
+  }
+
+  // Estatísticas de ração
+  double get totalFeedStock {
+    return _feedStocks.fold<double>(0.0, (sum, s) => sum + s.currentQuantityKg);
+  }
+
+  int get lowStockCount {
+    return _feedStocks.where((s) => s.isLowStock).length;
+  }
+
   // ========== LOAD ALL DATA ==========
 
   /// Carregar todos os dados ao iniciar a app
@@ -567,6 +686,7 @@ class AppState extends ChangeNotifier {
       loadExpenses(),
       loadVetRecords(),
       loadSales(),
+      loadFeedStocks(),
     ]);
   }
 
