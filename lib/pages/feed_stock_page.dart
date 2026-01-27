@@ -127,7 +127,6 @@ class _FeedStockPageState extends State<FeedStockPage> {
                         stock: stock,
                         locale: locale,
                         onTap: () => _showStockDetails(context, locale, stock),
-                        onQuickPurchase: () => _quickPurchase(context, locale, stock),
                         onQuickConsume: () => _quickConsume(context, locale, stock),
                         onDelete: () => _deleteStock(context, locale, stock),
                       );
@@ -154,17 +153,6 @@ class _FeedStockPageState extends State<FeedStockPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => _StockDetailsSheet(stock: stock, locale: locale),
-    );
-  }
-
-  void _quickPurchase(BuildContext context, String locale, FeedStock stock) {
-    showDialog(
-      context: context,
-      builder: (context) => _MovementDialog(
-        locale: locale,
-        stock: stock,
-        initialType: StockMovementType.purchase,
-      ),
     );
   }
 
@@ -263,7 +251,6 @@ class _FeedStockCard extends StatelessWidget {
   final FeedStock stock;
   final String locale;
   final VoidCallback onTap;
-  final VoidCallback onQuickPurchase;
   final VoidCallback onQuickConsume;
   final VoidCallback onDelete;
 
@@ -271,7 +258,6 @@ class _FeedStockCard extends StatelessWidget {
     required this.stock,
     required this.locale,
     required this.onTap,
-    required this.onQuickPurchase,
     required this.onQuickConsume,
     required this.onDelete,
   });
@@ -400,32 +386,14 @@ class _FeedStockCard extends StatelessWidget {
               // Quick Actions
               Row(
                 children: [
-                  // Quick Purchase Button
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: onQuickPurchase,
-                      icon: const Icon(Icons.add_shopping_cart, size: 18),
-                      label: Text(locale == 'pt' ? 'Comprar' : 'Purchase'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.green,
-                        side: const BorderSide(color: Colors.green),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
                   // Quick Consume Button
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: stock.currentQuantityKg > 0 ? onQuickConsume : null,
                       icon: const Icon(Icons.restaurant, size: 18),
-                      label: Text(locale == 'pt' ? 'Consumir' : 'Consume'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.orange,
-                        side: BorderSide(
-                          color: stock.currentQuantityKg > 0
-                              ? Colors.orange
-                              : Colors.grey.withOpacity(0.3),
-                        ),
+                      label: Text(locale == 'pt' ? 'Registar Consumo' : 'Record Consumption'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: stock.currentQuantityKg > 0 ? Colors.orange : Colors.grey,
                       ),
                     ),
                   ),
@@ -561,25 +529,6 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                 children: [
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        showDialog(
-                          context: context,
-                          builder: (context) => _MovementDialog(
-                            locale: widget.locale,
-                            stock: widget.stock,
-                            initialType: StockMovementType.purchase,
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.add_shopping_cart),
-                      label: Text(widget.locale == 'pt' ? 'Comprar' : 'Purchase'),
-                      style: FilledButton.styleFrom(backgroundColor: Colors.green),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: FilledButton.icon(
                       onPressed: widget.stock.currentQuantityKg > 0
                           ? () {
                               Navigator.pop(context);
@@ -594,8 +543,10 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                             }
                           : null,
                       icon: const Icon(Icons.restaurant),
-                      label: Text(widget.locale == 'pt' ? 'Consumir' : 'Consume'),
-                      style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+                      label: Text(widget.locale == 'pt' ? 'Registar Consumo' : 'Record Consumption'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: widget.stock.currentQuantityKg > 0 ? Colors.orange : Colors.grey,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
