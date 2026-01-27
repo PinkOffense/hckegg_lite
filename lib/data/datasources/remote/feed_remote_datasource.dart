@@ -1,6 +1,8 @@
 // lib/data/datasources/remote/feed_remote_datasource.dart
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/exceptions.dart';
+import '../../../core/json_utils.dart';
 import '../../../models/feed_stock.dart';
 
 /// Datasource remoto para stock de ração (Supabase)
@@ -140,21 +142,24 @@ class FeedRemoteDatasource {
   }
 
   /// Converter de JSON do Supabase para FeedStock
+  /// Usa parsing seguro com tratamento de erros adequado
   FeedStock _stockFromSupabase(Map<String, dynamic> json) {
-    return FeedStock(
-      id: json['id'] as String,
-      type: FeedType.values.firstWhere(
-        (e) => e.name == json['type'],
-        orElse: () => FeedType.other,
-      ),
-      brand: json['brand'] as String?,
-      currentQuantityKg: (json['current_quantity_kg'] as num).toDouble(),
-      minimumQuantityKg: (json['minimum_quantity_kg'] as num?)?.toDouble() ?? 10.0,
-      pricePerKg: (json['price_per_kg'] as num?)?.toDouble(),
-      notes: json['notes'] as String?,
-      lastUpdated: DateTime.parse(json['last_updated'] as String),
-      createdAt: DateTime.parse(json['created_at'] as String),
-    );
+    try {
+      return FeedStock(
+        id: json.requireString('id'),
+        type: json.enumValue('type', FeedType.values, FeedType.other),
+        brand: json.optionalString('brand'),
+        currentQuantityKg: json.requireDouble('current_quantity_kg'),
+        minimumQuantityKg: json.doubleOrDefault('minimum_quantity_kg', 10.0),
+        pricePerKg: json.optionalDouble('price_per_kg'),
+        notes: json.optionalString('notes'),
+        lastUpdated: json.requireDateTime('last_updated'),
+        createdAt: json.requireDateTime('created_at'),
+      );
+    } catch (e) {
+      if (e is ValidationException) rethrow;
+      throw ValidationException.parseError('FeedStock', json);
+    }
   }
 
   /// Converter de FeedStock para JSON do Supabase
@@ -174,20 +179,23 @@ class FeedRemoteDatasource {
   }
 
   /// Converter de JSON do Supabase para FeedMovement
+  /// Usa parsing seguro com tratamento de erros adequado
   FeedMovement _movementFromSupabase(Map<String, dynamic> json) {
-    return FeedMovement(
-      id: json['id'] as String,
-      feedStockId: json['feed_stock_id'] as String,
-      movementType: StockMovementType.values.firstWhere(
-        (e) => e.name == json['movement_type'],
-        orElse: () => StockMovementType.adjustment,
-      ),
-      quantityKg: (json['quantity_kg'] as num).toDouble(),
-      cost: (json['cost'] as num?)?.toDouble(),
-      date: json['date'] as String,
-      notes: json['notes'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-    );
+    try {
+      return FeedMovement(
+        id: json.requireString('id'),
+        feedStockId: json.requireString('feed_stock_id'),
+        movementType: json.enumValue('movement_type', StockMovementType.values, StockMovementType.adjustment),
+        quantityKg: json.requireDouble('quantity_kg'),
+        cost: json.optionalDouble('cost'),
+        date: json.requireString('date'),
+        notes: json.optionalString('notes'),
+        createdAt: json.requireDateTime('created_at'),
+      );
+    } catch (e) {
+      if (e is ValidationException) rethrow;
+      throw ValidationException.parseError('FeedMovement', json);
+    }
   }
 
   /// Converter de FeedMovement para JSON do Supabase

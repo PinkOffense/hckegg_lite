@@ -1,6 +1,8 @@
 // lib/data/datasources/remote/expense_remote_datasource.dart
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/exceptions.dart';
+import '../../../core/json_utils.dart';
 import '../../../models/expense.dart';
 
 /// Datasource remoto para despesas (Supabase)
@@ -156,19 +158,22 @@ class ExpenseRemoteDatasource {
   }
 
   /// Converter de JSON do Supabase para Expense
+  /// Usa parsing seguro com tratamento de erros adequado
   Expense _fromSupabaseJson(Map<String, dynamic> json) {
-    return Expense(
-      id: json['id'] as String,
-      date: json['date'] as String,
-      category: ExpenseCategory.values.firstWhere(
-        (e) => e.name == json['category'],
-        orElse: () => ExpenseCategory.other,
-      ),
-      amount: (json['amount'] as num).toDouble(),
-      description: json['description'] as String,
-      notes: json['notes'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-    );
+    try {
+      return Expense(
+        id: json.requireString('id'),
+        date: json.requireString('date'),
+        category: json.enumValue('category', ExpenseCategory.values, ExpenseCategory.other),
+        amount: json.requireDouble('amount'),
+        description: json.requireString('description'),
+        notes: json.optionalString('notes'),
+        createdAt: json.requireDateTime('created_at'),
+      );
+    } catch (e) {
+      if (e is ValidationException) rethrow;
+      throw ValidationException.parseError('Expense', json);
+    }
   }
 
   /// Converter de Expense para JSON do Supabase

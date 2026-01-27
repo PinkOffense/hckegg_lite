@@ -366,7 +366,7 @@ class _LoginPageState extends State<LoginPage>
                           child: Container(
                             height: 100,
                             width: 100,
-                            margin: const EdgeInsets.only(bottom: 32),
+                            margin: const EdgeInsets.only(bottom: 16),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
@@ -392,6 +392,18 @@ class _LoginPageState extends State<LoginPage>
                             ),
                           ),
                         ),
+
+                        // App name
+                        Text(
+                          t('app_title'),
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                            letterSpacing: 1.2,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
 
                         // Title
                         Text(

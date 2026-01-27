@@ -1,6 +1,8 @@
 // lib/data/datasources/remote/sale_remote_datasource.dart
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/exceptions.dart';
+import '../../../core/json_utils.dart';
 import '../../../models/egg_sale.dart';
 
 /// Datasource remoto para vendas de ovos (Supabase)
@@ -52,12 +54,20 @@ class SaleRemoteDatasource {
         .toList();
   }
 
-  /// Obter vendas por cliente
+  /// Obter vendas por cliente (com sanitização para prevenir SQL injection)
   Future<List<EggSale>> getByCustomer(String customerName) async {
+    // Sanitize input to prevent SQL injection
+    final sanitizedName = JsonUtils.sanitizeForQuery(customerName);
+
+    // Validate query is safe
+    if (sanitizedName.isEmpty || !JsonUtils.isSafeForQuery(sanitizedName)) {
+      return []; // Return empty list for potentially malicious queries
+    }
+
     final response = await _client
         .from(_tableName)
         .select()
-        .ilike('customer_name', '%$customerName%')
+        .ilike('customer_name', '%$sanitizedName%')
         .order('date', ascending: false);
 
     return (response as List)
@@ -156,26 +166,33 @@ class SaleRemoteDatasource {
   }
 
   /// Converter de JSON do Supabase para EggSale
+  /// Usa parsing seguro com tratamento de erros adequado
   EggSale _fromSupabaseJson(Map<String, dynamic> json) {
-    return EggSale(
-      id: json['id'] as String,
-      date: json['date'] as String,
-      quantitySold: json['quantity_sold'] as int,
-      pricePerEgg: (json['price_per_egg'] as num).toDouble(),
-      pricePerDozen: (json['price_per_dozen'] as num).toDouble(),
-      customerName: json['customer_name'] as String?,
-      customerEmail: json['customer_email'] as String?,
-      customerPhone: json['customer_phone'] as String?,
-      notes: json['notes'] as String?,
-      paymentStatus: json['payment_status'] != null
-          ? PaymentStatus.fromString(json['payment_status'] as String)
-          : PaymentStatus.pending,
-      paymentDate: json['payment_date'] as String?,
-      isReservation: json['is_reservation'] as bool? ?? false,
-      reservationNotes: json['reservation_notes'] as String?,
-      isLost: json['is_lost'] as bool? ?? false,
-      createdAt: DateTime.parse(json['created_at'] as String),
-    );
+    try {
+      final paymentStatusStr = json.optionalString('payment_status');
+      return EggSale(
+        id: json.requireString('id'),
+        date: json.requireString('date'),
+        quantitySold: json.requireInt('quantity_sold'),
+        pricePerEgg: json.requireDouble('price_per_egg'),
+        pricePerDozen: json.requireDouble('price_per_dozen'),
+        customerName: json.optionalString('customer_name'),
+        customerEmail: json.optionalString('customer_email'),
+        customerPhone: json.optionalString('customer_phone'),
+        notes: json.optionalString('notes'),
+        paymentStatus: paymentStatusStr != null
+            ? PaymentStatus.fromString(paymentStatusStr)
+            : PaymentStatus.pending,
+        paymentDate: json.optionalString('payment_date'),
+        isReservation: json.boolOrDefault('is_reservation', false),
+        reservationNotes: json.optionalString('reservation_notes'),
+        isLost: json.boolOrDefault('is_lost', false),
+        createdAt: json.requireDateTime('created_at'),
+      );
+    } catch (e) {
+      if (e is ValidationException) rethrow;
+      throw ValidationException.parseError('EggSale', json);
+    }
   }
 
   /// Converter de EggSale para JSON do Supabase
