@@ -187,7 +187,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   const Divider(),
                   ListTile(
                     leading: const Icon(Icons.info_outline),
-                    title: Text(t('about_lite')),
+                    title: Text(t('about')),
                     onTap: () {
                       showAboutDialog(
                         context: context,
