@@ -6,7 +6,6 @@ import '../widgets/app_scaffold.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../services/profile_service.dart';
-import '../state/app_state.dart';
 import '../state/providers/providers.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -340,11 +339,8 @@ class _SettingsPageState extends State<SettingsPage> {
       // Small delay for better UX feedback
       await Future.delayed(const Duration(milliseconds: 300));
 
-      // Clear local app state (legacy)
-      final appState = Provider.of<AppState>(context, listen: false);
-      appState.clearAllData();
-
       // Clear all domain-specific providers
+      context.read<EggProvider>().clearData();
       context.read<EggRecordProvider>().clearData();
       context.read<ExpenseProvider>().clearData();
       context.read<VetRecordProvider>().clearData();
