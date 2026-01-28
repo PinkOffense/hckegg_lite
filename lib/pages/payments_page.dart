@@ -50,11 +50,11 @@ class PaymentsPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Overdue Payments
+                // Lost Payments
                 if (overdueSales.isNotEmpty) ...[
                   _SectionHeader(
                     icon: Icons.error_outline,
-                    title: locale == 'pt' ? 'Pagamentos Atrasados' : 'Overdue Payments',
+                    title: locale == 'pt' ? 'Pagamentos Perdidos' : 'Lost Payments',
                     color: Colors.red,
                   ),
                   const SizedBox(height: 12),
@@ -347,7 +347,7 @@ class _PaymentSummaryCards extends StatelessWidget {
           children: [
             Expanded(
               child: _SummaryCard(
-                title: locale == 'pt' ? 'Atrasado' : 'Overdue',
+                title: locale == 'pt' ? 'Perdido' : 'Lost',
                 amount: totalOverdue,
                 color: Colors.red,
                 icon: Icons.error_outline,
