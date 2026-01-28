@@ -1,6 +1,7 @@
 // lib/data/datasources/remote/egg_remote_datasource.dart
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/date_utils.dart';
 import '../../../core/exceptions.dart';
 import '../../../core/json_utils.dart';
 import '../../../models/daily_egg_record.dart';
@@ -40,8 +41,8 @@ class EggRemoteDatasource {
 
   /// Obter registos num intervalo de datas
   Future<List<DailyEggRecord>> getByDateRange(DateTime start, DateTime end) async {
-    final startStr = _dateToString(start);
-    final endStr = _dateToString(end);
+    final startStr = AppDateUtils.toIsoDateString(start);
+    final endStr = AppDateUtils.toIsoDateString(end);
 
     final response = await _client
         .from(_tableName)
@@ -140,10 +141,10 @@ class EggRemoteDatasource {
     String query = _client.from(_tableName).select().toString();
 
     if (startDate != null) {
-      query += '.gte(date,${_dateToString(startDate)})';
+      query += '.gte(date,${AppDateUtils.toIsoDateString(startDate)})';
     }
     if (endDate != null) {
-      query += '.lte(date,${_dateToString(endDate)})';
+      query += '.lte(date,${AppDateUtils.toIsoDateString(endDate)})';
     }
 
     final response = await _client
@@ -199,9 +200,5 @@ class EggRemoteDatasource {
       if (userId != null) 'user_id': userId,
       // id é gerado automaticamente se não existir
     };
-  }
-
-  String _dateToString(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }

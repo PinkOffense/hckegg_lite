@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import '../core/date_utils.dart';
 import '../models/daily_egg_record.dart';
 import '../state/app_state.dart';
 import '../l10n/locale_provider.dart';
@@ -74,7 +75,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
 
     final record = DailyEggRecord(
       id: widget.existingRecord?.id ?? const Uuid().v4(),
-      date: _dateToString(_selectedDate),
+      date: AppDateUtils.toIsoDateString(_selectedDate),
       eggsCollected: collected,
       eggsConsumed: consumed,
       henCount: henCount,
@@ -98,10 +99,6 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
         );
       }
     }
-  }
-
-  String _dateToString(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   String _formatDate(DateTime date, String locale) {

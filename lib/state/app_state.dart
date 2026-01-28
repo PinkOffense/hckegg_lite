@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/date_utils.dart';
 import '../core/di/repository_provider.dart';
 import '../domain/repositories/egg_repository.dart';
 import '../domain/repositories/expense_repository.dart';
@@ -149,8 +150,8 @@ class AppState extends ChangeNotifier {
 
   /// Obter registos num intervalo de datas
   List<DailyEggRecord> getRecordsInRange(DateTime start, DateTime end) {
-    final startStr = _dateToString(start);
-    final endStr = _dateToString(end);
+    final startStr = AppDateUtils.toIsoDateString(start);
+    final endStr = AppDateUtils.toIsoDateString(end);
 
     return _records.where((r) {
       return r.date.compareTo(startStr) >= 0 && r.date.compareTo(endStr) <= 0;
@@ -293,7 +294,7 @@ class AppState extends ChangeNotifier {
   /// Remove appointments scheduled for before today
   Future<void> _cleanupPastAppointments() async {
     final today = DateTime.now();
-    final todayStr = _dateToString(today);
+    final todayStr = AppDateUtils.toIsoDateString(today);
 
     final pastRecords = _vetRecords.where((r) {
       if (r.nextActionDate == null) return false;
@@ -312,7 +313,7 @@ class AppState extends ChangeNotifier {
 
   /// Get today's appointments for reminder popup
   List<VetRecord> getTodayAppointments() {
-    final todayStr = _dateToString(DateTime.now());
+    final todayStr = AppDateUtils.toIsoDateString(DateTime.now());
     return _vetRecords
         .where((r) => r.nextActionDate == todayStr)
         .toList();
@@ -443,8 +444,8 @@ class AppState extends ChangeNotifier {
 
   /// Obter vendas num intervalo de datas
   List<EggSale> getSalesInRange(DateTime start, DateTime end) {
-    final startStr = _dateToString(start);
-    final endStr = _dateToString(end);
+    final startStr = AppDateUtils.toIsoDateString(start);
+    final endStr = AppDateUtils.toIsoDateString(end);
 
     return _sales.where((s) {
       return s.date.compareTo(startStr) >= 0 && s.date.compareTo(endStr) <= 0;
@@ -527,7 +528,7 @@ class AppState extends ChangeNotifier {
       // Create a new sale from the reservation
       final sale = EggSale(
         id: reservation.id, // Use same ID for tracking
-        date: _dateToString(DateTime.now()), // Sale date is today
+        date: AppDateUtils.toIsoDateString(DateTime.now()), // Sale date is today
         quantitySold: reservation.quantity,
         pricePerEgg: reservation.pricePerEgg ?? 0.50, // Use reserved price or default
         pricePerDozen: reservation.pricePerDozen ?? 6.00,
@@ -539,7 +540,7 @@ class AppState extends ChangeNotifier {
           : 'Converted from reservation on ${reservation.date}',
         paymentStatus: paymentStatus,
         paymentDate: paymentStatus == PaymentStatus.paid || paymentStatus == PaymentStatus.advance
-          ? _dateToString(DateTime.now())
+          ? AppDateUtils.toIsoDateString(DateTime.now())
           : null,
         isReservation: false,
         reservationNotes: null,
@@ -563,8 +564,8 @@ class AppState extends ChangeNotifier {
 
   /// Obter reservas num intervalo de datas
   List<EggReservation> getReservationsInRange(DateTime start, DateTime end) {
-    final startStr = _dateToString(start);
-    final endStr = _dateToString(end);
+    final startStr = AppDateUtils.toIsoDateString(start);
+    final endStr = AppDateUtils.toIsoDateString(end);
 
     return _reservations.where((r) {
       return r.date.compareTo(startStr) >= 0 && r.date.compareTo(endStr) <= 0;
@@ -727,9 +728,4 @@ class AppState extends ChangeNotifier {
     ]);
   }
 
-  // ========== UTILITIES ==========
-
-  static String _dateToString(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import '../core/date_utils.dart';
 import '../models/egg_reservation.dart';
 import '../state/app_state.dart';
 import '../l10n/locale_provider.dart';
@@ -421,10 +422,6 @@ class _ReservationDialogState extends State<ReservationDialog> {
     }
   }
 
-  String _dateToString(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
   void _saveReservation() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -438,8 +435,8 @@ class _ReservationDialogState extends State<ReservationDialog> {
 
     final reservation = EggReservation(
       id: widget.existingReservation?.id ?? const Uuid().v4(),
-      date: _dateToString(_reservationDate),
-      pickupDate: _pickupDate != null ? _dateToString(_pickupDate!) : null,
+      date: AppDateUtils.toIsoDateString(_reservationDate),
+      pickupDate: _pickupDate != null ? AppDateUtils.toIsoDateString(_pickupDate!) : null,
       quantity: quantity,
       customerName: customerName.isEmpty ? null : customerName,
       customerEmail: customerEmail.isEmpty ? null : customerEmail,

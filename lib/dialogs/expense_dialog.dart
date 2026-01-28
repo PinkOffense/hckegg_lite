@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import '../core/date_utils.dart';
 import '../models/expense.dart';
 import '../state/app_state.dart';
 import '../l10n/locale_provider.dart';
@@ -281,10 +282,6 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
     }
   }
 
-  String _dateToString(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
   void _saveExpense() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -296,7 +293,7 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
 
     final expense = Expense(
       id: widget.existingExpense?.id ?? const Uuid().v4(),
-      date: _dateToString(_selectedDate),
+      date: AppDateUtils.toIsoDateString(_selectedDate),
       category: _selectedCategory,
       amount: amount,
       description: description,
