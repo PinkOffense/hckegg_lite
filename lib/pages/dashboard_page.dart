@@ -395,14 +395,6 @@ class _DashboardPageState extends State<DashboardPage>
           }),
         ),
       ),
-      fab: FloatingActionButton.extended(
-        icon: const Icon(Icons.add),
-        label: Text(t('add_daily_record')),
-        onPressed: () => showDialog(
-          context: context,
-          builder: (_) => const DailyRecordDialog(),
-        ),
-      ),
     );
   }
 }
