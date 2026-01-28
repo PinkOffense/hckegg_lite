@@ -71,10 +71,16 @@ class LogoutManager {
 
   /// Signs out from Supabase authentication.
   ///
-  /// Uses local scope to only sign out from this device, preserving
-  /// sessions on other devices.
+  /// On mobile/desktop: Uses local scope to only sign out from this device
+  /// On web: Uses global scope as local scope may not work correctly
   Future<void> _signOutFromSupabase() async {
-    await _client.auth.signOut(scope: SignOutScope.local);
+    if (kIsWeb) {
+      // Web platform: use default scope (global) for reliable sign-out
+      await _client.auth.signOut();
+    } else {
+      // Mobile/desktop: use local scope to preserve sessions on other devices
+      await _client.auth.signOut(scope: SignOutScope.local);
+    }
   }
 
   /// Performs the complete sign-out process.
