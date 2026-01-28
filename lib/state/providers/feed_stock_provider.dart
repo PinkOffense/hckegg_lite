@@ -23,14 +23,30 @@ class FeedStockProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // Cached statistics
+  double? _cachedTotalFeed;
+  int? _cachedLowStockCount;
+
   // Getters
   List<FeedStock> get feedStocks => List.unmodifiable(_feedStocks);
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Estatísticas
-  double get totalFeedStock => _feedStocks.fold<double>(0.0, (sum, s) => sum + s.currentQuantityKg);
-  int get lowStockCount => _feedStocks.where((s) => s.isLowStock).length;
+  // Estatísticas (cached for performance)
+  double get totalFeedStock {
+    _cachedTotalFeed ??= _feedStocks.fold<double>(0.0, (sum, s) => sum + s.currentQuantityKg);
+    return _cachedTotalFeed!;
+  }
+
+  int get lowStockCount {
+    _cachedLowStockCount ??= _feedStocks.where((s) => s.isLowStock).length;
+    return _cachedLowStockCount!;
+  }
+
+  void _invalidateCache() {
+    _cachedTotalFeed = null;
+    _cachedLowStockCount = null;
+  }
 
   /// Carregar todos os stocks de ração
   Future<void> loadFeedStocks() async {
@@ -40,6 +56,7 @@ class FeedStockProvider extends ChangeNotifier {
 
     try {
       _feedStocks = await _repository.getAll();
+      _invalidateCache();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -74,6 +91,7 @@ class FeedStockProvider extends ChangeNotifier {
     } else {
       _feedStocks.add(stock);
     }
+    _invalidateCache();
     _error = null;
     notifyListeners();
 
@@ -121,6 +139,7 @@ class FeedStockProvider extends ChangeNotifier {
     try {
       await _repository.delete(id);
       _feedStocks.removeWhere((s) => s.id == id);
+      _invalidateCache();
       notifyListeners();
     } catch (e) {
       _error = e.toString();
@@ -151,6 +170,7 @@ class FeedStockProvider extends ChangeNotifier {
     final existingIndex = _feedStocks.indexWhere((s) => s.id == stock.id);
     if (existingIndex != -1) {
       _feedStocks[existingIndex] = updatedStock;
+      _invalidateCache();
       notifyListeners();
     }
 
@@ -177,6 +197,7 @@ class FeedStockProvider extends ChangeNotifier {
     _feedStocks = [];
     _error = null;
     _isLoading = false;
+    _invalidateCache();
     notifyListeners();
   }
 }

@@ -24,16 +24,39 @@ class VetRecordProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // Cached statistics
+  int? _cachedTotalDeaths;
+  double? _cachedTotalCosts;
+  int? _cachedTotalHensAffected;
+
   // Getters
   List<VetRecord> get vetRecords => List.unmodifiable(_vetRecords);
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Estatísticas
+  // Estatísticas (cached for performance)
   int get totalVetRecords => _vetRecords.length;
-  int get totalDeaths => _vetRecords.where((r) => r.type == VetRecordType.death).length;
-  double get totalVetCosts => _vetRecords.fold<double>(0.0, (sum, r) => sum + (r.cost ?? 0.0));
-  int get totalHensAffected => _vetRecords.fold<int>(0, (sum, r) => sum + r.hensAffected);
+
+  int get totalDeaths {
+    _cachedTotalDeaths ??= _vetRecords.where((r) => r.type == VetRecordType.death).length;
+    return _cachedTotalDeaths!;
+  }
+
+  double get totalVetCosts {
+    _cachedTotalCosts ??= _vetRecords.fold<double>(0.0, (sum, r) => sum + (r.cost ?? 0.0));
+    return _cachedTotalCosts!;
+  }
+
+  int get totalHensAffected {
+    _cachedTotalHensAffected ??= _vetRecords.fold<int>(0, (sum, r) => sum + r.hensAffected);
+    return _cachedTotalHensAffected!;
+  }
+
+  void _invalidateCache() {
+    _cachedTotalDeaths = null;
+    _cachedTotalCosts = null;
+    _cachedTotalHensAffected = null;
+  }
 
   /// Carregar registos veterinários
   Future<void> loadVetRecords() async {
@@ -44,6 +67,7 @@ class VetRecordProvider extends ChangeNotifier {
     try {
       _vetRecords = await _repository.getAll();
       await _cleanupPastAppointments();
+      _invalidateCache();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -106,6 +130,7 @@ class VetRecordProvider extends ChangeNotifier {
         _vetRecords.add(saved);
       }
 
+      _invalidateCache();
       _error = null;
       notifyListeners();
     } catch (e) {
@@ -142,6 +167,7 @@ class VetRecordProvider extends ChangeNotifier {
     try {
       await _repository.delete(id);
       _vetRecords.removeWhere((r) => r.id == id);
+      _invalidateCache();
       notifyListeners();
     } catch (e) {
       _error = e.toString();
@@ -173,6 +199,7 @@ class VetRecordProvider extends ChangeNotifier {
     _vetRecords = [];
     _error = null;
     _isLoading = false;
+    _invalidateCache();
     notifyListeners();
   }
 }

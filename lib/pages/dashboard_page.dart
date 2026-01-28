@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/constants/date_constants.dart';
 import '../core/models/week_stats.dart';
 import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
@@ -55,14 +56,16 @@ class _DashboardPageState extends State<DashboardPage>
     super.dispose();
   }
 
-  String _formatDate(DateTime date) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${months[date.month - 1]} ${date.day}';
-  }
+  // Cache today's date string (computed once per page lifecycle)
+  late final String _todayString = _computeTodayString();
 
-  String _getTodayString() {
+  String _computeTodayString() {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDate(DateTime date, String locale) {
+    return DateConstants.formatMonthDay(date, locale);
   }
 
   @override
@@ -82,7 +85,7 @@ class _DashboardPageState extends State<DashboardPage>
             builder: (context, eggProvider, saleProvider, expenseProvider, reservationProvider, _) {
               final records = eggProvider.records;
               final sales = saleProvider.sales;
-              final todayRecord = eggProvider.getRecordByDate(_getTodayString());
+              final todayRecord = eggProvider.getRecordByDate(_todayString);
               final weekStats = eggProvider.getWeekStats(
                 sales: sales,
                 expenses: expenseProvider.expenses,
@@ -154,7 +157,7 @@ class _DashboardPageState extends State<DashboardPage>
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            _formatDate(DateTime.now()),
+                            _formatDate(DateTime.now(), locale),
                             style: theme.textTheme.bodyLarge?.copyWith(
                               color: theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.7),
                             ),
@@ -499,19 +502,15 @@ class _DayRecordCard extends StatelessWidget {
     if (difference == 0) return locale == 'pt' ? 'Hoje' : 'Today';
     if (difference == 1) return locale == 'pt' ? 'Ontem' : 'Yesterday';
 
-    if (locale == 'pt') {
-      final months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      return '${date.day} ${months[date.month - 1]}';
-    } else {
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return '${months[date.month - 1]} ${date.day}';
-    }
+    return locale == 'pt'
+        ? DateConstants.formatDayMonth(date, locale)
+        : DateConstants.formatMonthDay(date, locale);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final locale = Provider.of<LocaleProvider>(context).code;
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),

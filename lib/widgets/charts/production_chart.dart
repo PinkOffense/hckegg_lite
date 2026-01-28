@@ -1,6 +1,49 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../../core/constants/date_constants.dart';
 import '../../models/daily_egg_record.dart';
+
+/// Chart widget data computed once and cached
+class _ChartData {
+  final List<DailyEggRecord> displayRecords;
+  final double maxY;
+  final double adjustedMaxY;
+
+  _ChartData({
+    required this.displayRecords,
+    required this.maxY,
+    required this.adjustedMaxY,
+  });
+
+  factory _ChartData.fromRecords(List<DailyEggRecord> records) {
+    if (records.isEmpty) {
+      return _ChartData(displayRecords: [], maxY: 0, adjustedMaxY: 10);
+    }
+
+    // Sort records by date
+    final sortedRecords = List<DailyEggRecord>.from(records)
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    // Get last 7 records
+    final displayRecords = sortedRecords.length > 7
+        ? sortedRecords.sublist(sortedRecords.length - 7)
+        : sortedRecords;
+
+    // Calculate max values
+    int maxEggs = 0;
+    for (final r in displayRecords) {
+      if (r.eggsCollected > maxEggs) maxEggs = r.eggsCollected;
+    }
+    final maxY = maxEggs.toDouble();
+    final adjustedMaxY = (maxY * 1.2).ceil().toDouble();
+
+    return _ChartData(
+      displayRecords: displayRecords,
+      maxY: maxY,
+      adjustedMaxY: adjustedMaxY > 0 ? adjustedMaxY : 10,
+    );
+  }
+}
 
 class ProductionChart extends StatelessWidget {
   final List<DailyEggRecord> records;
@@ -30,17 +73,10 @@ class ProductionChart extends StatelessWidget {
       );
     }
 
-    // Sort records by date
-    final sortedRecords = List<DailyEggRecord>.from(records)
-      ..sort((a, b) => a.date.compareTo(b.date));
-
-    // Get last 7 records
-    final displayRecords = sortedRecords.length > 7
-        ? sortedRecords.sublist(sortedRecords.length - 7)
-        : sortedRecords;
-
-    final maxY = displayRecords.map((r) => r.eggsCollected).reduce((a, b) => a > b ? a : b).toDouble();
-    final adjustedMaxY = (maxY * 1.2).ceil().toDouble();
+    // Compute chart data once
+    final chartData = _ChartData.fromRecords(records);
+    final displayRecords = chartData.displayRecords;
+    final adjustedMaxY = chartData.adjustedMaxY;
 
     return SizedBox(
       height: 250,
@@ -49,7 +85,7 @@ class ProductionChart extends StatelessWidget {
         child: BarChart(
           BarChartData(
             alignment: BarChartAlignment.spaceAround,
-            maxY: adjustedMaxY > 0 ? adjustedMaxY : 10,
+            maxY: adjustedMaxY,
             barTouchData: BarTouchData(
               enabled: true,
               touchTooltipData: BarTouchTooltipData(
@@ -154,12 +190,8 @@ class ProductionChart extends StatelessWidget {
   }
 
   String _formatDateShort(DateTime date, String locale) {
-    if (locale == 'pt') {
-      final months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      return '${date.day} ${months[date.month - 1]}';
-    } else {
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return '${months[date.month - 1]} ${date.day}';
-    }
+    return locale == 'pt'
+        ? DateConstants.formatDayMonth(date, locale)
+        : DateConstants.formatMonthDay(date, locale);
   }
 }
