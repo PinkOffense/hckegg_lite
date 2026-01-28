@@ -6,7 +6,7 @@ import 'package:uuid/uuid.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import '../models/feed_stock.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 
 class FeedStockDialog extends StatefulWidget {
@@ -915,7 +915,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
       createdAt: widget.existingStock?.createdAt ?? now,
     );
 
-    Provider.of<AppState>(context, listen: false).saveFeedStock(stock);
+    context.read<FeedStockProvider>().saveFeedStock(stock);
     Navigator.pop(context);
   }
 }

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../core/date_utils.dart';
 import '../models/egg_sale.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 
@@ -515,7 +515,7 @@ class _SaleDialogState extends State<SaleDialog> {
       createdAt: widget.existingSale?.createdAt ?? DateTime.now(),
     );
 
-    Provider.of<AppState>(context, listen: false).saveSale(sale);
+    context.read<SaleProvider>().saveSale(sale);
 
     Navigator.pop(context);
   }
