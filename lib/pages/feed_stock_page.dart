@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/feed_stock.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../widgets/app_scaffold.dart';
@@ -21,11 +21,11 @@ class _FeedStockPageState extends State<FeedStockPage> {
     final theme = Theme.of(context);
     final locale = Provider.of<LocaleProvider>(context).code;
     final t = (String k) => Translations.of(locale, k);
-    final appState = Provider.of<AppState>(context);
+    final feedProvider = Provider.of<FeedStockProvider>(context);
 
-    final stocks = appState.getFeedStocks();
-    final lowStockCount = appState.lowStockCount;
-    final totalStock = appState.totalFeedStock;
+    final stocks = feedProvider.feedStocks;
+    final lowStockCount = feedProvider.lowStockCount;
+    final totalStock = feedProvider.totalFeedStock;
 
     return AppScaffold(
       title: locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
@@ -185,7 +185,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
           ),
           TextButton(
             onPressed: () {
-              Provider.of<AppState>(context, listen: false).deleteFeedStock(stock.id);
+              context.read<FeedStockProvider>().deleteFeedStock(stock.id);
               Navigator.pop(context);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -441,8 +441,8 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
   }
 
   Future<void> _loadMovements() async {
-    final appState = Provider.of<AppState>(context, listen: false);
-    final movements = await appState.getFeedMovements(widget.stock.id);
+    final feedProvider = Provider.of<FeedStockProvider>(context, listen: false);
+    final movements = await feedProvider.getFeedMovements(widget.stock.id);
     if (mounted) {
       setState(() {
         _movements = movements;
@@ -998,7 +998,7 @@ class _MovementDialogState extends State<_MovementDialog> {
       createdAt: now,
     );
 
-    Provider.of<AppState>(context, listen: false).addFeedMovement(movement, widget.stock);
+    context.read<FeedStockProvider>().addFeedMovement(movement, widget.stock);
     Navigator.pop(context);
 
     // Show confirmation snackbar
