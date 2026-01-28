@@ -1,6 +1,7 @@
 // lib/data/datasources/remote/vet_remote_datasource.dart
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/date_utils.dart';
 import '../../../core/exceptions.dart';
 import '../../../core/json_utils.dart';
 import '../../../models/vet_record.dart';
@@ -66,7 +67,7 @@ class VetRemoteDatasource {
   /// Obter acções agendadas futuras
   Future<List<VetRecord>> getUpcomingActions() async {
     final today = DateTime.now();
-    final todayStr = _dateToString(today);
+    final todayStr = AppDateUtils.toIsoDateString(today);
 
     final response = await _client
         .from(_tableName)
@@ -82,8 +83,8 @@ class VetRemoteDatasource {
 
   /// Obter registos num intervalo de datas
   Future<List<VetRecord>> getByDateRange(DateTime start, DateTime end) async {
-    final startStr = _dateToString(start);
-    final endStr = _dateToString(end);
+    final startStr = AppDateUtils.toIsoDateString(start);
+    final endStr = AppDateUtils.toIsoDateString(end);
 
     final response = await _client
         .from(_tableName)
@@ -140,10 +141,10 @@ class VetRemoteDatasource {
     var query = _client.from(_tableName).select();
 
     if (startDate != null) {
-      query = query.gte('date', _dateToString(startDate));
+      query = query.gte('date', AppDateUtils.toIsoDateString(startDate));
     }
     if (endDate != null) {
-      query = query.lte('date', _dateToString(endDate));
+      query = query.lte('date', AppDateUtils.toIsoDateString(endDate));
     }
 
     final response = await query;
@@ -220,9 +221,5 @@ class VetRemoteDatasource {
       // Adicionar user_id explicitamente (também validado pelo RLS)
       if (userId != null) 'user_id': userId,
     };
-  }
-
-  String _dateToString(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }

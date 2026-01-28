@@ -1,6 +1,7 @@
 // lib/data/datasources/remote/expense_remote_datasource.dart
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/date_utils.dart';
 import '../../../core/exceptions.dart';
 import '../../../core/json_utils.dart';
 import '../../../models/expense.dart';
@@ -39,8 +40,8 @@ class ExpenseRemoteDatasource {
 
   /// Obter despesas num intervalo de datas
   Future<List<Expense>> getByDateRange(DateTime start, DateTime end) async {
-    final startStr = _dateToString(start);
-    final endStr = _dateToString(end);
+    final startStr = AppDateUtils.toIsoDateString(start);
+    final endStr = AppDateUtils.toIsoDateString(end);
 
     final response = await _client
         .from(_tableName)
@@ -111,10 +112,10 @@ class ExpenseRemoteDatasource {
     var query = _client.from(_tableName).select();
 
     if (startDate != null) {
-      query = query.gte('date', _dateToString(startDate));
+      query = query.gte('date', AppDateUtils.toIsoDateString(startDate));
     }
     if (endDate != null) {
-      query = query.lte('date', _dateToString(endDate));
+      query = query.lte('date', AppDateUtils.toIsoDateString(endDate));
     }
 
     final response = await query;
@@ -143,10 +144,10 @@ class ExpenseRemoteDatasource {
     var query = _client.from(_tableName).select();
 
     if (startDate != null) {
-      query = query.gte('date', _dateToString(startDate));
+      query = query.gte('date', AppDateUtils.toIsoDateString(startDate));
     }
     if (endDate != null) {
-      query = query.lte('date', _dateToString(endDate));
+      query = query.lte('date', AppDateUtils.toIsoDateString(endDate));
     }
 
     final response = await query;
@@ -189,9 +190,5 @@ class ExpenseRemoteDatasource {
       // Adicionar user_id explicitamente (também validado pelo RLS)
       if (userId != null) 'user_id': userId,
     };
-  }
-
-  String _dateToString(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }

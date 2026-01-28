@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import '../core/date_utils.dart';
 import '../models/vet_record.dart';
 import '../state/app_state.dart';
 import '../l10n/locale_provider.dart';
@@ -111,13 +112,13 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
 
     final record = VetRecord(
       id: widget.existingRecord?.id ?? const Uuid().v4(),
-      date: _dateToString(_selectedDate),
+      date: AppDateUtils.toIsoDateString(_selectedDate),
       type: _selectedType,
       hensAffected: hensAffected,
       description: description,
       medication: medication.isEmpty ? null : medication,
       cost: cost,
-      nextActionDate: _nextActionDate != null ? _dateToString(_nextActionDate!) : null,
+      nextActionDate: _nextActionDate != null ? AppDateUtils.toIsoDateString(_nextActionDate!) : null,
       notes: notes.isEmpty ? null : notes,
       severity: _selectedSeverity,
     );
@@ -139,10 +140,6 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
         );
       }
     }
-  }
-
-  String _dateToString(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   String _formatDate(DateTime date, String locale) {

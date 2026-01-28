@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import '../core/date_utils.dart';
 import '../models/egg_sale.dart';
 import '../state/app_state.dart';
 import '../l10n/locale_provider.dart';
@@ -483,10 +484,6 @@ class _SaleDialogState extends State<SaleDialog> {
     }
   }
 
-  String _dateToString(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
   void _saveSale() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -502,7 +499,7 @@ class _SaleDialogState extends State<SaleDialog> {
 
     final sale = EggSale(
       id: widget.existingSale?.id ?? const Uuid().v4(),
-      date: _dateToString(_selectedDate),
+      date: AppDateUtils.toIsoDateString(_selectedDate),
       quantitySold: quantity,
       pricePerEgg: pricePerEgg,
       pricePerDozen: pricePerDozen,
@@ -511,7 +508,7 @@ class _SaleDialogState extends State<SaleDialog> {
       customerPhone: customerPhone.isEmpty ? null : customerPhone,
       notes: notes.isEmpty ? null : notes,
       paymentStatus: _paymentStatus,
-      paymentDate: _paymentDate != null ? _dateToString(_paymentDate!) : null,
+      paymentDate: _paymentDate != null ? AppDateUtils.toIsoDateString(_paymentDate!) : null,
       isReservation: false, // Sales are never reservations (reservations are separate)
       reservationNotes: null,
       isLost: false, // New sales are never marked as lost initially
