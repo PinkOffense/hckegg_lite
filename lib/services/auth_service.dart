@@ -97,12 +97,18 @@ class AuthService {
       }
     }
 
-    // Sign out from Supabase with local scope
-    try {
-      await client.auth.signOut(scope: SignOutScope.local);
-    } catch (e) {
-      // Fallback: try without scope if local scope fails
+    // Sign out from Supabase
+    // Web: use default scope (global) for reliable sign-out
+    // Mobile/desktop: use local scope to preserve sessions on other devices
+    if (kIsWeb) {
       await client.auth.signOut();
+    } else {
+      try {
+        await client.auth.signOut(scope: SignOutScope.local);
+      } catch (e) {
+        // Fallback: try without scope if local scope fails
+        await client.auth.signOut();
+      }
     }
   }
 

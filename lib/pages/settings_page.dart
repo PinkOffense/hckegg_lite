@@ -350,9 +350,10 @@ class _SettingsPageState extends State<SettingsPage> {
       final logoutManager = LogoutManager.instance();
       await logoutManager.signOut(context);
 
-      // Close loading overlay after successful sign-out
+      // Reset state and close loading overlay after successful sign-out
       // The auth state listener will handle navigation to login page
       if (mounted) {
+        setState(() => _isLoggingOut = false);
         navigator.pop();
       }
     } catch (e) {
