@@ -294,72 +294,18 @@ class _SettingsPageState extends State<SettingsPage> {
 
     setState(() => _isLoggingOut = true);
 
-    // Capture navigator state before showing dialog
-    final navigator = Navigator.of(context);
-
-    // Show full-screen loading overlay
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black54,
-      builder: (loadingContext) => PopScope(
-        canPop: false,
-        child: Center(
-          child: Card(
-            margin: const EdgeInsets.all(32),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: CircularProgressIndicator(strokeWidth: 3),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    locale == 'pt' ? 'A terminar sessão...' : 'Signing out...',
-                    style: Theme.of(loadingContext).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    locale == 'pt' ? 'Por favor aguarde' : 'Please wait',
-                    style: Theme.of(loadingContext).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(loadingContext).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
     try {
-      // Small delay for better UX feedback
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      // Use LogoutManager for centralized, consistent logout
+      // Clear all provider data first (using captured context)
       final logoutManager = LogoutManager.instance();
-      await logoutManager.signOut(context);
+      logoutManager.clearAllProviders(context);
 
-      // Reset state and close loading overlay after successful sign-out
-      // The auth state listener will handle navigation to login page
-      if (mounted) {
-        setState(() => _isLoggingOut = false);
-        navigator.pop();
-      }
+      // Sign out from Supabase (this will trigger auth state change)
+      await Supabase.instance.client.auth.signOut();
+
+      // Auth state listener will handle navigation to login page
     } catch (e) {
-      // Close loading overlay on error
+      // Show error if sign-out failed
       if (mounted) {
-        navigator.pop();
         setState(() => _isLoggingOut = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
