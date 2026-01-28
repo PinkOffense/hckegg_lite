@@ -25,6 +25,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _isUploading = false;
   bool _isLoggingOut = false;
   bool _isChangingPassword = false;
+  bool _isDeletingAccount = false;
 
   @override
   void initState() {
@@ -317,6 +318,202 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: Text(locale == 'pt'
                       ? 'Erro ao terminar sessão. Tente novamente.'
                       : 'Error signing out. Please try again.'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeleteAccount(String locale) async {
+    final deleteController = TextEditingController();
+
+    // Show confirmation dialog with strong warning
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final isDeleteEnabled = deleteController.text.toUpperCase() == 'DELETE';
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              icon: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  size: 40,
+                  color: Colors.red.shade600,
+                ),
+              ),
+              title: Text(
+                locale == 'pt' ? 'Eliminar Conta?' : 'Delete Account?',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red.shade700,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    locale == 'pt'
+                        ? 'Esta acção é IRREVERSÍVEL. Todos os seus dados serão eliminados permanentemente:'
+                        : 'This action is IRREVERSIBLE. All your data will be permanently deleted:',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    locale == 'pt'
+                        ? '• Registos de ovos\n• Vendas e reservas\n• Despesas\n• Registos veterinários\n• Stock de ração\n• Perfil e conta'
+                        : '• Egg records\n• Sales and reservations\n• Expenses\n• Vet records\n• Feed stock\n• Profile and account',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    locale == 'pt'
+                        ? 'Escreva DELETE para confirmar:'
+                        : 'Type DELETE to confirm:',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: deleteController,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      hintText: 'DELETE',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    onChanged: (_) => setDialogState(() {}),
+                  ),
+                ],
+              ),
+              actionsAlignment: MainAxisAlignment.center,
+              actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              actions: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: isDeleteEnabled
+                              ? Colors.red.shade600
+                              : Colors.grey.shade400,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: isDeleteEnabled
+                            ? () => Navigator.pop(dialogContext, true)
+                            : null,
+                        child: Text(
+                          locale == 'pt' ? 'Eliminar' : 'Delete',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    deleteController.dispose();
+
+    if (shouldDelete != true || !mounted) return;
+
+    setState(() => _isDeletingAccount = true);
+
+    try {
+      final client = Supabase.instance.client;
+      final userId = client.auth.currentUser?.id;
+
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Delete all user data from Supabase tables
+      // Order matters: delete dependent data first
+      await client.from('feed_movements').delete().eq('user_id', userId);
+      await client.from('feed_stocks').delete().eq('user_id', userId);
+      await client.from('reservations').delete().eq('user_id', userId);
+      await client.from('egg_sales').delete().eq('user_id', userId);
+      await client.from('expenses').delete().eq('user_id', userId);
+      await client.from('vet_records').delete().eq('user_id', userId);
+      await client.from('daily_egg_records').delete().eq('user_id', userId);
+      await client.from('profiles').delete().eq('id', userId);
+
+      // Clear all provider data
+      final logoutManager = LogoutManager.instance();
+      logoutManager.clearAllProviders(context);
+
+      // Delete user account from Supabase Auth
+      // Note: This requires the user to be authenticated
+      // The RPC function must be created in Supabase
+      await client.rpc('delete_user_account');
+
+      // Sign out (this will trigger navigation to login page)
+      await client.auth.signOut();
+
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isDeletingAccount = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(locale == 'pt'
+                      ? 'Erro ao eliminar conta. Tente novamente.'
+                      : 'Error deleting account. Please try again.'),
                 ),
               ],
             ),
@@ -781,13 +978,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
 
-            // Logout
+            // Delete Account
             Card(
               color: Theme.of(context).brightness == Brightness.light
                   ? Colors.red.shade50
                   : Colors.red.shade900.withValues(alpha: 0.2),
               child: ListTile(
-                leading: _isLoggingOut
+                leading: _isDeletingAccount
                     ? SizedBox(
                         width: 24,
                         height: 24,
@@ -799,15 +996,15 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       )
                     : Icon(
-                        Icons.logout,
+                        Icons.delete_forever,
                         color: Theme.of(context).brightness == Brightness.light
                             ? Colors.red.shade700
                             : Colors.red.shade300,
                       ),
                 title: Text(
-                  _isLoggingOut
-                      ? (locale == 'pt' ? 'A sair...' : 'Signing out...')
-                      : (locale == 'pt' ? 'Terminar Sessão' : 'Sign Out'),
+                  _isDeletingAccount
+                      ? (locale == 'pt' ? 'A eliminar...' : 'Deleting...')
+                      : (locale == 'pt' ? 'Eliminar Conta' : 'Delete Account'),
                   style: TextStyle(
                     color: Theme.of(context).brightness == Brightness.light
                         ? Colors.red.shade700
@@ -816,9 +1013,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 subtitle: Text(locale == 'pt'
-                    ? 'Sair da sua conta'
-                    : 'Sign out of your account'),
-                trailing: _isLoggingOut
+                    ? 'Eliminar permanentemente a sua conta e dados'
+                    : 'Permanently delete your account and data'),
+                trailing: _isDeletingAccount
                     ? null
                     : Icon(
                         Icons.arrow_forward_ios,
@@ -827,7 +1024,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ? Colors.red.shade700
                             : Colors.red.shade300,
                       ),
-                onTap: _isLoggingOut ? null : () => _handleLogout(locale),
+                onTap: _isDeletingAccount ? null : () => _handleDeleteAccount(locale),
               ),
             ),
             const SizedBox(height: 16),
