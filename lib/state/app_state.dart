@@ -683,6 +683,37 @@ class AppState extends ChangeNotifier {
     return _feedStocks.where((s) => s.isLowStock).length;
   }
 
+  // ========== CLEAR ALL DATA ==========
+
+  /// Limpar todos os dados locais (usado no logout)
+  void clearAllData() {
+    _records = [];
+    _recordsError = null;
+    _isLoadingRecords = false;
+
+    _expenses = [];
+    _expensesError = null;
+    _isLoadingExpenses = false;
+
+    _vetRecords = [];
+    _vetRecordsError = null;
+    _isLoadingVetRecords = false;
+
+    _sales = [];
+    _salesError = null;
+    _isLoadingSales = false;
+
+    _reservations = [];
+    _reservationsError = null;
+    _isLoadingReservations = false;
+
+    _feedStocks = [];
+    _feedStocksError = null;
+    _isLoadingFeedStocks = false;
+
+    notifyListeners();
+  }
+
   // ========== LOAD ALL DATA ==========
 
   /// Carregar todos os dados ao iniciar a app

@@ -154,17 +154,6 @@ class _DashboardPageState extends State<DashboardPage>
                               color: theme.textTheme.bodyLarge?.color?.withOpacity(0.7),
                             ),
                           ),
-                          if (todayRecord == null) ...[
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: () => showDialog(
-                                context: context,
-                                builder: (_) => const DailyRecordDialog(),
-                              ),
-                              icon: const Icon(Icons.add),
-                              label: Text(locale == 'pt' ? 'Adicionar Registo de Hoje' : 'Add Today\'s Record'),
-                            ),
-                          ],
                         ],
                       ),
                     ),
