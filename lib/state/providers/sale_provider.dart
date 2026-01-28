@@ -7,8 +7,17 @@ import '../../domain/repositories/sale_repository.dart';
 import '../../models/egg_sale.dart';
 
 /// Provider para gestão de vendas
+///
+/// Responsabilidades:
+/// - Carregar, guardar e eliminar vendas
+/// - Fornecer estatísticas de vendas
+/// - Notificar listeners sobre mudanças de estado
 class SaleProvider extends ChangeNotifier {
-  final SaleRepository _repository = RepositoryProvider.instance.saleRepository;
+  final SaleRepository _repository;
+
+  /// Construtor que permite injecção de dependências para testes
+  SaleProvider({SaleRepository? repository})
+      : _repository = repository ?? RepositoryProvider.instance.saleRepository;
 
   List<EggSale> _sales = [];
   bool _isLoading = false;
