@@ -20,9 +20,10 @@ class AppScaffold extends StatelessWidget {
     this.additionalActions,
   });
 
-  /// Handle sign out - clears data and signs out from Supabase
+  /// Handle sign out - sign out from Supabase and clear navigation stack
   Future<void> _handleSignOut(BuildContext context) async {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    final navigator = Navigator.of(context);
 
     // Show confirmation dialog
     final shouldSignOut = await showDialog<bool>(
@@ -54,25 +55,14 @@ class AppScaffold extends StatelessWidget {
 
     if (shouldSignOut != true) return;
 
-    try {
-      // Clear all provider data first
-      final logoutManager = LogoutManager.instance();
-      logoutManager.clearAllProviders(context);
+    // Clear all provider data to prevent data leakage
+    LogoutManager.instance().clearAllProviders(context);
 
-      // Sign out from Supabase (auth state listener handles navigation)
-      await Supabase.instance.client.auth.signOut();
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(locale == 'pt'
-                ? 'Erro ao terminar sessão. Tente novamente.'
-                : 'Error signing out. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+    // Sign out from Supabase
+    await Supabase.instance.client.auth.signOut();
+
+    // Clear the navigation stack to go back to AuthGate (which shows LoginPage)
+    navigator.popUntil((route) => route.isFirst);
   }
 
   @override
@@ -99,17 +89,14 @@ class AppScaffold extends StatelessWidget {
     );
   }
 
-  // Mobile: Show only calendar + overflow menu
   List<Widget> _buildMobileActions(BuildContext context, String locale, ThemeProvider themeProvider) {
     return [
       if (additionalActions != null) ...additionalActions!,
-      // Calendar button
       IconButton(
         tooltip: locale == 'pt' ? 'Calendário' : 'Calendar',
         icon: const Icon(Icons.calendar_month),
         onPressed: () => Navigator.pushNamed(context, '/vet-calendar'),
       ),
-      // Overflow menu
       PopupMenuButton<String>(
         tooltip: locale == 'pt' ? 'Mais opções' : 'More options',
         icon: const Icon(Icons.more_vert),
@@ -135,7 +122,6 @@ class AppScaffold extends StatelessWidget {
         itemBuilder: (BuildContext context) {
           final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
           return [
-            // Language header
             PopupMenuItem<String>(
               enabled: false,
               child: Text(
@@ -173,7 +159,6 @@ class AppScaffold extends StatelessWidget {
               ),
             ),
             const PopupMenuDivider(),
-            // Theme toggle
             PopupMenuItem<String>(
               value: 'toggle_theme',
               child: Row(
@@ -192,7 +177,6 @@ class AppScaffold extends StatelessWidget {
               ),
             ),
             const PopupMenuDivider(),
-            // Profile
             PopupMenuItem<String>(
               value: 'profile',
               child: Row(
@@ -203,14 +187,16 @@ class AppScaffold extends StatelessWidget {
                 ],
               ),
             ),
-            // Sign Out
             PopupMenuItem<String>(
               value: 'sign_out',
               child: Row(
                 children: [
-                  const Icon(Icons.logout, size: 18),
+                  const Icon(Icons.logout, size: 18, color: Colors.red),
                   const SizedBox(width: 8),
-                  Text(locale == 'pt' ? 'Terminar Sessão' : 'Sign Out'),
+                  Text(
+                    locale == 'pt' ? 'Terminar Sessão' : 'Sign Out',
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ],
               ),
             ),
@@ -220,17 +206,14 @@ class AppScaffold extends StatelessWidget {
     ];
   }
 
-  // Desktop: Show all actions
   List<Widget> _buildDesktopActions(BuildContext context, String locale, ThemeProvider themeProvider) {
     return [
       if (additionalActions != null) ...additionalActions!,
-      // Calendar button
       IconButton(
         tooltip: locale == 'pt' ? 'Calendário' : 'Calendar',
         icon: const Icon(Icons.calendar_month),
         onPressed: () => Navigator.pushNamed(context, '/vet-calendar'),
       ),
-      // Language Selector
       PopupMenuButton<String>(
         tooltip: locale == 'pt' ? 'Idioma' : 'Language',
         icon: const Icon(Icons.language),
@@ -267,7 +250,6 @@ class AppScaffold extends StatelessWidget {
           ];
         },
       ),
-      // Theme Toggle
       IconButton(
         tooltip: themeProvider.isDarkMode
             ? (locale == 'pt' ? 'Modo Claro' : 'Light Mode')
@@ -277,13 +259,11 @@ class AppScaffold extends StatelessWidget {
         ),
         onPressed: () => themeProvider.toggleTheme(),
       ),
-      // Sign Out
       IconButton(
         tooltip: locale == 'pt' ? 'Terminar Sessão' : 'Sign Out',
         icon: const Icon(Icons.logout),
         onPressed: () => _handleSignOut(context),
       ),
-      // Profile
       IconButton(
         tooltip: locale == 'pt' ? 'Perfil' : 'Profile',
         icon: const Icon(Icons.account_circle),
