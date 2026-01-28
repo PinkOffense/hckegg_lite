@@ -30,6 +30,7 @@ class _LoginPageState extends State<LoginPage>
 
   bool _loading = false;
   bool _googleLoading = false;
+  bool _resetLoading = false;
   bool _isSignup = false;
   bool _acceptedTerms = false;
   String? _emailError;
@@ -332,6 +333,123 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
+  Future<void> _showForgotPasswordDialog(String locale) async {
+    final emailController = TextEditingController(text: _emailCtl.text);
+    final t = (String k, {Map<String, String>? params}) =>
+        Translations.of(locale, k, params: params);
+
+    final shouldReset = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        icon: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.lock_reset,
+            size: 40,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        title: Text(
+          t('reset_password'),
+          textAlign: TextAlign.center,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              t('enter_email_to_reset'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: t('email'),
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(t('cancel')),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    if (emailController.text.trim().isNotEmpty) {
+                      Navigator.pop(context, true);
+                    }
+                  },
+                  child: Text(t('send_reset_link')),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (shouldReset != true || !mounted) return;
+
+    setState(() => _resetLoading = true);
+
+    try {
+      final supabase = Supabase.instance.client;
+      final auth = AuthService(supabase);
+      await auth.resetPassword(emailController.text.trim());
+
+      if (mounted) {
+        setState(() => _resetLoading = false);
+        _showMessage(t('reset_password_email_sent'));
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        setState(() => _resetLoading = false);
+        _showMessage(e.message, isError: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _resetLoading = false);
+        _showMessage('An error occurred. Please try again.', isError: true);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = Provider.of<LocaleProvider>(context).code;
@@ -459,6 +577,40 @@ class _LoginPageState extends State<LoginPage>
                             }
                           },
                         ),
+
+                        // Forgot password link (login only)
+                        if (!_isSignup) ...[
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: _loading || _googleLoading || _resetLoading
+                                  ? null
+                                  : () => _showForgotPasswordDialog(locale),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: _resetLoading
+                                  ? SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: colorScheme.primary,
+                                      ),
+                                    )
+                                  : Text(
+                                      t('forgot_password'),
+                                      style: TextStyle(
+                                        color: colorScheme.primary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
 
                         // Password strength indicator (signup only)
                         if (_isSignup && password.isNotEmpty) ...[
@@ -623,14 +775,14 @@ class _LoginPageState extends State<LoginPage>
 
                         // Toggle mode link
                         TextButton(
-                          onPressed: _loading || _googleLoading
+                          onPressed: _loading || _googleLoading || _resetLoading
                               ? null
                               : _toggleMode,
                           child: Text.rich(
                             TextSpan(
                               text: _isSignup
-                                  ? 'Already have an account? '
-                                  : 'Don\'t have an account? ',
+                                  ? t('already_have_account')
+                                  : t('dont_have_account'),
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurface.withValues(alpha: 0.7),
                               ),
