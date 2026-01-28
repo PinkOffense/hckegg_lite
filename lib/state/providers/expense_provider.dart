@@ -6,8 +6,17 @@ import '../../domain/repositories/expense_repository.dart';
 import '../../models/expense.dart';
 
 /// Provider para gestão de despesas
+///
+/// Responsabilidades:
+/// - Carregar, guardar e eliminar despesas
+/// - Fornecer estatísticas de despesas por categoria
+/// - Notificar listeners sobre mudanças de estado
 class ExpenseProvider extends ChangeNotifier {
-  final ExpenseRepository _repository = RepositoryProvider.instance.expenseRepository;
+  final ExpenseRepository _repository;
+
+  /// Construtor que permite injecção de dependências para testes
+  ExpenseProvider({ExpenseRepository? repository})
+      : _repository = repository ?? RepositoryProvider.instance.expenseRepository;
 
   List<Expense> _expenses = [];
   bool _isLoading = false;
