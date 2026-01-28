@@ -22,13 +22,23 @@ class ExpenseProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // Cached statistics
+  double? _cachedTotalExpenses;
+
   // Getters
   List<Expense> get expenses => List.unmodifiable(_expenses);
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Estatísticas
-  double get totalExpenses => _expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
+  // Estatísticas (cached for performance)
+  double get totalExpenses {
+    _cachedTotalExpenses ??= _expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
+    return _cachedTotalExpenses!;
+  }
+
+  void _invalidateCache() {
+    _cachedTotalExpenses = null;
+  }
 
   /// Carregar todas as despesas
   Future<void> loadExpenses() async {
@@ -38,6 +48,7 @@ class ExpenseProvider extends ChangeNotifier {
 
     try {
       _expenses = await _repository.getAll();
+      _invalidateCache();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -65,6 +76,7 @@ class ExpenseProvider extends ChangeNotifier {
         _expenses.insert(0, saved);
       }
 
+      _invalidateCache();
       _error = null;
       notifyListeners();
     } catch (e) {
@@ -98,6 +110,7 @@ class ExpenseProvider extends ChangeNotifier {
     try {
       await _repository.delete(id);
       _expenses.removeWhere((e) => e.id == id);
+      _invalidateCache();
       notifyListeners();
     } catch (e) {
       _error = e.toString();
@@ -116,6 +129,7 @@ class ExpenseProvider extends ChangeNotifier {
     _expenses = [];
     _error = null;
     _isLoading = false;
+    _invalidateCache();
     notifyListeners();
   }
 }

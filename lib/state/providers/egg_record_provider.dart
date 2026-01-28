@@ -22,6 +22,11 @@ class EggRecordProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // Cached statistics (invalidated on data changes)
+  int? _cachedTotalCollected;
+  int? _cachedTotalConsumed;
+  int? _cachedTotalRemaining;
+
   /// Construtor que permite injecção de dependências para testes
   EggRecordProvider({EggRepository? repository})
       : _repository = repository ?? RepositoryProvider.instance.eggRepository;
@@ -43,19 +48,35 @@ class EggRecordProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ============== Estatísticas ==============
+  // ============== Estatísticas (cached for performance) ==============
 
   /// Total de ovos recolhidos (todos os registos)
-  int get totalEggsCollected => _records.fold<int>(0, (sum, r) => sum + r.eggsCollected);
+  int get totalEggsCollected {
+    _cachedTotalCollected ??= _records.fold<int>(0, (sum, r) => sum + r.eggsCollected);
+    return _cachedTotalCollected!;
+  }
 
   /// Total de ovos consumidos (todos os registos)
-  int get totalEggsConsumed => _records.fold<int>(0, (sum, r) => sum + r.eggsConsumed);
+  int get totalEggsConsumed {
+    _cachedTotalConsumed ??= _records.fold<int>(0, (sum, r) => sum + r.eggsConsumed);
+    return _cachedTotalConsumed!;
+  }
 
   /// Total de ovos restantes (todos os registos)
-  int get totalEggsRemaining => _records.fold<int>(0, (sum, r) => sum + r.eggsRemaining);
+  int get totalEggsRemaining {
+    _cachedTotalRemaining ??= _records.fold<int>(0, (sum, r) => sum + r.eggsRemaining);
+    return _cachedTotalRemaining!;
+  }
 
   /// Número total de registos
   int get recordCount => _records.length;
+
+  /// Invalidate cached statistics when data changes
+  void _invalidateCache() {
+    _cachedTotalCollected = null;
+    _cachedTotalConsumed = null;
+    _cachedTotalRemaining = null;
+  }
 
   // ============== CRUD Operations ==============
 
@@ -70,6 +91,7 @@ class EggRecordProvider extends ChangeNotifier {
     try {
       _records = await _repository.getAll();
       _records.sort((a, b) => b.date.compareTo(a.date));
+      _invalidateCache();
       return true;
     } catch (e) {
       _error = _formatError(e);
@@ -111,6 +133,7 @@ class EggRecordProvider extends ChangeNotifier {
       }
 
       _records.sort((a, b) => b.date.compareTo(a.date));
+      _invalidateCache();
       _error = null;
       notifyListeners();
     } catch (e) {
@@ -131,6 +154,7 @@ class EggRecordProvider extends ChangeNotifier {
     try {
       await _repository.deleteByDate(date);
       _records.removeWhere((r) => r.date == date);
+      _invalidateCache();
       _error = null;
       notifyListeners();
     } catch (e) {
@@ -242,6 +266,7 @@ class EggRecordProvider extends ChangeNotifier {
     _records = [];
     _error = null;
     _isLoading = false;
+    _invalidateCache();
     notifyListeners();
   }
 

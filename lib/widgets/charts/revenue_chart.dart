@@ -1,6 +1,42 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../../core/constants/date_constants.dart';
 import '../../models/egg_sale.dart';
+
+/// Pre-computed chart data for revenue chart
+class _RevenueChartData {
+  final List<EggSale> displaySales;
+  final double adjustedMaxY;
+
+  _RevenueChartData({required this.displaySales, required this.adjustedMaxY});
+
+  factory _RevenueChartData.fromSales(List<EggSale> sales) {
+    if (sales.isEmpty) {
+      return _RevenueChartData(displaySales: [], adjustedMaxY: 10);
+    }
+
+    // Sort sales by date
+    final sortedSales = List<EggSale>.from(sales)
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    // Get last 7 sales
+    final displaySales = sortedSales.length > 7
+        ? sortedSales.sublist(sortedSales.length - 7)
+        : sortedSales;
+
+    // Calculate max using a simple loop (avoids map/reduce overhead)
+    double maxY = 0;
+    for (final s in displaySales) {
+      if (s.totalAmount > maxY) maxY = s.totalAmount;
+    }
+    final adjustedMaxY = (maxY * 1.2).ceil().toDouble();
+
+    return _RevenueChartData(
+      displaySales: displaySales,
+      adjustedMaxY: adjustedMaxY > 0 ? adjustedMaxY : 10,
+    );
+  }
+}
 
 class RevenueChart extends StatelessWidget {
   final List<EggSale> sales;
@@ -30,17 +66,10 @@ class RevenueChart extends StatelessWidget {
       );
     }
 
-    // Sort sales by date
-    final sortedSales = List<EggSale>.from(sales)
-      ..sort((a, b) => a.date.compareTo(b.date));
-
-    // Get last 7 sales
-    final displaySales = sortedSales.length > 7
-        ? sortedSales.sublist(sortedSales.length - 7)
-        : sortedSales;
-
-    final maxY = displaySales.map((s) => s.totalAmount).reduce((a, b) => a > b ? a : b);
-    final adjustedMaxY = (maxY * 1.2).ceil().toDouble();
+    // Compute chart data once
+    final chartData = _RevenueChartData.fromSales(sales);
+    final displaySales = chartData.displaySales;
+    final adjustedMaxY = chartData.adjustedMaxY;
 
     return SizedBox(
       height: 250,
@@ -99,7 +128,7 @@ class RevenueChart extends StatelessWidget {
             minX: 0,
             maxX: (displaySales.length - 1).toDouble(),
             minY: 0,
-            maxY: adjustedMaxY > 0 ? adjustedMaxY : 10,
+            maxY: adjustedMaxY,
             lineTouchData: LineTouchData(
               touchTooltipData: LineTouchTooltipData(
                 getTooltipItems: (touchedSpots) {
@@ -172,12 +201,8 @@ class RevenueChart extends StatelessWidget {
   }
 
   String _formatDateShort(DateTime date, String locale) {
-    if (locale == 'pt') {
-      final months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      return '${date.day} ${months[date.month - 1]}';
-    } else {
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return '${months[date.month - 1]} ${date.day}';
-    }
+    return locale == 'pt'
+        ? DateConstants.formatDayMonth(date, locale)
+        : DateConstants.formatMonthDay(date, locale);
   }
 }

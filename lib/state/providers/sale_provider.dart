@@ -23,14 +23,30 @@ class SaleProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // Cached statistics (invalidated on data changes)
+  int? _cachedTotalSold;
+  double? _cachedTotalRevenue;
+
   // Getters
   List<EggSale> get sales => List.unmodifiable(_sales);
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Estatísticas
-  int get totalEggsSold => _sales.fold<int>(0, (sum, s) => sum + s.quantitySold);
-  double get totalRevenue => _sales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
+  // Estatísticas (cached for performance)
+  int get totalEggsSold {
+    _cachedTotalSold ??= _sales.fold<int>(0, (sum, s) => sum + s.quantitySold);
+    return _cachedTotalSold!;
+  }
+
+  double get totalRevenue {
+    _cachedTotalRevenue ??= _sales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
+    return _cachedTotalRevenue!;
+  }
+
+  void _invalidateCache() {
+    _cachedTotalSold = null;
+    _cachedTotalRevenue = null;
+  }
 
   /// Carregar todas as vendas
   Future<void> loadSales() async {
@@ -40,6 +56,7 @@ class SaleProvider extends ChangeNotifier {
 
     try {
       _sales = await _repository.getAll();
+      _invalidateCache();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -68,6 +85,7 @@ class SaleProvider extends ChangeNotifier {
       }
 
       _sales.sort((a, b) => b.date.compareTo(a.date));
+      _invalidateCache();
       _error = null;
       notifyListeners();
     } catch (e) {
@@ -101,6 +119,7 @@ class SaleProvider extends ChangeNotifier {
     try {
       await _repository.delete(id);
       _sales.removeWhere((s) => s.id == id);
+      _invalidateCache();
       notifyListeners();
     } catch (e) {
       _error = e.toString();
@@ -136,6 +155,7 @@ class SaleProvider extends ChangeNotifier {
     _sales = [];
     _error = null;
     _isLoading = false;
+    _invalidateCache();
     notifyListeners();
   }
 }
