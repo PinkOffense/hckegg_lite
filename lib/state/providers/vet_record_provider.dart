@@ -7,8 +7,18 @@ import '../../domain/repositories/vet_repository.dart';
 import '../../models/vet_record.dart';
 
 /// Provider para gestão de registos veterinários
+///
+/// Responsabilidades:
+/// - Carregar, guardar e eliminar registos veterinários
+/// - Fornecer estatísticas de saúde
+/// - Gerir agendamentos e lembretes
+/// - Notificar listeners sobre mudanças de estado
 class VetRecordProvider extends ChangeNotifier {
-  final VetRepository _repository = RepositoryProvider.instance.vetRepository;
+  final VetRepository _repository;
+
+  /// Construtor que permite injecção de dependências para testes
+  VetRecordProvider({VetRepository? repository})
+      : _repository = repository ?? RepositoryProvider.instance.vetRepository;
 
   List<VetRecord> _vetRecords = [];
   bool _isLoading = false;

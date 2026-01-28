@@ -6,8 +6,18 @@ import '../../domain/repositories/feed_repository.dart';
 import '../../models/feed_stock.dart';
 
 /// Provider para gestão de stocks de ração
+///
+/// Responsabilidades:
+/// - Carregar, guardar e eliminar stocks de ração
+/// - Gerir movimentos de stock (compras, consumo)
+/// - Alertar sobre stocks baixos
+/// - Notificar listeners sobre mudanças de estado
 class FeedStockProvider extends ChangeNotifier {
-  final FeedRepository _repository = RepositoryProvider.instance.feedRepository;
+  final FeedRepository _repository;
+
+  /// Construtor que permite injecção de dependências para testes
+  FeedStockProvider({FeedRepository? repository})
+      : _repository = repository ?? RepositoryProvider.instance.feedRepository;
 
   List<FeedStock> _feedStocks = [];
   bool _isLoading = false;
