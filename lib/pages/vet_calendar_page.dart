@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/vet_record.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../dialogs/vet_record_dialog.dart';
@@ -32,8 +32,8 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
 
   void _showTodayReminder() {
     if (_reminderShown) return;
-    final appState = Provider.of<AppState>(context, listen: false);
-    final todayAppointments = appState.getTodayAppointments();
+    final vetProvider = Provider.of<VetRecordProvider>(context, listen: false);
+    final todayAppointments = vetProvider.getTodayAppointments();
     if (todayAppointments.isEmpty) return;
 
     _reminderShown = true;
@@ -53,9 +53,9 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
     final theme = Theme.of(context);
     final locale = Provider.of<LocaleProvider>(context).code;
     final t = (String k) => Translations.of(locale, k);
-    final appState = Provider.of<AppState>(context);
+    final vetProvider = Provider.of<VetRecordProvider>(context);
 
-    final allRecords = appState.getVetRecords();
+    final allRecords = vetProvider.getVetRecords();
 
     // Get records with scheduled actions
     final scheduledRecords = allRecords
@@ -472,7 +472,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
           ),
           TextButton(
             onPressed: () {
-              Provider.of<AppState>(context, listen: false).deleteVetRecord(record.id);
+              context.read<VetRecordProvider>().deleteVetRecord(record.id);
               Navigator.pop(context);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),

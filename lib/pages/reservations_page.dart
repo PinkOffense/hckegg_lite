@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/egg_reservation.dart';
 import '../models/egg_sale.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../dialogs/reservation_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../widgets/app_scaffold.dart';
@@ -14,9 +14,9 @@ class ReservationsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final locale = Provider.of<LocaleProvider>(context).code;
-    final state = Provider.of<AppState>(context);
+    final reservationProvider = Provider.of<ReservationProvider>(context);
 
-    final reservations = state.reservations;
+    final reservations = reservationProvider.reservations;
     final upcomingReservations = reservations.where((r) {
       if (r.pickupDate == null) return true;
       return DateTime.parse(r.pickupDate!).isAfter(DateTime.now().subtract(const Duration(days: 1)));
@@ -327,8 +327,13 @@ class _ReservationCard extends StatelessWidget {
 
     // Convert to sale
     try {
-      final appState = Provider.of<AppState>(context, listen: false);
-      await appState.convertReservationToSale(reservation, paymentStatus);
+      final reservationProvider = context.read<ReservationProvider>();
+      final saleProvider = context.read<SaleProvider>();
+      await reservationProvider.convertReservationToSale(
+        reservation,
+        paymentStatus,
+        saleProvider,
+      );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

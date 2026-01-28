@@ -1,11 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/egg.dart';
-// TODO: Migrate eggs feature to dedicated provider
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 
@@ -37,10 +34,16 @@ class _NewEggDialogState extends State<NewEggDialog> {
         TextButton(onPressed: () => Navigator.pop(context), child: Text(t('cancel'))),
         ElevatedButton(
           onPressed: () {
-            final state = Provider.of<AppState>(context, listen: false);
-            final nextId = state.eggs.isEmpty ? 1 : (state.eggs.map((e) => e.id).reduce(max) + 1);
+            final eggProvider = context.read<EggProvider>();
+            final nextId = eggProvider.nextId;
             final weight = int.tryParse(_weightCtl.text);
-            state.addEgg(Egg(id: nextId, tag: _tagCtl.text.isNotEmpty ? _tagCtl.text : 'Batch-$nextId', createdAt: DateTime.now(), weight: weight, synced: false));
+            eggProvider.addEgg(Egg(
+              id: nextId,
+              tag: _tagCtl.text.isNotEmpty ? _tagCtl.text : 'Batch-$nextId',
+              createdAt: DateTime.now(),
+              weight: weight,
+              synced: false,
+            ));
             Navigator.pop(context);
           },
           child: Text(t('add')),

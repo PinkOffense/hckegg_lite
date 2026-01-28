@@ -23,6 +23,7 @@ class HckEggApp extends StatelessWidget {
         // Legacy AppState (for gradual migration)
         ChangeNotifierProvider(create: (_) => AppState()),
         // Domain-specific providers
+        ChangeNotifierProvider(create: (_) => EggProvider()),
         ChangeNotifierProvider(create: (_) => EggRecordProvider()),
         ChangeNotifierProvider(create: (_) => ExpenseProvider()),
         ChangeNotifierProvider(create: (_) => VetRecordProvider()),

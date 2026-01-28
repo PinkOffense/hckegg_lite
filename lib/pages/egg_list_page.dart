@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../dialogs/daily_record_dialog.dart';
@@ -39,13 +39,13 @@ class _EggListPageState extends State<EggListPage> {
 
     return AppScaffold(
       title: 'Daily Records',
-      body: Consumer<AppState>(
-        builder: (context, state, _) {
+      body: Consumer<EggRecordProvider>(
+        builder: (context, eggProvider, _) {
           final records = _searchQuery.isEmpty
-              ? state.records
-              : state.search(_searchQuery);
+              ? eggProvider.records
+              : eggProvider.search(_searchQuery);
 
-          if (state.records.isEmpty) {
+          if (eggProvider.records.isEmpty) {
             return EmptyState(
               icon: Icons.egg_outlined,
               title: 'No Records Yet',
@@ -122,7 +122,7 @@ class _EggListPageState extends State<EggListPage> {
                               context: context,
                               builder: (_) => DailyRecordDialog(existingRecord: record),
                             ),
-                            onDelete: () => _confirmDelete(context, state, record),
+                            onDelete: () => _confirmDelete(context, eggProvider, record),
                           );
                         },
                       ),
@@ -144,19 +144,19 @@ class _EggListPageState extends State<EggListPage> {
                   children: [
                     _SummaryItem(
                       label: 'Total',
-                      value: '${state.totalEggsCollected}',
+                      value: '${eggProvider.totalEggsCollected}',
                       icon: Icons.egg,
                       color: theme.colorScheme.primary,
                     ),
                     _SummaryItem(
                       label: 'Consumed',
-                      value: '${state.totalEggsConsumed}',
+                      value: '${eggProvider.totalEggsConsumed}',
                       icon: Icons.restaurant,
                       color: Colors.orange,
                     ),
                     _SummaryItem(
                       label: 'Remaining',
-                      value: '${state.totalEggsCollected - state.totalEggsConsumed}',
+                      value: '${eggProvider.totalEggsCollected - eggProvider.totalEggsConsumed}',
                       icon: Icons.inventory,
                       color: Colors.green,
                     ),
@@ -177,7 +177,7 @@ class _EggListPageState extends State<EggListPage> {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, AppState state, DailyEggRecord record) async {
+  Future<void> _confirmDelete(BuildContext context, EggRecordProvider eggProvider, DailyEggRecord record) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -201,7 +201,7 @@ class _EggListPageState extends State<EggListPage> {
     );
 
     if (confirmed == true && context.mounted) {
-      state.deleteRecord(record.date);
+      eggProvider.deleteRecord(record.date);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Record deleted')),
       );
