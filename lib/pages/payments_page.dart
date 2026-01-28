@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
@@ -18,9 +18,9 @@ class PaymentsPage extends StatelessWidget {
 
     return AppScaffold(
       title: locale == 'pt' ? 'Gestão de Pagamentos' : 'Payment Management',
-      body: Consumer<AppState>(
-        builder: (context, state, _) {
-          final sales = state.sales;
+      body: Consumer<SaleProvider>(
+        builder: (context, saleProvider, _) {
+          final sales = saleProvider.sales;
 
           // Categorize sales (excluding lost sales from payment views)
           final paidSales = sales.where((s) => !s.isLost && s.paymentStatus == PaymentStatus.paid).toList();
@@ -149,7 +149,7 @@ class PaymentsPage extends StatelessWidget {
 
   Future<void> _markAsPaid(BuildContext context, EggSale sale) async {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
-    final appState = Provider.of<AppState>(context, listen: false);
+    final saleProvider = context.read<SaleProvider>();
     final now = DateTime.now();
     final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
@@ -183,7 +183,7 @@ class PaymentsPage extends StatelessWidget {
     );
 
     try {
-      await appState.saveSale(updatedSale);
+      await saleProvider.saveSale(updatedSale);
       if (context.mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -242,7 +242,7 @@ class PaymentsPage extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    final appState = Provider.of<AppState>(context, listen: false);
+    final saleProvider = context.read<SaleProvider>();
 
     // Show loading
     if (context.mounted) {
@@ -273,7 +273,7 @@ class PaymentsPage extends StatelessWidget {
     );
 
     try {
-      await appState.saveSale(updatedSale);
+      await saleProvider.saveSale(updatedSale);
       if (context.mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
