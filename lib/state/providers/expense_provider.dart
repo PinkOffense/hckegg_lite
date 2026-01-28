@@ -47,7 +47,14 @@ class ExpenseProvider extends ChangeNotifier {
   }
 
   /// Guardar uma despesa
+  ///
+  /// Throws [ArgumentError] if:
+  /// - amount is negative
+  /// - date is empty
+  /// - description is empty
   Future<void> saveExpense(Expense expense) async {
+    _validateExpense(expense);
+
     try {
       final saved = await _repository.save(expense);
 
@@ -58,12 +65,32 @@ class ExpenseProvider extends ChangeNotifier {
         _expenses.insert(0, saved);
       }
 
+      _error = null;
       notifyListeners();
     } catch (e) {
       _error = e.toString();
       notifyListeners();
       rethrow;
     }
+  }
+
+  /// Validates expense data before saving
+  void _validateExpense(Expense expense) {
+    if (expense.amount < 0) {
+      throw ArgumentError('Expense amount cannot be negative');
+    }
+    if (expense.date.isEmpty) {
+      throw ArgumentError('Expense date cannot be empty');
+    }
+    if (expense.description.isEmpty) {
+      throw ArgumentError('Expense description cannot be empty');
+    }
+  }
+
+  /// Limpar erro
+  void clearError() {
+    _error = null;
+    notifyListeners();
   }
 
   /// Eliminar uma despesa

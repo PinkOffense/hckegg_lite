@@ -87,7 +87,15 @@ class VetRecordProvider extends ChangeNotifier {
   }
 
   /// Guardar um registo veterinário
+  ///
+  /// Throws [ArgumentError] if:
+  /// - hensAffected is negative
+  /// - date is empty
+  /// - description is empty
+  /// - cost is negative (when provided)
   Future<void> saveVetRecord(VetRecord record) async {
+    _validateVetRecord(record);
+
     try {
       final saved = await _repository.save(record);
 
@@ -98,12 +106,35 @@ class VetRecordProvider extends ChangeNotifier {
         _vetRecords.add(saved);
       }
 
+      _error = null;
       notifyListeners();
     } catch (e) {
       _error = e.toString();
       notifyListeners();
       rethrow;
     }
+  }
+
+  /// Validates vet record data before saving
+  void _validateVetRecord(VetRecord record) {
+    if (record.hensAffected < 0) {
+      throw ArgumentError('Hens affected cannot be negative');
+    }
+    if (record.date.isEmpty) {
+      throw ArgumentError('Record date cannot be empty');
+    }
+    if (record.description.isEmpty) {
+      throw ArgumentError('Record description cannot be empty');
+    }
+    if (record.cost != null && record.cost! < 0) {
+      throw ArgumentError('Cost cannot be negative');
+    }
+  }
+
+  /// Limpar erro
+  void clearError() {
+    _error = null;
+    notifyListeners();
   }
 
   /// Eliminar um registo veterinário

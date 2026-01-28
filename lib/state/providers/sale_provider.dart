@@ -49,7 +49,14 @@ class SaleProvider extends ChangeNotifier {
   }
 
   /// Guardar uma venda
+  ///
+  /// Throws [ArgumentError] if:
+  /// - quantitySold is negative
+  /// - pricePerEgg is negative
+  /// - date is empty
   Future<void> saveSale(EggSale sale) async {
+    _validateSale(sale);
+
     try {
       final saved = await _repository.save(sale);
 
@@ -61,12 +68,32 @@ class SaleProvider extends ChangeNotifier {
       }
 
       _sales.sort((a, b) => b.date.compareTo(a.date));
+      _error = null;
       notifyListeners();
     } catch (e) {
       _error = e.toString();
       notifyListeners();
       rethrow;
     }
+  }
+
+  /// Validates sale data before saving
+  void _validateSale(EggSale sale) {
+    if (sale.quantitySold < 0) {
+      throw ArgumentError('Quantity sold cannot be negative');
+    }
+    if (sale.pricePerEgg < 0) {
+      throw ArgumentError('Price per egg cannot be negative');
+    }
+    if (sale.date.isEmpty) {
+      throw ArgumentError('Sale date cannot be empty');
+    }
+  }
+
+  /// Limpar erro
+  void clearError() {
+    _error = null;
+    notifyListeners();
   }
 
   /// Eliminar uma venda
