@@ -466,22 +466,21 @@ class _LoginPageState extends State<LoginPage>
       body: SafeArea(
         child: Stack(
           children: [
-            // Main content
             Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 140.0),
                 child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 440),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 440),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
                         // App logo/icon
                         Hero(
                           tag: 'app_logo',
@@ -811,6 +810,7 @@ class _LoginPageState extends State<LoginPage>
               ),
             ),
           ),
+        ),
             // Animated chickens at the bottom
             const Positioned(
               left: 0,
