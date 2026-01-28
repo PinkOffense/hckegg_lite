@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../services/logout_manager.dart';
@@ -21,7 +22,7 @@ class AppScaffold extends StatelessWidget {
     this.additionalActions,
   });
 
-  /// Handle logout using centralized LogoutManager
+  /// Handle logout - clears data and signs out from Supabase
   Future<void> _handleLogout(BuildContext context) async {
     // Capture locale BEFORE showing dialog to avoid context issues
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
@@ -57,10 +58,12 @@ class AppScaffold extends StatelessWidget {
     if (shouldLogout != true) return;
 
     try {
-      // Use centralized LogoutManager for consistent logout behavior
+      // Clear all provider data first
       final logoutManager = LogoutManager.instance();
-      await logoutManager.signOut(context);
-      // Auth state listener will handle navigation to login page
+      logoutManager.clearAllProviders(context);
+
+      // Sign out from Supabase (auth state listener handles navigation)
+      await Supabase.instance.client.auth.signOut();
     } catch (e) {
       // Show error snackbar if context is still valid
       if (context.mounted) {
