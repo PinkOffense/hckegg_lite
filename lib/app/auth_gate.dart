@@ -8,6 +8,12 @@ import '../pages/login_page.dart';
 import '../pages/dashboard_page.dart';
 import '../state/providers/providers.dart';
 
+/// Authentication gate that handles routing between login and dashboard.
+///
+/// Listens to Supabase auth state changes and:
+/// - Loads user data on login
+/// - Clears data flags on logout (actual clearing done by LogoutManager)
+/// - Automatically navigates between LoginPage and DashboardPage
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
@@ -17,58 +23,75 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   late final StreamSubscription<AuthState> _sub;
-  bool signedIn = false;
-  bool ready = false;
+  bool _signedIn = false;
+  bool _ready = false;
   bool _dataLoaded = false;
 
   @override
   void initState() {
     super.initState();
+    _initializeAuth();
+  }
 
+  void _initializeAuth() {
     final client = Supabase.instance.client;
 
-    signedIn = client.auth.currentUser != null;
-    ready = true;
+    // Check current auth state
+    _signedIn = client.auth.currentUser != null;
+    _ready = true;
 
-    // Carregar dados se já estiver autenticado
-    if (signedIn) {
+    // Load data if already authenticated
+    if (_signedIn) {
       _loadData();
     }
 
-    _sub = client.auth.onAuthStateChange.listen((data) {
-      final wasSignedIn = signedIn;
-      final isSignedIn = data.session != null;
+    // Listen for auth state changes
+    _sub = client.auth.onAuthStateChange.listen(_handleAuthStateChange);
+  }
 
+  void _handleAuthStateChange(AuthState data) {
+    final wasSignedIn = _signedIn;
+    final isSignedIn = data.session != null;
+
+    // Update signed in state
+    if (mounted) {
       setState(() {
-        signedIn = isSignedIn;
+        _signedIn = isSignedIn;
       });
+    }
 
-      // Carregar dados quando faz login
-      if (!wasSignedIn && isSignedIn) {
-        _loadData();
-      }
+    // Handle login: load user data
+    if (!wasSignedIn && isSignedIn) {
+      _loadData();
+    }
 
-      // Limpar dados quando faz logout
-      if (wasSignedIn && !isSignedIn) {
-        _dataLoaded = false;
-      }
-    });
+    // Handle logout: reset data loaded flag
+    // Note: Actual provider clearing is done by LogoutManager before sign out
+    if (wasSignedIn && !isSignedIn) {
+      _dataLoaded = false;
+    }
   }
 
   Future<void> _loadData() async {
-    if (_dataLoaded) return;
+    if (_dataLoaded || !mounted) return;
 
-    // Load data from all domain-specific providers
-    await Future.wait([
-      context.read<EggRecordProvider>().loadRecords(),
-      context.read<ExpenseProvider>().loadExpenses(),
-      context.read<VetRecordProvider>().loadVetRecords(),
-      context.read<SaleProvider>().loadSales(),
-      context.read<ReservationProvider>().loadReservations(),
-      context.read<FeedStockProvider>().loadFeedStocks(),
-    ]);
+    try {
+      // Load data from all domain-specific providers in parallel
+      await Future.wait([
+        context.read<EggRecordProvider>().loadRecords(),
+        context.read<ExpenseProvider>().loadExpenses(),
+        context.read<VetRecordProvider>().loadVetRecords(),
+        context.read<SaleProvider>().loadSales(),
+        context.read<ReservationProvider>().loadReservations(),
+        context.read<FeedStockProvider>().loadFeedStocks(),
+      ]);
 
-    _dataLoaded = true;
+      _dataLoaded = true;
+    } catch (e) {
+      // Data loading failed, but continue to dashboard
+      // Individual providers will handle their own error states
+      _dataLoaded = true;
+    }
   }
 
   @override
@@ -79,12 +102,12 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (!ready) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (!_ready) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    if (!signedIn) return const LoginPage();
-
-    return const DashboardPage();
+    return _signedIn ? const DashboardPage() : const LoginPage();
   }
 }
