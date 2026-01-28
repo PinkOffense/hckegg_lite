@@ -108,6 +108,59 @@ class EggRecordProvider extends ChangeNotifier {
     }).toList();
   }
 
+  /// Obter estatísticas da semana actual
+  Map<String, dynamic> getWeekStats({
+    required List<dynamic> sales,
+    required List<dynamic> expenses,
+  }) {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 6));
+
+    final startStr = AppDateUtils.toIsoDateString(startOfWeek);
+    final endStr = AppDateUtils.toIsoDateString(endOfWeek);
+
+    // Filter records for this week
+    final weekRecords = _records.where((r) {
+      return r.date.compareTo(startStr) >= 0 && r.date.compareTo(endStr) <= 0;
+    }).toList();
+
+    // Calculate egg stats
+    int collected = 0;
+    int consumed = 0;
+    for (final record in weekRecords) {
+      collected += record.eggsCollected;
+      consumed += record.eggsConsumed;
+    }
+
+    // Calculate sales stats
+    int sold = 0;
+    double revenue = 0.0;
+    for (final sale in sales) {
+      if (sale.date.compareTo(startStr) >= 0 && sale.date.compareTo(endStr) <= 0) {
+        sold += sale.quantitySold as int;
+        revenue += sale.totalAmount as double;
+      }
+    }
+
+    // Calculate expenses
+    double expensesTotal = 0.0;
+    for (final expense in expenses) {
+      if (expense.date.compareTo(startStr) >= 0 && expense.date.compareTo(endStr) <= 0) {
+        expensesTotal += expense.amount as double;
+      }
+    }
+
+    return {
+      'collected': collected,
+      'consumed': consumed,
+      'sold': sold,
+      'revenue': revenue,
+      'expenses': expensesTotal,
+      'net_profit': revenue - expensesTotal,
+    };
+  }
+
   /// Limpar todos os dados (usado no logout)
   void clearData() {
     _records = [];
