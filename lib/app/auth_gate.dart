@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../pages/login_page.dart';
 import '../pages/dashboard_page.dart';
 import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -58,8 +59,20 @@ class _AuthGateState extends State<AuthGate> {
   Future<void> _loadData() async {
     if (_dataLoaded) return;
 
+    // Load data from legacy AppState (for gradual migration)
     final appState = Provider.of<AppState>(context, listen: false);
     await appState.loadAllData();
+
+    // Also load data into new domain-specific providers
+    await Future.wait([
+      context.read<EggRecordProvider>().loadRecords(),
+      context.read<ExpenseProvider>().loadExpenses(),
+      context.read<VetRecordProvider>().loadVetRecords(),
+      context.read<SaleProvider>().loadSales(),
+      context.read<ReservationProvider>().loadReservations(),
+      context.read<FeedStockProvider>().loadFeedStocks(),
+    ]);
+
     _dataLoaded = true;
   }
 

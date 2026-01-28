@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../state/app_state.dart';
 import '../state/theme_provider.dart';
+import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 
@@ -19,7 +20,16 @@ class HckEggApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // Legacy AppState (for gradual migration)
         ChangeNotifierProvider(create: (_) => AppState()),
+        // Domain-specific providers
+        ChangeNotifierProvider(create: (_) => EggRecordProvider()),
+        ChangeNotifierProvider(create: (_) => ExpenseProvider()),
+        ChangeNotifierProvider(create: (_) => VetRecordProvider()),
+        ChangeNotifierProvider(create: (_) => SaleProvider()),
+        ChangeNotifierProvider(create: (_) => ReservationProvider()),
+        ChangeNotifierProvider(create: (_) => FeedStockProvider()),
+        // UI providers
         ChangeNotifierProvider(create: (_) => LocaleProvider('en')),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],

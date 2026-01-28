@@ -7,6 +7,7 @@ import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../services/profile_service.dart';
 import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -233,9 +234,17 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => _isLoggingOut = true);
 
     try {
-      // Clear local app state
+      // Clear local app state (legacy)
       final appState = Provider.of<AppState>(context, listen: false);
       appState.clearAllData();
+
+      // Clear all domain-specific providers
+      context.read<EggRecordProvider>().clearData();
+      context.read<ExpenseProvider>().clearData();
+      context.read<VetRecordProvider>().clearData();
+      context.read<SaleProvider>().clearData();
+      context.read<ReservationProvider>().clearData();
+      context.read<FeedStockProvider>().clearData();
 
       // Sign out from Supabase
       await Supabase.instance.client.auth.signOut();
