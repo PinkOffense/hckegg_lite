@@ -54,7 +54,14 @@ class ReservationProvider extends ChangeNotifier {
   }
 
   /// Guardar uma reserva
+  ///
+  /// Throws [ArgumentError] if:
+  /// - quantity is not positive
+  /// - date is empty
+  /// - customerName is empty
   Future<void> saveReservation(EggReservation reservation) async {
+    _validateReservation(reservation);
+
     try {
       final existingIndex = _reservations.indexWhere((r) => r.id == reservation.id);
       if (existingIndex != -1) {
@@ -64,12 +71,35 @@ class ReservationProvider extends ChangeNotifier {
       }
 
       _reservations.sort((a, b) => b.date.compareTo(a.date));
+      _error = null;
       notifyListeners();
     } catch (e) {
       _error = e.toString();
       notifyListeners();
       rethrow;
     }
+  }
+
+  /// Validates reservation data before saving
+  void _validateReservation(EggReservation reservation) {
+    if (reservation.quantity <= 0) {
+      throw ArgumentError('Reservation quantity must be positive');
+    }
+    if (reservation.date.isEmpty) {
+      throw ArgumentError('Reservation date cannot be empty');
+    }
+    if (reservation.customerName.isEmpty) {
+      throw ArgumentError('Customer name cannot be empty');
+    }
+    if (reservation.pricePerEgg != null && reservation.pricePerEgg! < 0) {
+      throw ArgumentError('Price per egg cannot be negative');
+    }
+  }
+
+  /// Limpar erro
+  void clearError() {
+    _error = null;
+    notifyListeners();
   }
 
   /// Eliminar uma reserva

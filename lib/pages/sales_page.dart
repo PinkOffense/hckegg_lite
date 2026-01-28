@@ -70,8 +70,8 @@ class SalesPage extends StatelessWidget {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              theme.colorScheme.primaryContainer.withOpacity(0.3),
-                              theme.colorScheme.primaryContainer.withOpacity(0.1),
+                              theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                              theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
                             ],
                           ),
                         ),
@@ -168,7 +168,7 @@ class SalesPage extends StatelessWidget {
                               Icon(
                                 Icons.inventory_2_outlined,
                                 size: 64,
-                                color: theme.textTheme.bodyMedium?.color?.withOpacity(0.3),
+                                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -176,7 +176,7 @@ class SalesPage extends StatelessWidget {
                                     ? 'Nenhuma venda registada'
                                     : 'No sales recorded',
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -185,7 +185,7 @@ class SalesPage extends StatelessWidget {
                                     ? 'Toque no + para adicionar uma venda'
                                     : 'Tap + to add a sale',
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                                 ),
                               ),
                             ],
@@ -358,7 +358,7 @@ class _SaleCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
+                          color: Colors.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(Icons.sell, color: Colors.green),
@@ -377,7 +377,7 @@ class _SaleCard extends StatelessWidget {
                             Text(
                               sale.customerName!,
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                               ),
                             ),
                         ],
@@ -392,7 +392,7 @@ class _SaleCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Divider(color: theme.dividerColor.withOpacity(0.5)),
+              Divider(color: theme.dividerColor.withValues(alpha: 0.5)),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -437,7 +437,7 @@ class _SaleCard extends StatelessWidget {
                   sale.notes!,
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontStyle: FontStyle.italic,
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

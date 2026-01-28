@@ -227,7 +227,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     : 'Are you sure you want to sign out of your account?',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(height: 8),
@@ -237,7 +237,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     : 'Your data will remain safe in the cloud.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -324,7 +324,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   Text(
                     locale == 'pt' ? 'Por favor aguarde' : 'Please wait',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+                      color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -545,7 +545,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     Text(
                       user?.email ?? 'Guest User',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                        color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -555,7 +555,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       Text(
                         '${locale == 'pt' ? 'Membro desde' : 'Member since'} ${_formatDate(DateTime.parse(user!.createdAt))}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                          color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                         ),
                       ),
                   ],
@@ -608,7 +608,7 @@ class _SettingsPageState extends State<SettingsPage> {
             Card(
               color: Theme.of(context).brightness == Brightness.light
                   ? Colors.red.shade50
-                  : Colors.red.shade900.withOpacity(0.2),
+                  : Colors.red.shade900.withValues(alpha: 0.2),
               child: ListTile(
                 leading: _isLoggingOut
                     ? SizedBox(

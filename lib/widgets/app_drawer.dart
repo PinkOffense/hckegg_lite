@@ -59,7 +59,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
                 ),
                 child: Row(
                   children: [
@@ -97,7 +97,7 @@ class _AppDrawerState extends State<AppDrawer> {
                           Text(
                             user?.email ?? 'Guest',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -107,7 +107,7 @@ class _AppDrawerState extends State<AppDrawer> {
                     ),
                     Icon(
                       Icons.chevron_right,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ],
                 ),

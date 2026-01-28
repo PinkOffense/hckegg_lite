@@ -473,11 +473,11 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
             Container(
               padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 border: Border(
                   bottom: BorderSide(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
                   ),
                 ),
               ),
@@ -516,8 +516,8 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      theme.colorScheme.primary.withOpacity(0.1),
-                      theme.colorScheme.secondary.withOpacity(0.05),
+                      theme.colorScheme.primary.withValues(alpha: 0.1),
+                      theme.colorScheme.secondary.withValues(alpha: 0.05),
                     ],
                   ),
                 ),
@@ -595,12 +595,12 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _ocrError != null
-                        ? theme.colorScheme.error.withOpacity(0.5)
-                        : theme.colorScheme.primary.withOpacity(0.3),
+                        ? theme.colorScheme.error.withValues(alpha: 0.5)
+                        : theme.colorScheme.primary.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
@@ -844,7 +844,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
                 border: Border(
                   top: BorderSide(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
                   ),
                 ),
               ),

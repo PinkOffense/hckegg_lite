@@ -166,10 +166,10 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                 border: Border(
                   bottom: BorderSide(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
                   ),
                 ),
               ),
@@ -420,7 +420,7 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
                           : (locale == 'pt' ? 'Sem ação agendada' : 'No action scheduled'),
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: _nextActionDate == null
-                            ? theme.textTheme.bodyMedium?.color?.withOpacity(0.5)
+                            ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5)
                             : null,
                       ),
                     ),
@@ -453,7 +453,7 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
                 color: theme.colorScheme.surface,
                 border: Border(
                   top: BorderSide(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
                   ),
                 ),
               ),

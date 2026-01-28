@@ -59,7 +59,14 @@ class FeedStockProvider extends ChangeNotifier {
   }
 
   /// Guardar um stock de ração
+  ///
+  /// Throws [ArgumentError] if:
+  /// - currentQuantityKg is negative
+  /// - minimumQuantityKg is negative
+  /// - pricePerKg is negative (when provided)
   Future<void> saveFeedStock(FeedStock stock) async {
+    _validateFeedStock(stock);
+
     // Optimistic update
     final existingIndex = _feedStocks.indexWhere((s) => s.id == stock.id);
     if (existingIndex != -1) {
@@ -67,6 +74,7 @@ class FeedStockProvider extends ChangeNotifier {
     } else {
       _feedStocks.add(stock);
     }
+    _error = null;
     notifyListeners();
 
     try {
@@ -74,6 +82,38 @@ class FeedStockProvider extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
     }
+  }
+
+  /// Validates feed stock data before saving
+  void _validateFeedStock(FeedStock stock) {
+    if (stock.currentQuantityKg < 0) {
+      throw ArgumentError('Current quantity cannot be negative');
+    }
+    if (stock.minimumQuantityKg < 0) {
+      throw ArgumentError('Minimum quantity cannot be negative');
+    }
+    if (stock.pricePerKg != null && stock.pricePerKg! < 0) {
+      throw ArgumentError('Price per kg cannot be negative');
+    }
+  }
+
+  /// Validates feed movement data before saving
+  void _validateFeedMovement(FeedMovement movement) {
+    if (movement.quantityKg <= 0) {
+      throw ArgumentError('Movement quantity must be positive');
+    }
+    if (movement.date.isEmpty) {
+      throw ArgumentError('Movement date cannot be empty');
+    }
+    if (movement.cost != null && movement.cost! < 0) {
+      throw ArgumentError('Movement cost cannot be negative');
+    }
+  }
+
+  /// Limpar erro
+  void clearError() {
+    _error = null;
+    notifyListeners();
   }
 
   /// Eliminar um stock de ração
@@ -90,7 +130,11 @@ class FeedStockProvider extends ChangeNotifier {
   }
 
   /// Adicionar movimento de stock (compra, consumo, etc)
+  ///
+  /// Throws [ArgumentError] if movement data is invalid
   Future<void> addFeedMovement(FeedMovement movement, FeedStock stock) async {
+    _validateFeedMovement(movement);
+
     double newQuantity = stock.currentQuantityKg;
     if (movement.movementType == StockMovementType.purchase) {
       newQuantity += movement.quantityKg;

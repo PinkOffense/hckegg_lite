@@ -42,10 +42,10 @@ class _FeedStockPageState extends State<FeedStockPage> {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.2),
+                color: theme.colorScheme.primary.withValues(alpha: 0.2),
               ),
             ),
             child: Column(
@@ -96,7 +96,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
                         Icon(
                           Icons.inventory_2_outlined,
                           size: 64,
-                          color: theme.textTheme.bodyMedium?.color?.withOpacity(0.3),
+                          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -104,7 +104,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
                               ? 'Nenhum stock registado'
                               : 'No stock registered',
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -113,7 +113,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
                               ? 'Toque em + para adicionar ração'
                               : 'Tap + to add feed',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                           ),
                         ),
                       ],
@@ -216,7 +216,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -230,7 +230,7 @@ class _StatCard extends StatelessWidget {
               Text(
                 label,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                 ),
               ),
               Text(
@@ -316,7 +316,7 @@ class _FeedStockCard extends StatelessWidget {
                           Text(
                             stock.brand!,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                             ),
                           ),
                       ],
@@ -337,7 +337,7 @@ class _FeedStockCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
+                            color: Colors.red.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -368,7 +368,7 @@ class _FeedStockCard extends StatelessWidget {
                       Text(
                         '${locale == 'pt' ? 'Mín' : 'Min'}: ${stock.minimumQuantityKg.toStringAsFixed(0)} kg',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                          color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -403,7 +403,7 @@ class _FeedStockCard extends StatelessWidget {
                   IconButton(
                     onPressed: onDelete,
                     icon: const Icon(Icons.delete_outline),
-                    color: Colors.red.withOpacity(0.7),
+                    color: Colors.red.withValues(alpha: 0.7),
                     tooltip: locale == 'pt' ? 'Eliminar' : 'Delete',
                   ),
                 ],
@@ -469,7 +469,7 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withOpacity(0.2),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -497,7 +497,7 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                           Text(
                             widget.stock.brand!,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                             ),
                           ),
                       ],
@@ -593,7 +593,7 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                                 ? 'Nenhum movimento registado'
                                 : 'No movements recorded',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                             ),
                           ),
                         )
@@ -664,16 +664,16 @@ class _MovementTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -692,7 +692,7 @@ class _MovementTile extends StatelessWidget {
                 Text(
                   formattedDate,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                   ),
                 ),
                 if (movement.notes != null)
@@ -719,7 +719,7 @@ class _MovementTile extends StatelessWidget {
                 Text(
                   '€${movement.cost!.toStringAsFixed(2)}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                   ),
                 ),
             ],
@@ -811,7 +811,7 @@ class _MovementDialogState extends State<_MovementDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -885,10 +885,10 @@ class _MovementDialogState extends State<_MovementDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: (_newStock < 0 ? Colors.red : (isPurchase ? Colors.green : Colors.orange)).withOpacity(0.1),
+                  color: (_newStock < 0 ? Colors.red : (isPurchase ? Colors.green : Colors.orange)).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: (_newStock < 0 ? Colors.red : (isPurchase ? Colors.green : Colors.orange)).withOpacity(0.3),
+                    color: (_newStock < 0 ? Colors.red : (isPurchase ? Colors.green : Colors.orange)).withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
