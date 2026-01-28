@@ -6,6 +6,7 @@ import '../widgets/app_scaffold.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../services/profile_service.dart';
+import '../state/app_state.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -19,6 +20,7 @@ class _SettingsPageState extends State<SettingsPage> {
   UserProfile? _profile;
   bool _isLoading = true;
   bool _isUploading = false;
+  bool _isLoggingOut = false;
 
   @override
   void initState() {
@@ -179,6 +181,74 @@ class _SettingsPageState extends State<SettingsPage> {
             content: Text(locale == 'pt'
                 ? 'Erro ao remover foto: $e'
                 : 'Error removing photo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleLogout(String locale) async {
+    // Show confirmation dialog
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: Icon(
+          Icons.logout,
+          size: 48,
+          color: Colors.red.shade400,
+        ),
+        title: Text(
+          locale == 'pt' ? 'Terminar Sessão?' : 'Sign Out?',
+          textAlign: TextAlign.center,
+        ),
+        content: Text(
+          locale == 'pt'
+              ? 'Tem a certeza que deseja sair da sua conta?'
+              : 'Are you sure you want to sign out of your account?',
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              locale == 'pt' ? 'Sair' : 'Sign Out',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout != true || !mounted) return;
+
+    setState(() => _isLoggingOut = true);
+
+    try {
+      // Clear local app state
+      final appState = Provider.of<AppState>(context, listen: false);
+      appState.clearAllData();
+
+      // Sign out from Supabase
+      await Supabase.instance.client.auth.signOut();
+
+      // The auth state listener will handle navigation
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoggingOut = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(locale == 'pt'
+                ? 'Erro ao terminar sessão. Tente novamente.'
+                : 'Error signing out. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -414,14 +484,27 @@ class _SettingsPageState extends State<SettingsPage> {
                   ? Colors.red.shade50
                   : Colors.red.shade900.withOpacity(0.2),
               child: ListTile(
-                leading: Icon(
-                  Icons.logout,
-                  color: Theme.of(context).brightness == Brightness.light
-                      ? Colors.red.shade700
-                      : Colors.red.shade300,
-                ),
+                leading: _isLoggingOut
+                    ? SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).brightness == Brightness.light
+                              ? Colors.red.shade700
+                              : Colors.red.shade300,
+                        ),
+                      )
+                    : Icon(
+                        Icons.logout,
+                        color: Theme.of(context).brightness == Brightness.light
+                            ? Colors.red.shade700
+                            : Colors.red.shade300,
+                      ),
                 title: Text(
-                  locale == 'pt' ? 'Terminar Sessão' : 'Logout',
+                  _isLoggingOut
+                      ? (locale == 'pt' ? 'A sair...' : 'Signing out...')
+                      : (locale == 'pt' ? 'Terminar Sessão' : 'Sign Out'),
                   style: TextStyle(
                     color: Theme.of(context).brightness == Brightness.light
                         ? Colors.red.shade700
@@ -432,16 +515,16 @@ class _SettingsPageState extends State<SettingsPage> {
                 subtitle: Text(locale == 'pt'
                     ? 'Sair da sua conta'
                     : 'Sign out of your account'),
-                trailing: Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Theme.of(context).brightness == Brightness.light
-                      ? Colors.red.shade700
-                      : Colors.red.shade300,
-                ),
-                onTap: () async {
-                  await Supabase.instance.client.auth.signOut();
-                },
+                trailing: _isLoggingOut
+                    ? null
+                    : Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Theme.of(context).brightness == Brightness.light
+                            ? Colors.red.shade700
+                            : Colors.red.shade300,
+                      ),
+                onTap: _isLoggingOut ? null : () => _handleLogout(locale),
               ),
             ),
             const SizedBox(height: 16),
