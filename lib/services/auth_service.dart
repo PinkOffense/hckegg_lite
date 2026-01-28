@@ -118,4 +118,13 @@ class AuthService {
       UserAttributes(password: newPassword),
     );
   }
+
+  /// Enviar email para reset de password
+  Future<void> resetPassword(String email) async {
+    if (email.isEmpty) {
+      throw AuthException('Email is required');
+    }
+
+    await client.auth.resetPasswordForEmail(email);
+  }
 }
