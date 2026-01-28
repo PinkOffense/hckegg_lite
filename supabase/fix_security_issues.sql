@@ -383,6 +383,67 @@ END;
 $$;
 
 -- ============================================
+-- FIX 7: Function get_user_stats
+-- Issue: Mutable search_path
+-- ============================================
+
+CREATE OR REPLACE FUNCTION public.get_user_stats(p_user_id UUID DEFAULT NULL)
+RETURNS TABLE (
+    total_eggs BIGINT,
+    total_sold BIGINT,
+    total_revenue NUMERIC,
+    total_expenses NUMERIC,
+    net_profit NUMERIC,
+    total_hens INTEGER,
+    avg_eggs_per_day NUMERIC
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    v_user_id UUID;
+BEGIN
+    -- Use provided user_id or current user
+    v_user_id := COALESCE(p_user_id, auth.uid());
+
+    RETURN QUERY
+    SELECT
+        COALESCE(SUM(der.eggs_collected), 0)::BIGINT AS total_eggs,
+        COALESCE(SUM(der.eggs_sold), 0)::BIGINT AS total_sold,
+        COALESCE(SUM(der.eggs_sold * der.price_per_egg), 0)::NUMERIC AS total_revenue,
+        COALESCE((SELECT SUM(e.amount) FROM public.expenses e WHERE e.user_id = v_user_id), 0)::NUMERIC AS total_expenses,
+        (COALESCE(SUM(der.eggs_sold * der.price_per_egg), 0) -
+         COALESCE((SELECT SUM(e.amount) FROM public.expenses e WHERE e.user_id = v_user_id), 0))::NUMERIC AS net_profit,
+        COALESCE(MAX(der.hen_count), 0)::INTEGER AS total_hens,
+        CASE
+            WHEN COUNT(DISTINCT der.date) > 0
+            THEN (SUM(der.eggs_collected)::NUMERIC / COUNT(DISTINCT der.date))
+            ELSE 0
+        END AS avg_eggs_per_day
+    FROM public.daily_egg_records der
+    WHERE der.user_id = v_user_id;
+END;
+$$;
+
+-- ============================================
+-- FIX 8: Function update_updated_at_column
+-- Issue: Mutable search_path
+-- ============================================
+
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$;
+
+-- ============================================
 -- VERIFICATION
 -- ============================================
 
@@ -401,6 +462,8 @@ BEGIN
     RAISE NOTICE '  - mark_notifications_as_sent()';
     RAISE NOTICE '  - create_appointment_reminders()';
     RAISE NOTICE '  - get_due_appointment_notifications()';
+    RAISE NOTICE '  - get_user_stats()';
+    RAISE NOTICE '  - update_updated_at_column()';
     RAISE NOTICE '';
     RAISE NOTICE 'Next Steps (in Supabase Dashboard):';
     RAISE NOTICE '  1. Go to Authentication -> Settings -> MFA';
