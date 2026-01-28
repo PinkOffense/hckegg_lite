@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
@@ -19,17 +19,14 @@ class ExpensesPage extends StatelessWidget {
 
     return AppScaffold(
       title: t('expenses'),
-      body: Consumer<AppState>(
-        builder: (context, state, _) {
-          final sales = state.sales;
-          final standaloneExpenses = state.expenses;
-          final vetRecords = state.vetRecords;
+      body: Consumer3<SaleProvider, ExpenseProvider, VetRecordProvider>(
+        builder: (context, saleProvider, expenseProvider, vetProvider, _) {
+          final sales = saleProvider.sales;
+          final standaloneExpenses = expenseProvider.expenses;
+          final vetRecords = vetProvider.vetRecords;
 
           // Calculate total revenue from egg sales
-          double totalRevenue = 0;
-          for (var sale in sales) {
-            totalRevenue += sale.totalAmount;
-          }
+          double totalRevenue = sales.fold(0.0, (sum, s) => sum + s.totalAmount);
 
           // Calculate totals from standalone expenses
           double totalFeedStandalone = 0;
@@ -59,12 +56,7 @@ class ExpensesPage extends StatelessWidget {
           }
 
           // Calculate veterinary costs from vet_records
-          double totalVetCosts = 0;
-          for (var vetRecord in vetRecords) {
-            if (vetRecord.cost != null) {
-              totalVetCosts += vetRecord.cost!;
-            }
-          }
+          double totalVetCosts = vetProvider.totalVetCosts;
 
           // Combined totals
           final totalFeed = totalFeedStandalone;
@@ -386,9 +378,8 @@ class ExpensesPage extends StatelessWidget {
           ),
           TextButton(
             onPressed: () async {
-              final appState = Provider.of<AppState>(context, listen: false);
               try {
-                await appState.deleteExpense(expense.id);
+                await context.read<ExpenseProvider>().deleteExpense(expense.id);
                 if (context.mounted) {
                   Navigator.pop(context);
                 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
@@ -18,15 +18,15 @@ class SalesPage extends StatelessWidget {
 
     return AppScaffold(
       title: locale == 'pt' ? 'Vendas de Ovos' : 'Egg Sales',
-      body: Consumer<AppState>(
-        builder: (context, state, _) {
-          final sales = state.sales;
+      body: Consumer<SaleProvider>(
+        builder: (context, saleProvider, _) {
+          final sales = saleProvider.sales;
 
-          if (state.isLoadingSales) {
+          if (saleProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state.salesError != null) {
+          if (saleProvider.error != null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -38,7 +38,7 @@ class SalesPage extends StatelessWidget {
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  Text(state.salesError!),
+                  Text(saleProvider.error!),
                 ],
               ),
             );
@@ -256,7 +256,7 @@ class SalesPage extends StatelessWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        await Provider.of<AppState>(context, listen: false).deleteSale(sale.id);
+        await context.read<SaleProvider>().deleteSale(sale.id);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
