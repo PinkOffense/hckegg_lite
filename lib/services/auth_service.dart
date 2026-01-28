@@ -110,8 +110,8 @@ class AuthService {
       throw AuthException('Password change is only available for email/password accounts');
     }
 
-    if (newPassword.length < 6) {
-      throw AuthException('Password must be at least 6 characters');
+    if (newPassword.length < 8) {
+      throw AuthException('Password must be at least 8 characters');
     }
 
     await client.auth.updateUser(

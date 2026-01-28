@@ -490,8 +490,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     if (value == null || value.isEmpty) {
                       return locale == 'pt' ? 'Introduza a nova password' : 'Enter new password';
                     }
-                    if (value.length < 6) {
-                      return locale == 'pt' ? 'Mínimo 6 caracteres' : 'Minimum 6 characters';
+                    if (value.length < 8) {
+                      return locale == 'pt' ? 'Mínimo 8 caracteres' : 'Minimum 8 characters';
                     }
                     return null;
                   },
@@ -806,6 +806,32 @@ class _SettingsPageState extends State<SettingsPage> {
                       : 'Change your login password'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _isChangingPassword ? null : () => _handleChangePassword(locale),
+                ),
+              )
+            else
+              // Info card for Google OAuth users
+              Card(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                child: ListTile(
+                  leading: Icon(
+                    Icons.info_outline,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  title: Text(
+                    locale == 'pt' ? 'Password gerida pelo Google' : 'Password managed by Google',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  subtitle: Text(
+                    locale == 'pt'
+                        ? 'A sua conta usa o Google para autenticação. Gere a sua password em account.google.com'
+                        : 'Your account uses Google for authentication. Manage your password at account.google.com',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               ),
 
