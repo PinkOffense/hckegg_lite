@@ -7,8 +7,26 @@ import '../../models/egg_sale.dart';
 import 'sale_provider.dart';
 
 /// Provider para gestão de reservas
-/// Nota: Reservas são armazenadas localmente por enquanto
+///
+/// Responsabilidades:
+/// - Carregar, guardar e eliminar reservas
+/// - Converter reservas em vendas
+/// - Notificar listeners sobre mudanças de estado
+///
+/// Nota: Reservas são armazenadas localmente por enquanto.
+/// Quando um repositório for implementado, injectar via construtor.
 class ReservationProvider extends ChangeNotifier {
+  // Future: final ReservationRepository? _repository;
+
+  /// Construtor que permite injecção de dependências para testes
+  ///
+  /// Quando um repositório for implementado:
+  /// ```dart
+  /// ReservationProvider({ReservationRepository? repository})
+  ///     : _repository = repository ?? RepositoryProvider.instance.reservationRepository;
+  /// ```
+  ReservationProvider();
+
   List<EggReservation> _reservations = [];
   bool _isLoading = false;
   String? _error;
