@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
+import '../services/auth_service.dart';
+import '../state/providers/providers.dart';
 import '../state/theme_provider.dart';
 import 'app_drawer.dart';
 
@@ -19,6 +21,53 @@ class AppScaffold extends StatelessWidget {
     this.fab,
     this.additionalActions,
   });
+
+  /// Handle logout properly: clear providers and use AuthService
+  Future<void> _handleLogout(BuildContext context) async {
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+
+    // Show confirmation dialog
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(locale == 'pt' ? 'Terminar Sessão?' : 'Sign Out?'),
+        content: Text(
+          locale == 'pt'
+              ? 'Tem a certeza que deseja sair?'
+              : 'Are you sure you want to sign out?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              locale == 'pt' ? 'Sair' : 'Sign Out',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout != true) return;
+
+    // Clear all provider data
+    context.read<EggProvider>().clearData();
+    context.read<EggRecordProvider>().clearData();
+    context.read<ExpenseProvider>().clearData();
+    context.read<VetRecordProvider>().clearData();
+    context.read<SaleProvider>().clearData();
+    context.read<ReservationProvider>().clearData();
+    context.read<FeedStockProvider>().clearData();
+
+    // Sign out using AuthService (handles Google sign-out too)
+    final authService = AuthService(Supabase.instance.client);
+    await authService.signOut();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +120,7 @@ class AppScaffold extends StatelessWidget {
               themeProvider.toggleTheme();
               break;
             case 'logout':
-              await Supabase.instance.client.auth.signOut();
+              await _handleLogout(context);
               break;
             case 'profile':
               Navigator.pushNamed(context, '/settings');
@@ -227,9 +276,7 @@ class AppScaffold extends StatelessWidget {
       IconButton(
         tooltip: 'Logout',
         icon: const Icon(Icons.logout),
-        onPressed: () async {
-          await Supabase.instance.client.auth.signOut();
-        },
+        onPressed: () => _handleLogout(context),
       ),
       // Profile
       IconButton(
