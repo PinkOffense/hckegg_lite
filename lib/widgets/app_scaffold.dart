@@ -24,12 +24,22 @@ class AppScaffold extends StatelessWidget {
 
   /// Handle logout properly: clear providers and use AuthService
   Future<void> _handleLogout(BuildContext context) async {
+    // Capture all references BEFORE showing dialog to avoid context issues
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    final eggProvider = context.read<EggProvider>();
+    final eggRecordProvider = context.read<EggRecordProvider>();
+    final expenseProvider = context.read<ExpenseProvider>();
+    final vetRecordProvider = context.read<VetRecordProvider>();
+    final saleProvider = context.read<SaleProvider>();
+    final reservationProvider = context.read<ReservationProvider>();
+    final feedStockProvider = context.read<FeedStockProvider>();
+    final supabaseClient = Supabase.instance.client;
 
     // Show confirmation dialog
     final shouldLogout = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
         title: Text(locale == 'pt' ? 'Terminar Sessão?' : 'Sign Out?'),
         content: Text(
           locale == 'pt'
@@ -38,12 +48,12 @@ class AppScaffold extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(
               locale == 'pt' ? 'Sair' : 'Sign Out',
               style: const TextStyle(color: Colors.white),
@@ -55,18 +65,27 @@ class AppScaffold extends StatelessWidget {
 
     if (shouldLogout != true) return;
 
-    // Clear all provider data
-    context.read<EggProvider>().clearData();
-    context.read<EggRecordProvider>().clearData();
-    context.read<ExpenseProvider>().clearData();
-    context.read<VetRecordProvider>().clearData();
-    context.read<SaleProvider>().clearData();
-    context.read<ReservationProvider>().clearData();
-    context.read<FeedStockProvider>().clearData();
+    try {
+      // Clear all provider data using captured references
+      eggProvider.clearData();
+      eggRecordProvider.clearData();
+      expenseProvider.clearData();
+      vetRecordProvider.clearData();
+      saleProvider.clearData();
+      reservationProvider.clearData();
+      feedStockProvider.clearData();
 
-    // Sign out using AuthService (handles Google sign-out too)
-    final authService = AuthService(Supabase.instance.client);
-    await authService.signOut();
+      // Sign out using AuthService (handles Google sign-out too)
+      final authService = AuthService(supabaseClient);
+      await authService.signOut();
+    } catch (e) {
+      // If logout fails, try direct Supabase sign out as fallback
+      try {
+        await supabaseClient.auth.signOut();
+      } catch (_) {
+        // Ignore - auth state listener will handle navigation
+      }
+    }
   }
 
   @override
