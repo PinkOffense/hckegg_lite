@@ -10,6 +10,7 @@ import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../services/auth_service.dart';
 import '../widgets/accessible_text_field.dart';
+import '../widgets/animated_chickens.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -463,10 +464,13 @@ class _LoginPageState extends State<LoginPage>
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: FadeTransition(
+        child: Stack(
+          children: [
+            // Main content
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 140.0),
+                child: FadeTransition(
               opacity: _fadeAnimation,
               child: SlideTransition(
                 position: _slideAnimation,
@@ -807,6 +811,14 @@ class _LoginPageState extends State<LoginPage>
               ),
             ),
           ),
+            // Animated chickens at the bottom
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: AnimatedChickens(),
+            ),
+          ],
         ),
       ),
     );
