@@ -32,7 +32,7 @@ class PaymentsPage extends StatelessWidget {
           // Calculate totals
           final totalPaid = paidSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
           final totalPending = pendingSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
-          final totalOverdue = overdueSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
+          final totalLost = lostSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
           final totalAdvance = advanceSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
 
           return SingleChildScrollView(
@@ -44,26 +44,23 @@ class PaymentsPage extends StatelessWidget {
                 _PaymentSummaryCards(
                   totalPaid: totalPaid,
                   totalPending: totalPending,
-                  totalOverdue: totalOverdue,
+                  totalLost: totalLost,
                   totalAdvance: totalAdvance,
                   locale: locale,
                 ),
                 const SizedBox(height: 24),
 
                 // Lost Payments
-                if (overdueSales.isNotEmpty) ...[
+                if (lostSales.isNotEmpty) ...[
                   _SectionHeader(
                     icon: Icons.error_outline,
                     title: locale == 'pt' ? 'Pagamentos Perdidos' : 'Lost Payments',
                     color: Colors.red,
                   ),
                   const SizedBox(height: 12),
-                  ...overdueSales.map((sale) => _PaymentCard(
+                  ...lostSales.map((sale) => _LostPaymentCard(
                         sale: sale,
                         locale: locale,
-                        onTap: () => _showSaleDialog(context, sale),
-                        onMarkPaid: () => _markAsPaid(context, sale),
-                        onMarkLost: () => _markAsLost(context, sale),
                       )),
                   const SizedBox(height: 24),
                 ],
@@ -305,14 +302,14 @@ class PaymentsPage extends StatelessWidget {
 class _PaymentSummaryCards extends StatelessWidget {
   final double totalPaid;
   final double totalPending;
-  final double totalOverdue;
+  final double totalLost;
   final double totalAdvance;
   final String locale;
 
   const _PaymentSummaryCards({
     required this.totalPaid,
     required this.totalPending,
-    required this.totalOverdue,
+    required this.totalLost,
     required this.totalAdvance,
     required this.locale,
   });
@@ -348,7 +345,7 @@ class _PaymentSummaryCards extends StatelessWidget {
             Expanded(
               child: _SummaryCard(
                 title: locale == 'pt' ? 'Perdido' : 'Lost',
-                amount: totalOverdue,
+                amount: totalLost,
                 color: Colors.red,
                 icon: Icons.error_outline,
               ),
@@ -624,6 +621,105 @@ class _PaymentCard extends StatelessWidget {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LostPaymentCard extends StatelessWidget {
+  final EggSale sale;
+  final String locale;
+
+  const _LostPaymentCard({
+    required this.sale,
+    required this.locale,
+  });
+
+  String _formatDate(String dateStr) {
+    final date = DateTime.parse(dateStr);
+    if (locale == 'pt') {
+      final months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
+    } else {
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: Colors.grey.shade100,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        sale.customerName ?? (locale == 'pt' ? 'Cliente sem nome' : 'Unnamed customer'),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatDate(sale.date),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.red, width: 1.5),
+                  ),
+                  child: Text(
+                    locale == 'pt' ? 'Perdido' : 'Lost',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${sale.quantitySold} ${locale == 'pt' ? 'ovos' : 'eggs'}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                Text(
+                  '€${sale.totalAmount.toStringAsFixed(2)}',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                    decoration: TextDecoration.lineThrough,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
