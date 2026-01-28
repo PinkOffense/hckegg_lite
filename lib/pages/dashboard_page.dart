@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../dialogs/daily_record_dialog.dart';
@@ -77,13 +77,17 @@ class _DashboardPageState extends State<DashboardPage>
         opacity: _fadeAnimation,
         child: SlideTransition(
           position: _slideAnimation,
-          child: Consumer<AppState>(builder: (context, state, _) {
-            final records = state.records;
-            final sales = state.sales;
-            final todayRecord = state.getRecordByDate(_getTodayString());
-            final weekStats = state.getWeekStats();
-            final recentRecords = state.getRecentRecords(7);
-            final recentSales = state.getRecentSales(7);
+          child: Consumer4<EggRecordProvider, SaleProvider, ExpenseProvider, ReservationProvider>(
+            builder: (context, eggProvider, saleProvider, expenseProvider, reservationProvider, _) {
+              final records = eggProvider.records;
+              final sales = saleProvider.sales;
+              final todayRecord = eggProvider.getRecordByDate(_getTodayString());
+              final weekStats = eggProvider.getWeekStats(
+                sales: sales,
+                expenses: expenseProvider.expenses,
+              );
+              final recentRecords = eggProvider.getRecentRecords(7);
+              final recentSales = saleProvider.getRecentSales(7);
 
             if (records.isEmpty) {
               return EmptyState(
@@ -220,7 +224,7 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.inventory,
                           label: locale == 'pt' ? 'Disponíveis' : 'Available',
-                          value: '${state.totalEggsCollected - state.totalEggsConsumed - state.totalEggsSold}',
+                          value: '${eggProvider.totalEggsCollected - eggProvider.totalEggsConsumed - saleProvider.totalEggsSold}',
                           color: Colors.purple,
                         ),
                       ),
@@ -229,7 +233,7 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.bookmark,
                           label: locale == 'pt' ? 'Reservados' : 'Reserved',
-                          value: '${state.reservations.fold<int>(0, (sum, r) => sum + r.quantity)}',
+                          value: '${reservationProvider.reservations.fold<int>(0, (sum, r) => sum + r.quantity)}',
                           color: Colors.blue,
                         ),
                       ),
