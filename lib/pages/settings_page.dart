@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../widgets/app_scaffold.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
+import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../state/providers/providers.dart';
 
@@ -17,10 +18,12 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   final _profileService = ProfileService(Supabase.instance.client);
+  final _authService = AuthService(Supabase.instance.client);
   UserProfile? _profile;
   bool _isLoading = true;
   bool _isUploading = false;
   bool _isLoggingOut = false;
+  bool _isChangingPassword = false;
 
   @override
   void initState() {
@@ -434,6 +437,188 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _handleChangePassword(String locale) async {
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+
+    final shouldChange = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          icon: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.lock_outline,
+              size: 40,
+              color: Colors.blue.shade600,
+            ),
+          ),
+          title: Text(
+            locale == 'pt' ? 'Alterar Password' : 'Change Password',
+            textAlign: TextAlign.center,
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: newPasswordController,
+                  obscureText: obscureNew,
+                  decoration: InputDecoration(
+                    labelText: locale == 'pt' ? 'Nova password' : 'New password',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureNew ? Icons.visibility : Icons.visibility_off),
+                      onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return locale == 'pt' ? 'Introduza a nova password' : 'Enter new password';
+                    }
+                    if (value.length < 6) {
+                      return locale == 'pt' ? 'Mínimo 6 caracteres' : 'Minimum 6 characters';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: confirmPasswordController,
+                  obscureText: obscureConfirm,
+                  decoration: InputDecoration(
+                    labelText: locale == 'pt' ? 'Confirmar password' : 'Confirm password',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureConfirm ? Icons.visibility : Icons.visibility_off),
+                      onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value != newPasswordController.text) {
+                      return locale == 'pt' ? 'Passwords não coincidem' : 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      if (formKey.currentState!.validate()) {
+                        Navigator.pop(context, true);
+                      }
+                    },
+                    child: Text(locale == 'pt' ? 'Alterar' : 'Change'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (shouldChange != true || !mounted) return;
+
+    setState(() => _isChangingPassword = true);
+
+    try {
+      await _authService.changePassword(newPasswordController.text);
+
+      if (mounted) {
+        setState(() => _isChangingPassword = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(locale == 'pt'
+                      ? 'Password alterada com sucesso!'
+                      : 'Password changed successfully!'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isChangingPassword = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(locale == 'pt'
+                      ? 'Erro ao alterar password: $e'
+                      : 'Error changing password: $e'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final localeProvider = Provider.of<LocaleProvider>(context);
@@ -603,6 +788,26 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             const SizedBox(height: 8),
+
+            // Change password (only for email/password users)
+            if (_authService.isEmailPasswordUser)
+              Card(
+                child: ListTile(
+                  leading: _isChangingPassword
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.lock_outline),
+                  title: Text(locale == 'pt' ? 'Alterar Password' : 'Change Password'),
+                  subtitle: Text(locale == 'pt'
+                      ? 'Mudar a sua password de acesso'
+                      : 'Change your login password'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _isChangingPassword ? null : () => _handleChangePassword(locale),
+                ),
+              ),
 
             // Logout
             Card(

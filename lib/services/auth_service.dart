@@ -89,4 +89,33 @@ class AuthService {
     }
     await client.auth.signOut();
   }
+
+  /// Verificar se o utilizador atual usou email/password (não Google)
+  bool get isEmailPasswordUser {
+    final user = currentUser;
+    if (user == null) return false;
+
+    // Check if user has email provider (not Google)
+    final identities = user.identities;
+    if (identities == null || identities.isEmpty) return false;
+
+    // User is email/password if they have 'email' provider
+    return identities.any((identity) => identity.provider == 'email');
+  }
+
+  /// Mudar a password do utilizador atual
+  /// Só funciona para utilizadores que criaram conta com email/password
+  Future<void> changePassword(String newPassword) async {
+    if (!isEmailPasswordUser) {
+      throw AuthException('Password change is only available for email/password accounts');
+    }
+
+    if (newPassword.length < 6) {
+      throw AuthException('Password must be at least 6 characters');
+    }
+
+    await client.auth.updateUser(
+      UserAttributes(password: newPassword),
+    );
+  }
 }
