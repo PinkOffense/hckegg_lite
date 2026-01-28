@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
-import '../services/auth_service.dart';
+import '../services/logout_manager.dart';
 import '../state/providers/providers.dart';
 import '../state/theme_provider.dart';
 import 'app_drawer.dart';
@@ -22,18 +21,10 @@ class AppScaffold extends StatelessWidget {
     this.additionalActions,
   });
 
-  /// Handle logout properly: clear providers and use AuthService
+  /// Handle logout using centralized LogoutManager
   Future<void> _handleLogout(BuildContext context) async {
-    // Capture all references BEFORE showing dialog to avoid context issues
+    // Capture locale BEFORE showing dialog to avoid context issues
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
-    final eggProvider = context.read<EggProvider>();
-    final eggRecordProvider = context.read<EggRecordProvider>();
-    final expenseProvider = context.read<ExpenseProvider>();
-    final vetRecordProvider = context.read<VetRecordProvider>();
-    final saleProvider = context.read<SaleProvider>();
-    final reservationProvider = context.read<ReservationProvider>();
-    final feedStockProvider = context.read<FeedStockProvider>();
-    final supabaseClient = Supabase.instance.client;
 
     // Show confirmation dialog
     final shouldLogout = await showDialog<bool>(
@@ -66,24 +57,21 @@ class AppScaffold extends StatelessWidget {
     if (shouldLogout != true) return;
 
     try {
-      // Clear all provider data using captured references
-      eggProvider.clearData();
-      eggRecordProvider.clearData();
-      expenseProvider.clearData();
-      vetRecordProvider.clearData();
-      saleProvider.clearData();
-      reservationProvider.clearData();
-      feedStockProvider.clearData();
-
-      // Sign out using AuthService (handles Google sign-out too)
-      final authService = AuthService(supabaseClient);
-      await authService.signOut();
+      // Use centralized LogoutManager for consistent logout behavior
+      final logoutManager = LogoutManager.instance();
+      await logoutManager.signOut(context);
+      // Auth state listener will handle navigation to login page
     } catch (e) {
-      // If logout fails, try direct Supabase sign out as fallback
-      try {
-        await supabaseClient.auth.signOut();
-      } catch (_) {
-        // Ignore - auth state listener will handle navigation
+      // Show error snackbar if context is still valid
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(locale == 'pt'
+                ? 'Erro ao terminar sessão. Tente novamente.'
+                : 'Error signing out. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }

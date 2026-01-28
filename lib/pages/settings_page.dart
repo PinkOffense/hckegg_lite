@@ -6,6 +6,7 @@ import '../widgets/app_scaffold.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../services/auth_service.dart';
+import '../services/logout_manager.dart';
 import '../services/profile_service.dart';
 import '../state/providers/providers.dart';
 
@@ -196,8 +197,8 @@ class _SettingsPageState extends State<SettingsPage> {
     final shouldLogout = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        final theme = Theme.of(context);
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -258,7 +259,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () => Navigator.pop(context, false),
+                    onPressed: () => Navigator.pop(dialogContext, false),
                     child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
                   ),
                 ),
@@ -272,7 +273,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () => Navigator.pop(context, true),
+                    onPressed: () => Navigator.pop(dialogContext, true),
                     child: Text(
                       locale == 'pt' ? 'Sair' : 'Sign Out',
                       style: const TextStyle(
@@ -293,12 +294,15 @@ class _SettingsPageState extends State<SettingsPage> {
 
     setState(() => _isLoggingOut = true);
 
+    // Capture navigator state before showing dialog
+    final navigator = Navigator.of(context);
+
     // Show full-screen loading overlay
     showDialog(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black54,
-      builder: (context) => PopScope(
+      builder: (loadingContext) => PopScope(
         canPop: false,
         child: Center(
           child: Card(
@@ -319,15 +323,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 24),
                   Text(
                     locale == 'pt' ? 'A terminar sessão...' : 'Signing out...',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    style: Theme.of(loadingContext).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     locale == 'pt' ? 'Por favor aguarde' : 'Please wait',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                    style: Theme.of(loadingContext).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(loadingContext).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -342,24 +346,19 @@ class _SettingsPageState extends State<SettingsPage> {
       // Small delay for better UX feedback
       await Future.delayed(const Duration(milliseconds: 300));
 
-      // Clear all domain-specific providers
-      context.read<EggProvider>().clearData();
-      context.read<EggRecordProvider>().clearData();
-      context.read<ExpenseProvider>().clearData();
-      context.read<VetRecordProvider>().clearData();
-      context.read<SaleProvider>().clearData();
-      context.read<ReservationProvider>().clearData();
-      context.read<FeedStockProvider>().clearData();
+      // Use LogoutManager for centralized, consistent logout
+      final logoutManager = LogoutManager.instance();
+      await logoutManager.signOut(context);
 
-      // Sign out from Supabase
-      await Supabase.instance.client.auth.signOut();
-
-      // The auth state listener will handle navigation
-    } catch (e) {
-      // Close loading overlay
-      if (mounted) Navigator.of(context).pop();
-
+      // Close loading overlay after successful sign-out
+      // The auth state listener will handle navigation to login page
       if (mounted) {
+        navigator.pop();
+      }
+    } catch (e) {
+      // Close loading overlay on error
+      if (mounted) {
+        navigator.pop();
         setState(() => _isLoggingOut = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

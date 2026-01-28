@@ -77,17 +77,33 @@ class AuthService {
     }
   }
 
+  /// Sign out from all authentication providers.
+  ///
+  /// This method:
+  /// 1. Signs out from Google (if on mobile/desktop and user is signed in)
+  /// 2. Signs out from Supabase using local scope (only this device)
+  ///
+  /// Uses local scope to preserve sessions on other devices.
   Future<void> signOut() async {
-    // Sign out do Google também (se estiver logado)
+    // Sign out from Google first (if applicable)
     if (!kIsWeb) {
       try {
         final googleSignIn = GoogleSignIn();
-        await googleSignIn.signOut();
+        if (await googleSignIn.isSignedIn()) {
+          await googleSignIn.signOut();
+        }
       } catch (_) {
-        // Ignorar erros de Google sign-out
+        // Google sign-out failed, continue with Supabase sign-out
       }
     }
-    await client.auth.signOut();
+
+    // Sign out from Supabase with local scope
+    try {
+      await client.auth.signOut(scope: SignOutScope.local);
+    } catch (e) {
+      // Fallback: try without scope if local scope fails
+      await client.auth.signOut();
+    }
   }
 
   /// Verificar se o utilizador atual usou email/password (não Google)
