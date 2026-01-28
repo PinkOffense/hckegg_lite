@@ -88,7 +88,7 @@ class ReservationProvider extends ChangeNotifier {
     if (reservation.date.isEmpty) {
       throw ArgumentError('Reservation date cannot be empty');
     }
-    if (reservation.customerName.isEmpty) {
+    if (reservation.customerName == null || reservation.customerName!.isEmpty) {
       throw ArgumentError('Customer name cannot be empty');
     }
     if (reservation.pricePerEgg != null && reservation.pricePerEgg! < 0) {
