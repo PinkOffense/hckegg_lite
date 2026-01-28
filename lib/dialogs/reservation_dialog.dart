@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../core/date_utils.dart';
 import '../models/egg_reservation.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 
 class ReservationDialog extends StatefulWidget {
@@ -447,7 +447,7 @@ class _ReservationDialogState extends State<ReservationDialog> {
       createdAt: widget.existingReservation?.createdAt ?? DateTime.now(),
     );
 
-    Provider.of<AppState>(context, listen: false).saveReservation(reservation);
+    context.read<ReservationProvider>().saveReservation(reservation);
 
     Navigator.pop(context);
   }

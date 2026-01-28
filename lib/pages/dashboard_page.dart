@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/models/week_stats.dart';
 import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
@@ -178,7 +179,7 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.egg,
                           label: locale == 'pt' ? 'Recolhidos' : 'Collected',
-                          value: '${weekStats['collected']}',
+                          value: '${weekStats.collected}',
                           color: colorScheme.primary,
                         ),
                       ),
@@ -187,7 +188,7 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.sell,
                           label: locale == 'pt' ? 'Vendidos' : 'Sold',
-                          value: '${weekStats['sold']}',
+                          value: '${weekStats.sold}',
                           color: colorScheme.secondary,
                         ),
                       ),
@@ -200,7 +201,7 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.restaurant,
                           label: locale == 'pt' ? 'Consumidos' : 'Consumed',
-                          value: '${weekStats['consumed']}',
+                          value: '${weekStats.consumed}',
                           color: colorScheme.tertiary,
                         ),
                       ),
@@ -209,7 +210,7 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.euro,
                           label: locale == 'pt' ? 'Receita' : 'Revenue',
-                          value: '€${(weekStats['revenue'] as double).toStringAsFixed(2)}',
+                          value: '€${weekStats.revenue.toStringAsFixed(2)}',
                           color: Colors.green,
                         ),
                       ),
@@ -248,17 +249,17 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.trending_down,
                           label: locale == 'pt' ? 'Despesas' : 'Expenses',
-                          value: '€${(weekStats['expenses'] as double).toStringAsFixed(2)}',
+                          value: '€${weekStats.expenses.toStringAsFixed(2)}',
                           color: Colors.orange,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _StatCard(
-                          icon: (weekStats['net_profit'] as double) >= 0 ? Icons.trending_up : Icons.trending_down,
+                          icon: weekStats.hasProfit ? Icons.trending_up : Icons.trending_down,
                           label: locale == 'pt' ? 'Lucro Líquido' : 'Net Profit',
-                          value: '€${(weekStats['net_profit'] as double).toStringAsFixed(2)}',
-                          color: (weekStats['net_profit'] as double) >= 0 ? Colors.green : Colors.red,
+                          value: '€${weekStats.netProfit.toStringAsFixed(2)}',
+                          color: weekStats.hasProfit ? Colors.green : Colors.red,
                         ),
                       ),
                     ],

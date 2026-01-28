@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/egg.dart';
+// TODO: Migrate eggs feature to dedicated provider
 import '../state/app_state.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';

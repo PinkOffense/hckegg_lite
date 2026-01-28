@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../core/date_utils.dart';
 import '../models/vet_record.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 
 class ScheduleVetVisitDialog extends StatefulWidget {
@@ -123,10 +123,8 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
       notes: fullNotes,
     );
 
-    final appState = Provider.of<AppState>(context, listen: false);
-
     try {
-      await appState.saveVetRecord(record);
+      await context.read<VetRecordProvider>().saveVetRecord(record);
       if (mounted) {
         Navigator.of(context).pop(true);
       }

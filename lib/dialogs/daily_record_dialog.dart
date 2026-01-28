@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../core/date_utils.dart';
 import '../models/daily_egg_record.dart';
-import '../state/app_state.dart';
+import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 
@@ -82,10 +82,8 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
       notes: notes.isEmpty ? null : notes,
     );
 
-    final appState = Provider.of<AppState>(context, listen: false);
-
     try {
-      await appState.saveRecord(record);
+      await context.read<EggRecordProvider>().saveRecord(record);
       if (mounted) {
         Navigator.of(context).pop();
       }
