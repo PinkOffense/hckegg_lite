@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 class Translations {
   static const Map<String, Map<String, String>> _t = {
     'en': {
-      'app_title': 'HCKEgg 360 Lite',
+      'app_title': 'HCKEgg 360',
       'dashboard': 'Dashboard',
       'egg_records': 'Egg Records',
       'sync': 'Sync',
@@ -170,7 +170,7 @@ class Translations {
       'critical': 'Critical',
     },
     'pt': {
-      'app_title': 'HCKEgg 360 Lite',
+      'app_title': 'HCKEgg 360',
       'dashboard': 'Painel',
       'egg_records': 'Registos de Ovos',
       'sync': 'Sincronizar',
