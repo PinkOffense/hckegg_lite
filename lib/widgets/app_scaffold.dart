@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/locale_provider.dart';
-import '../l10n/translations.dart';
 import '../services/logout_manager.dart';
-import '../state/providers/providers.dart';
 import '../state/theme_provider.dart';
 import 'app_drawer.dart';
 
@@ -22,13 +20,12 @@ class AppScaffold extends StatelessWidget {
     this.additionalActions,
   });
 
-  /// Handle logout - clears data and signs out from Supabase
-  Future<void> _handleLogout(BuildContext context) async {
-    // Capture locale BEFORE showing dialog to avoid context issues
+  /// Handle sign out - clears data and signs out from Supabase
+  Future<void> _handleSignOut(BuildContext context) async {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
 
     // Show confirmation dialog
-    final shouldLogout = await showDialog<bool>(
+    final shouldSignOut = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
@@ -55,7 +52,7 @@ class AppScaffold extends StatelessWidget {
       ),
     );
 
-    if (shouldLogout != true) return;
+    if (shouldSignOut != true) return;
 
     try {
       // Clear all provider data first
@@ -65,7 +62,6 @@ class AppScaffold extends StatelessWidget {
       // Sign out from Supabase (auth state listener handles navigation)
       await Supabase.instance.client.auth.signOut();
     } catch (e) {
-      // Show error snackbar if context is still valid
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -106,7 +102,6 @@ class AppScaffold extends StatelessWidget {
   // Mobile: Show only calendar + overflow menu
   List<Widget> _buildMobileActions(BuildContext context, String locale, ThemeProvider themeProvider) {
     return [
-      // Additional custom actions (if any)
       if (additionalActions != null) ...additionalActions!,
       // Calendar button
       IconButton(
@@ -114,7 +109,7 @@ class AppScaffold extends StatelessWidget {
         icon: const Icon(Icons.calendar_month),
         onPressed: () => Navigator.pushNamed(context, '/vet-calendar'),
       ),
-      // Overflow menu with all other options
+      // Overflow menu
       PopupMenuButton<String>(
         tooltip: locale == 'pt' ? 'Mais opções' : 'More options',
         icon: const Icon(Icons.more_vert),
@@ -129,8 +124,8 @@ class AppScaffold extends StatelessWidget {
             case 'toggle_theme':
               themeProvider.toggleTheme();
               break;
-            case 'logout':
-              await _handleLogout(context);
+            case 'sign_out':
+              await _handleSignOut(context);
               break;
             case 'profile':
               Navigator.pushNamed(context, '/settings');
@@ -140,7 +135,7 @@ class AppScaffold extends StatelessWidget {
         itemBuilder: (BuildContext context) {
           final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
           return [
-            // Language submenu header
+            // Language header
             PopupMenuItem<String>(
               enabled: false,
               child: Text(
@@ -208,14 +203,14 @@ class AppScaffold extends StatelessWidget {
                 ],
               ),
             ),
-            // Logout
+            // Sign Out
             PopupMenuItem<String>(
-              value: 'logout',
+              value: 'sign_out',
               child: Row(
                 children: [
                   const Icon(Icons.logout, size: 18),
                   const SizedBox(width: 8),
-                  Text(locale == 'pt' ? 'Sair' : 'Logout'),
+                  Text(locale == 'pt' ? 'Terminar Sessão' : 'Sign Out'),
                 ],
               ),
             ),
@@ -228,7 +223,6 @@ class AppScaffold extends StatelessWidget {
   // Desktop: Show all actions
   List<Widget> _buildDesktopActions(BuildContext context, String locale, ThemeProvider themeProvider) {
     return [
-      // Additional custom actions
       if (additionalActions != null) ...additionalActions!,
       // Calendar button
       IconButton(
@@ -238,11 +232,10 @@ class AppScaffold extends StatelessWidget {
       ),
       // Language Selector
       PopupMenuButton<String>(
-        tooltip: 'Language',
+        tooltip: locale == 'pt' ? 'Idioma' : 'Language',
         icon: const Icon(Icons.language),
         onSelected: (String languageCode) {
-          final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
-          localeProvider.setLocale(languageCode);
+          Provider.of<LocaleProvider>(context, listen: false).setLocale(languageCode);
         },
         itemBuilder: (BuildContext context) {
           final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
@@ -276,21 +269,23 @@ class AppScaffold extends StatelessWidget {
       ),
       // Theme Toggle
       IconButton(
-        tooltip: themeProvider.isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+        tooltip: themeProvider.isDarkMode
+            ? (locale == 'pt' ? 'Modo Claro' : 'Light Mode')
+            : (locale == 'pt' ? 'Modo Escuro' : 'Dark Mode'),
         icon: Icon(
           themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
         ),
         onPressed: () => themeProvider.toggleTheme(),
       ),
-      // Logout
+      // Sign Out
       IconButton(
-        tooltip: 'Logout',
+        tooltip: locale == 'pt' ? 'Terminar Sessão' : 'Sign Out',
         icon: const Icon(Icons.logout),
-        onPressed: () => _handleLogout(context),
+        onPressed: () => _handleSignOut(context),
       ),
       // Profile
       IconButton(
-        tooltip: 'Profile',
+        tooltip: locale == 'pt' ? 'Perfil' : 'Profile',
         icon: const Icon(Icons.account_circle),
         onPressed: () => Navigator.pushNamed(context, '/settings'),
       ),
