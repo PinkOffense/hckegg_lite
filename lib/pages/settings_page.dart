@@ -190,50 +190,156 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleLogout(String locale) async {
-    // Show confirmation dialog
+    // Show confirmation dialog with improved design
     final shouldLogout = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        icon: Icon(
-          Icons.logout,
-          size: 48,
-          color: Colors.red.shade400,
-        ),
-        title: Text(
-          locale == 'pt' ? 'Terminar Sessão?' : 'Sign Out?',
-          textAlign: TextAlign.center,
-        ),
-        content: Text(
-          locale == 'pt'
-              ? 'Tem a certeza que deseja sair da sua conta?'
-              : 'Are you sure you want to sign out of your account?',
-          textAlign: TextAlign.center,
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+      barrierDismissible: false,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
+          icon: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              shape: BoxShape.circle,
             ),
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              locale == 'pt' ? 'Sair' : 'Sign Out',
-              style: const TextStyle(color: Colors.white),
+            child: Icon(
+              Icons.logout_rounded,
+              size: 40,
+              color: Colors.red.shade600,
             ),
           ),
-        ],
-      ),
+          title: Text(
+            locale == 'pt' ? 'Terminar Sessão?' : 'Sign Out?',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                locale == 'pt'
+                    ? 'Tem a certeza que deseja sair da sua conta?'
+                    : 'Are you sure you want to sign out of your account?',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                locale == 'pt'
+                    ? 'Os seus dados permanecerão seguros na nuvem.'
+                    : 'Your data will remain safe in the cloud.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+                ),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.red.shade600,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(
+                      locale == 'pt' ? 'Sair' : 'Sign Out',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
 
     if (shouldLogout != true || !mounted) return;
 
     setState(() => _isLoggingOut = true);
 
+    // Show full-screen loading overlay
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: Center(
+          child: Card(
+            margin: const EdgeInsets.all(32),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: CircularProgressIndicator(strokeWidth: 3),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    locale == 'pt' ? 'A terminar sessão...' : 'Signing out...',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    locale == 'pt' ? 'Por favor aguarde' : 'Please wait',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
     try {
+      // Small delay for better UX feedback
+      await Future.delayed(const Duration(milliseconds: 300));
+
       // Clear local app state (legacy)
       final appState = Provider.of<AppState>(context, listen: false);
       appState.clearAllData();
@@ -251,14 +357,29 @@ class _SettingsPageState extends State<SettingsPage> {
 
       // The auth state listener will handle navigation
     } catch (e) {
+      // Close loading overlay
+      if (mounted) Navigator.of(context).pop();
+
       if (mounted) {
         setState(() => _isLoggingOut = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(locale == 'pt'
-                ? 'Erro ao terminar sessão. Tente novamente.'
-                : 'Error signing out. Please try again.'),
-            backgroundColor: Colors.red,
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(locale == 'pt'
+                      ? 'Erro ao terminar sessão. Tente novamente.'
+                      : 'Error signing out. Please try again.'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
