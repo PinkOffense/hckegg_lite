@@ -50,21 +50,6 @@ class PaymentsPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Lost Payments
-                if (lostSales.isNotEmpty) ...[
-                  _SectionHeader(
-                    icon: Icons.error_outline,
-                    title: locale == 'pt' ? 'Pagamentos Perdidos' : 'Lost Payments',
-                    color: Colors.red,
-                  ),
-                  const SizedBox(height: 12),
-                  ...lostSales.map((sale) => _LostPaymentCard(
-                        sale: sale,
-                        locale: locale,
-                      )),
-                  const SizedBox(height: 24),
-                ],
-
                 // Pending Payments
                 if (pendingSales.isNotEmpty) ...[
                   _SectionHeader(
@@ -346,8 +331,8 @@ class _PaymentSummaryCards extends StatelessWidget {
               child: _SummaryCard(
                 title: locale == 'pt' ? 'Perdido' : 'Lost',
                 amount: totalLost,
-                color: Colors.red,
-                icon: Icons.error_outline,
+                color: Colors.grey,
+                icon: Icons.cancel_outlined,
               ),
             ),
             const SizedBox(width: 12),
