@@ -144,10 +144,10 @@ class _SaleDialogState extends State<SaleDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                 border: Border(
                   bottom: BorderSide(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
                   ),
                 ),
               ),
@@ -284,7 +284,7 @@ class _SaleDialogState extends State<SaleDialog> {
                         prefixIcon: const Icon(Icons.euro, color: Colors.green),
                         suffixText: '€',
                         filled: true,
-                        fillColor: Colors.green.withOpacity(0.05),
+                        fillColor: Colors.green.withValues(alpha: 0.05),
                         labelStyle: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.green.shade700,
@@ -434,7 +434,7 @@ class _SaleDialogState extends State<SaleDialog> {
                 color: theme.colorScheme.surface,
                 border: Border(
                   top: BorderSide(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
                   ),
                 ),
               ),

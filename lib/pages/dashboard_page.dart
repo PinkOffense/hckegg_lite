@@ -119,8 +119,8 @@ class _DashboardPageState extends State<DashboardPage>
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            colorScheme.primaryContainer.withOpacity(0.3),
-                            colorScheme.primaryContainer.withOpacity(0.1),
+                            colorScheme.primaryContainer.withValues(alpha: 0.3),
+                            colorScheme.primaryContainer.withValues(alpha: 0.1),
                           ],
                         ),
                       ),
@@ -156,7 +156,7 @@ class _DashboardPageState extends State<DashboardPage>
                           Text(
                             _formatDate(DateTime.now()),
                             style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.textTheme.bodyLarge?.color?.withOpacity(0.7),
+                              color: theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -526,7 +526,7 @@ class _DayRecordCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withOpacity(0.5),
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -568,7 +568,7 @@ class _DayRecordCard extends StatelessWidget {
               ),
               Icon(
                 Icons.chevron_right,
-                color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
               ),
             ],
           ),

@@ -23,7 +23,7 @@ class ProductionChart extends StatelessWidget {
           child: Text(
             locale == 'pt' ? 'Sem dados disponíveis' : 'No data available',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
             ),
           ),
         ),
@@ -117,7 +117,7 @@ class ProductionChart extends StatelessWidget {
               horizontalInterval: adjustedMaxY / 5,
               getDrawingHorizontalLine: (value) {
                 return FlLine(
-                  color: theme.dividerColor.withOpacity(0.2),
+                  color: theme.dividerColor.withValues(alpha: 0.2),
                   strokeWidth: 1,
                 );
               },
@@ -135,7 +135,7 @@ class ProductionChart extends StatelessWidget {
                       gradient: LinearGradient(
                         colors: [
                           theme.colorScheme.primary,
-                          theme.colorScheme.primary.withOpacity(0.7),
+                          theme.colorScheme.primary.withValues(alpha: 0.7),
                         ],
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,

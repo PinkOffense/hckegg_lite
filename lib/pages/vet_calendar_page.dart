@@ -109,7 +109,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
         children: [
           // Calendar Header
           Container(
-            color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -193,7 +193,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                           day,
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                           ),
                         ),
                       ),
@@ -241,7 +241,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                             : isToday
                                 ? theme.colorScheme.primaryContainer
                                 : hasEvents
-                                    ? Colors.purple.withOpacity(0.1)
+                                    ? Colors.purple.withValues(alpha: 0.1)
                                     : null,
                         borderRadius: BorderRadius.circular(8),
                         border: isToday && !isSelected
@@ -260,7 +260,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                               color: isSelected
                                   ? theme.colorScheme.onPrimary
                                   : isPast && !hasEvents
-                                      ? theme.textTheme.bodyMedium?.color?.withOpacity(0.4)
+                                      ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.4)
                                       : null,
                             ),
                           ),
@@ -336,7 +336,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                       Icon(
                         Icons.event_available,
                         size: 48,
-                        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.3),
+                        color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -344,7 +344,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                             ? 'Sem eventos agendados'
                             : 'No scheduled events',
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -399,7 +399,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                       Icon(
                         Icons.calendar_today,
                         size: 48,
-                        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.3),
+                        color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -407,7 +407,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                             ? 'Nenhuma visita agendada'
                             : 'No visits scheduled',
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -636,7 +636,7 @@ class _EventCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: typeColor.withOpacity(0.1),
+                  color: typeColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(typeIcon, color: typeColor, size: 24),
@@ -689,7 +689,7 @@ class _EventCard extends StatelessWidget {
                     Text(
                       record.description,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                        color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -701,14 +701,14 @@ class _EventCard extends StatelessWidget {
                           Icon(
                             Icons.local_hospital,
                             size: 12,
-                            color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+                            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
                           ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               vetName,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                                 fontSize: 11,
                               ),
                               maxLines: 1,
@@ -737,13 +737,13 @@ class _EventCard extends StatelessWidget {
                             Icon(
                               Icons.egg_alt,
                               size: 12,
-                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+                              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
                             ),
                             const SizedBox(width: 2),
                             Text(
                               '${record.hensAffected}',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                                 fontSize: 11,
                               ),
                             ),
@@ -753,13 +753,13 @@ class _EventCard extends StatelessWidget {
                             Icon(
                               Icons.euro,
                               size: 12,
-                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+                              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
                             ),
                             const SizedBox(width: 2),
                             Text(
                               record.cost!.toStringAsFixed(2),
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                                 fontSize: 11,
                               ),
                             ),
@@ -774,7 +774,7 @@ class _EventCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: daysColor.withOpacity(0.1),
+                  color: daysColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -789,7 +789,7 @@ class _EventCard extends StatelessWidget {
               const SizedBox(width: 4),
               IconButton(
                 icon: const Icon(Icons.delete_outline, size: 20),
-                color: Colors.red.withOpacity(0.7),
+                color: Colors.red.withValues(alpha: 0.7),
                 tooltip: locale == 'pt' ? 'Eliminar' : 'Delete',
                 onPressed: onDelete,
                 padding: EdgeInsets.zero,
@@ -833,7 +833,7 @@ class _TodayReminderDialog extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
+              color: Colors.orange.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(Icons.notifications_active, color: Colors.orange),
@@ -919,9 +919,9 @@ class _TodayReminderDialog extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: typeColor.withOpacity(0.1),
+        color: typeColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: typeColor.withOpacity(0.3)),
+        border: Border.all(color: typeColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -941,7 +941,7 @@ class _TodayReminderDialog extends StatelessWidget {
                   Text(
                     '${locale == 'pt' ? 'Hora' : 'Time'}: $time',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                     ),
                   ),
                 Text(

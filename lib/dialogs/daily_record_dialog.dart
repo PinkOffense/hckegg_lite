@@ -125,10 +125,10 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                 border: Border(
                   bottom: BorderSide(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
                   ),
                 ),
               ),
@@ -246,7 +246,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
 
                 // Info Card
                 Card(
-                  color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -296,7 +296,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
                 color: theme.colorScheme.surface,
                 border: Border(
                   top: BorderSide(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
                   ),
                 ),
               ),

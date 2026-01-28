@@ -23,7 +23,7 @@ class RevenueChart extends StatelessWidget {
           child: Text(
             locale == 'pt' ? 'Sem dados de vendas disponíveis' : 'No sales data available',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
             ),
           ),
         ),
@@ -54,7 +54,7 @@ class RevenueChart extends StatelessWidget {
               horizontalInterval: adjustedMaxY / 5,
               getDrawingHorizontalLine: (value) {
                 return FlLine(
-                  color: theme.dividerColor.withOpacity(0.2),
+                  color: theme.dividerColor.withValues(alpha: 0.2),
                   strokeWidth: 1,
                 );
               },
@@ -136,7 +136,7 @@ class RevenueChart extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     theme.colorScheme.secondary,
-                    theme.colorScheme.secondary.withOpacity(0.7),
+                    theme.colorScheme.secondary.withValues(alpha: 0.7),
                   ],
                 ),
                 barWidth: 3,
@@ -156,8 +156,8 @@ class RevenueChart extends StatelessWidget {
                   show: true,
                   gradient: LinearGradient(
                     colors: [
-                      theme.colorScheme.secondary.withOpacity(0.3),
-                      theme.colorScheme.secondary.withOpacity(0.0),
+                      theme.colorScheme.secondary.withValues(alpha: 0.3),
+                      theme.colorScheme.secondary.withValues(alpha: 0.0),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,

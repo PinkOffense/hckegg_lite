@@ -94,13 +94,13 @@ class _EggListPageState extends State<EggListPage> {
                             Icon(
                               Icons.search_off,
                               size: 64,
-                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+                              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No records found',
                               style: theme.textTheme.titleMedium?.copyWith(
-                                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -132,10 +132,10 @@ class _EggListPageState extends State<EggListPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                  color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
                   border: Border(
                     top: BorderSide(
-                      color: theme.colorScheme.outline.withOpacity(0.2),
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
                     ),
                   ),
                 ),
@@ -255,7 +255,7 @@ class _RecordCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withOpacity(0.5),
+                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -322,7 +322,7 @@ class _RecordCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                    color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -331,7 +331,7 @@ class _RecordCard extends StatelessWidget {
                       Icon(
                         Icons.note,
                         size: 16,
-                        color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                        color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                       ),
                       const SizedBox(width: 8),
                       Expanded(

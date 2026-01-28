@@ -52,10 +52,10 @@ class _HenHealthPageState extends State<HenHealthPage> {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.2),
+                color: theme.colorScheme.primary.withValues(alpha: 0.2),
               ),
             ),
             child: Column(
@@ -120,7 +120,7 @@ class _HenHealthPageState extends State<HenHealthPage> {
                         Icon(
                           Icons.health_and_safety_outlined,
                           size: 64,
-                          color: theme.textTheme.bodyMedium?.color?.withOpacity(0.3),
+                          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -128,7 +128,7 @@ class _HenHealthPageState extends State<HenHealthPage> {
                               ? 'Nenhum registo veterinário'
                               : 'No veterinary records',
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -137,7 +137,7 @@ class _HenHealthPageState extends State<HenHealthPage> {
                               ? 'Toque em + para adicionar'
                               : 'Tap + to add a record',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                           ),
                         ),
                       ],
@@ -222,7 +222,7 @@ class _HealthStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -236,7 +236,7 @@ class _HealthStat extends StatelessWidget {
               Text(
                 label,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                 ),
               ),
               Text(
@@ -335,7 +335,7 @@ class _VetRecordCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: typeColor.withOpacity(0.1),
+                      color: typeColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(typeIcon, color: typeColor, size: 24),
@@ -356,7 +356,7 @@ class _VetRecordCard extends StatelessWidget {
                         Text(
                           formattedDate,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -366,7 +366,7 @@ class _VetRecordCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: severityColor.withOpacity(0.1),
+                      color: severityColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: severityColor, width: 1),
                     ),
@@ -421,9 +421,9 @@ class _VetRecordCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.purple.withOpacity(0.1),
+                    color: Colors.purple.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                    border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -449,7 +449,7 @@ class _VetRecordCard extends StatelessWidget {
                   '${locale == 'pt' ? 'Notas' : 'Notes'}: ${record.notes}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontStyle: FontStyle.italic,
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -486,7 +486,7 @@ class _DetailChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(

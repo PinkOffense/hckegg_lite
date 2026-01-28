@@ -223,7 +223,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _getTypeColor(_selectedType).withOpacity(0.1),
+                        color: _getTypeColor(_selectedType).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -302,10 +302,10 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: theme.colorScheme.primary.withOpacity(0.3),
+                              color: theme.colorScheme.primary.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Row(
@@ -319,7 +319,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                                     Text(
                                       locale == 'pt' ? 'Data' : 'Date',
                                       style: theme.textTheme.bodySmall?.copyWith(
-                                        color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                                        color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                                       ),
                                     ),
                                     const SizedBox(height: 2),
@@ -347,10 +347,10 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.secondaryContainer.withOpacity(0.3),
+                            color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: theme.colorScheme.secondary.withOpacity(0.3),
+                              color: theme.colorScheme.secondary.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Row(
@@ -364,7 +364,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                                     Text(
                                       locale == 'pt' ? 'Hora' : 'Time',
                                       style: theme.textTheme.bodySmall?.copyWith(
-                                        color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                                        color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                                       ),
                                     ),
                                     const SizedBox(height: 2),

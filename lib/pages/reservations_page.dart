@@ -166,7 +166,7 @@ class _ReservationCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isOverdue
                           ? Colors.orange.shade100
-                          : theme.colorScheme.primaryContainer.withOpacity(0.3),
+                          : theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(

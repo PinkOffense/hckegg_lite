@@ -379,7 +379,7 @@ class _LoginPageState extends State<LoginPage>
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: colorScheme.primary.withOpacity(0.3),
+                                  color: colorScheme.primary.withValues(alpha: 0.3),
                                   blurRadius: 20,
                                   offset: const Offset(0, 8),
                                 ),
@@ -422,7 +422,7 @@ class _LoginPageState extends State<LoginPage>
                               ? t('create_account_to_start')
                               : t('sign_in_to_continue'),
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.6),
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -510,7 +510,7 @@ class _LoginPageState extends State<LoginPage>
                                   TextSpan(
                                     text: t('accept_terms_prefix'),
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.onSurface.withOpacity(0.8),
+                                      color: colorScheme.onSurface.withValues(alpha: 0.8),
                                     ),
                                     children: [
                                       TextSpan(
@@ -555,7 +555,7 @@ class _LoginPageState extends State<LoginPage>
                               backgroundColor: colorScheme.primary,
                               foregroundColor: colorScheme.onPrimary,
                               elevation: 2,
-                              shadowColor: colorScheme.primary.withOpacity(0.3),
+                              shadowColor: colorScheme.primary.withValues(alpha: 0.3),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -589,7 +589,7 @@ class _LoginPageState extends State<LoginPage>
                           children: [
                             Expanded(
                               child: Divider(
-                                color: colorScheme.outline.withOpacity(0.5),
+                                color: colorScheme.outline.withValues(alpha: 0.5),
                               ),
                             ),
                             Padding(
@@ -598,13 +598,13 @@ class _LoginPageState extends State<LoginPage>
                               child: Text(
                                 t('or_continue_with'),
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurface.withOpacity(0.5),
+                                  color: colorScheme.onSurface.withValues(alpha: 0.5),
                                 ),
                               ),
                             ),
                             Expanded(
                               child: Divider(
-                                color: colorScheme.outline.withOpacity(0.5),
+                                color: colorScheme.outline.withValues(alpha: 0.5),
                               ),
                             ),
                           ],
@@ -632,7 +632,7 @@ class _LoginPageState extends State<LoginPage>
                                   ? 'Already have an account? '
                                   : 'Don\'t have an account? ',
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurface.withOpacity(0.7),
+                                color: colorScheme.onSurface.withValues(alpha: 0.7),
                               ),
                               children: [
                                 TextSpan(
@@ -732,7 +732,7 @@ class _PasswordStrengthIndicator extends StatelessWidget {
                 height: 4,
                 margin: EdgeInsets.only(right: index < 3 ? 4 : 0),
                 decoration: BoxDecoration(
-                  color: index < filledBars ? color : colorScheme.outline.withOpacity(0.3),
+                  color: index < filledBars ? color : colorScheme.outline.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -782,7 +782,7 @@ class _PasswordRequirements extends StatelessWidget {
                 fontSize: 12,
                 color: isMet
                     ? colorScheme.onSurface
-                    : colorScheme.onSurface.withOpacity(0.6),
+                    : colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -793,7 +793,7 @@ class _PasswordRequirements extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -804,7 +804,7 @@ class _PasswordRequirements extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface.withOpacity(0.8),
+              color: colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 8),

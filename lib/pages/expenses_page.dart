@@ -88,8 +88,8 @@ class ExpensesPage extends StatelessWidget {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              theme.colorScheme.secondaryContainer.withOpacity(0.3),
-                              theme.colorScheme.secondaryContainer.withOpacity(0.1),
+                              theme.colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                              theme.colorScheme.secondaryContainer.withValues(alpha: 0.1),
                             ],
                           ),
                         ),
@@ -135,13 +135,13 @@ class ExpensesPage extends StatelessWidget {
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: netProfit >= 0
-                                    ? Colors.green.withOpacity(0.1)
-                                    : Colors.red.withOpacity(0.1),
+                                    ? Colors.green.withValues(alpha: 0.1)
+                                    : Colors.red.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: netProfit >= 0
-                                      ? Colors.green.withOpacity(0.3)
-                                      : Colors.red.withOpacity(0.3),
+                                      ? Colors.green.withValues(alpha: 0.3)
+                                      : Colors.red.withValues(alpha: 0.3),
                                   width: 2,
                                 ),
                               ),
@@ -306,7 +306,7 @@ class ExpensesPage extends StatelessWidget {
                                 Icon(
                                   Icons.add_circle_outline,
                                   size: 64,
-                                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.3),
+                                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -314,7 +314,7 @@ class ExpensesPage extends StatelessWidget {
                                       ? 'Nenhuma despesa independente'
                                       : 'No standalone expenses',
                                   style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -323,7 +323,7 @@ class ExpensesPage extends StatelessWidget {
                                       ? 'Toque no + para adicionar'
                                       : 'Tap + to add',
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                                   ),
                                 ),
                               ],
@@ -559,7 +559,7 @@ class _StandaloneExpenseCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _getCategoryColor().withOpacity(0.1),
+                      color: _getCategoryColor().withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -589,7 +589,7 @@ class _StandaloneExpenseCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer.withOpacity(0.3),
+                      color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -617,7 +617,7 @@ class _StandaloneExpenseCard extends StatelessWidget {
                   expense.notes!,
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontStyle: FontStyle.italic,
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                   ),
                 ),
               ],
