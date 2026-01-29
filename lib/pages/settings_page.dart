@@ -300,7 +300,10 @@ class _SettingsPageState extends State<SettingsPage> {
       final logoutManager = LogoutManager.instance();
       await logoutManager.signOut(context);
 
-      // Auth state listener will handle navigation to login page
+      // Pop all routes to return to AuthGate (which will show LoginPage)
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } catch (e) {
       // Show error if sign-out failed
       if (mounted) {
