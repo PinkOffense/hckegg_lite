@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 
 /// Cute animated pink chicken with egg - for the login page
 class AnimatedChickens extends StatefulWidget {
-  const AnimatedChickens({super.key});
+  final double height;
+
+  const AnimatedChickens({super.key, this.height = 220});
 
   @override
   State<AnimatedChickens> createState() => _AnimatedChickensState();
@@ -80,7 +82,7 @@ class _AnimatedChickensState extends State<AnimatedChickens>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 180,
+      height: widget.height,
       width: double.infinity,
       child: ListenableBuilder(
         listenable: Listenable.merge([_sitAnimation, _eggWiggle, _heartAnimation]),
@@ -91,7 +93,7 @@ class _AnimatedChickensState extends State<AnimatedChickens>
               eggWiggle: _eggWiggle.value,
               heartProgress: _heartAnimation.value,
             ),
-            size: const Size(double.infinity, 180),
+            size: Size(double.infinity, widget.height),
           );
         },
       ),
