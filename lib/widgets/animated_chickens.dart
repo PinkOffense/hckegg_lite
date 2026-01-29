@@ -28,7 +28,7 @@ class _AnimatedChickensState extends State<AnimatedChickens>
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
 
-    _sitAnimation = Tween<double>(begin: 0, end: 4).animate(
+    _sitAnimation = Tween<double>(begin: 0, end: 3).animate(
       CurvedAnimation(parent: _sitController, curve: Curves.easeInOut),
     );
 
@@ -38,7 +38,7 @@ class _AnimatedChickensState extends State<AnimatedChickens>
       duration: const Duration(milliseconds: 300),
     );
 
-    _eggWiggle = Tween<double>(begin: 0, end: 0.1).animate(
+    _eggWiggle = Tween<double>(begin: 0, end: 0.08).animate(
       CurvedAnimation(parent: _eggController, curve: Curves.elasticIn),
     );
 
@@ -80,7 +80,7 @@ class _AnimatedChickensState extends State<AnimatedChickens>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 160,
+      height: 180,
       width: double.infinity,
       child: ListenableBuilder(
         listenable: Listenable.merge([_sitAnimation, _eggWiggle, _heartAnimation]),
@@ -91,7 +91,7 @@ class _AnimatedChickensState extends State<AnimatedChickens>
               eggWiggle: _eggWiggle.value,
               heartProgress: _heartAnimation.value,
             ),
-            size: const Size(double.infinity, 160),
+            size: const Size(double.infinity, 180),
           );
         },
       ),
@@ -114,73 +114,83 @@ class _ChickenWithEggPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final centerX = size.width / 2;
-    final baseY = size.height * 0.7;
+    final baseY = size.height * 0.75;
 
     // Colors
     const bodyPink = Color(0xFFFFB6C1);
     const darkPink = Color(0xFFFF69B4);
     const beakOrange = Color(0xFFFF8C00);
     const combRed = Color(0xFFFF4757);
-    const eggWhite = Color(0xFFFFFAF0);
+    const eggCream = Color(0xFFFFF8DC);
     const eggShadow = Color(0xFFFFE4B5);
 
-    // Nest/straw
-    _drawNest(canvas, centerX, baseY + 15);
+    // Draw nest first (behind everything)
+    _drawNest(canvas, centerX, baseY + 20);
 
-    // Egg (behind chicken)
+    // Egg (smaller, behind chicken)
     canvas.save();
-    canvas.translate(centerX, baseY - 5);
+    canvas.translate(centerX, baseY);
     canvas.rotate(eggWiggle * sin(eggWiggle * 50));
-    canvas.translate(-centerX, -(baseY - 5));
+    canvas.translate(-centerX, -baseY);
 
     // Egg shadow
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(centerX + 3, baseY),
-        width: 38,
-        height: 48,
+        center: Offset(centerX + 2, baseY + 5),
+        width: 28,
+        height: 36,
       ),
       Paint()..color = eggShadow,
     );
-    // Egg
+    // Egg main
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(centerX, baseY - 5),
-        width: 35,
-        height: 45,
+        center: Offset(centerX, baseY),
+        width: 26,
+        height: 34,
       ),
-      Paint()..color = eggWhite,
+      Paint()..color = eggCream,
     );
     // Egg shine
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(centerX - 8, baseY - 15),
-        width: 8,
-        height: 12,
+        center: Offset(centerX - 6, baseY - 8),
+        width: 6,
+        height: 10,
       ),
-      Paint()..color = Colors.white.withValues(alpha: 0.7),
+      Paint()..color = Colors.white.withValues(alpha: 0.8),
     );
     canvas.restore();
 
-    // Chicken body (sitting on egg)
-    final chickenY = baseY - 35 + sitOffset;
+    // Chicken body (bigger, sitting on egg)
+    final chickenY = baseY - 45 + sitOffset;
 
-    // Wing behind
+    // Shadow under chicken
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(centerX - 25, chickenY + 5),
-        width: 20,
-        height: 28,
+        center: Offset(centerX, baseY + 15),
+        width: 70,
+        height: 18,
+      ),
+      Paint()..color = Colors.black.withValues(alpha: 0.08),
+    );
+
+    // Wing behind (left)
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(centerX - 35, chickenY + 8),
+        width: 28,
+        height: 38,
       ),
       Paint()..color = darkPink.withValues(alpha: 0.6),
     );
 
-    // Body
+    // Body (bigger)
     canvas.drawOval(
       Rect.fromCenter(
         center: Offset(centerX, chickenY),
-        width: 60,
-        height: 45,
+        width: 85,
+        height: 65,
       ),
       Paint()..color = bodyPink,
     );
@@ -188,128 +198,204 @@ class _ChickenWithEggPainter extends CustomPainter {
     // Body highlight
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(centerX - 8, chickenY - 5),
-        width: 20,
-        height: 15,
+        center: Offset(centerX - 12, chickenY - 10),
+        width: 30,
+        height: 22,
       ),
-      Paint()..color = Colors.white.withValues(alpha: 0.3),
+      Paint()..color = Colors.white.withValues(alpha: 0.35),
     );
 
-    // Wing front
+    // Wing front (right)
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(centerX + 18, chickenY + 3),
-        width: 18,
-        height: 25,
+        center: Offset(centerX + 25, chickenY + 5),
+        width: 25,
+        height: 35,
       ),
       Paint()..color = darkPink.withValues(alpha: 0.5),
     );
 
-    // Tail
+    // Tail feathers
     final tailPath = Path()
-      ..moveTo(centerX - 28, chickenY - 5)
-      ..quadraticBezierTo(centerX - 45, chickenY - 20, centerX - 38, chickenY + 5)
-      ..quadraticBezierTo(centerX - 35, chickenY, centerX - 28, chickenY);
+      ..moveTo(centerX - 40, chickenY - 8)
+      ..quadraticBezierTo(centerX - 65, chickenY - 30, centerX - 55, chickenY + 5)
+      ..quadraticBezierTo(centerX - 50, chickenY, centerX - 40, chickenY);
     canvas.drawPath(tailPath, Paint()..color = darkPink);
 
-    // Head
-    final headY = chickenY - 30;
+    // Small tail accent
+    final tailPath2 = Path()
+      ..moveTo(centerX - 38, chickenY - 5)
+      ..quadraticBezierTo(centerX - 58, chickenY - 20, centerX - 50, chickenY + 8);
+    canvas.drawPath(
+      tailPath2,
+      Paint()
+        ..color = darkPink.withValues(alpha: 0.7)
+        ..strokeWidth = 4
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round,
+    );
+
+    // Head (bigger)
+    final headY = chickenY - 40;
     canvas.drawCircle(
-      Offset(centerX + 5, headY),
-      22,
+      Offset(centerX + 8, headY),
+      30,
       Paint()..color = bodyPink,
     );
 
     // Head highlight
     canvas.drawCircle(
-      Offset(centerX, headY - 8),
-      7,
+      Offset(centerX + 2, headY - 12),
+      10,
       Paint()..color = Colors.white.withValues(alpha: 0.4),
     );
 
-    // Comb
+    // Comb (bigger, more defined)
     final combPath = Path()
-      ..moveTo(centerX - 2, headY - 20)
-      ..quadraticBezierTo(centerX + 2, headY - 32, centerX + 6, headY - 22)
-      ..quadraticBezierTo(centerX + 10, headY - 35, centerX + 14, headY - 20)
+      ..moveTo(centerX - 5, headY - 26)
+      ..quadraticBezierTo(centerX + 2, headY - 45, centerX + 8, headY - 28)
+      ..quadraticBezierTo(centerX + 14, headY - 48, centerX + 20, headY - 26)
       ..close();
     canvas.drawPath(combPath, Paint()..color = combRed);
 
-    // Eye (happy/closed when sitting)
-    // Closed happy eye (arc)
+    // Comb highlight
+    canvas.drawCircle(
+      Offset(centerX + 5, headY - 35),
+      4,
+      Paint()..color = Colors.white.withValues(alpha: 0.3),
+    );
+
+    // Eye (happy/closed - curved line)
     final eyePath = Path()
-      ..moveTo(centerX, headY - 2)
-      ..quadraticBezierTo(centerX + 8, headY - 8, centerX + 16, headY - 2);
+      ..moveTo(centerX + 2, headY - 2)
+      ..quadraticBezierTo(centerX + 12, headY - 10, centerX + 22, headY - 2);
     canvas.drawPath(
       eyePath,
       Paint()
-        ..color = Colors.black
-        ..strokeWidth = 2.5
+        ..color = Colors.black87
+        ..strokeWidth = 3
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round,
     );
 
-    // Blush
-    canvas.drawCircle(
-      Offset(centerX - 8, headY + 5),
-      6,
-      Paint()..color = darkPink.withValues(alpha: 0.4),
+    // Blush cheeks
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(centerX - 10, headY + 8),
+        width: 14,
+        height: 10,
+      ),
+      Paint()..color = darkPink.withValues(alpha: 0.45),
     );
-    canvas.drawCircle(
-      Offset(centerX + 20, headY + 5),
-      6,
-      Paint()..color = darkPink.withValues(alpha: 0.4),
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(centerX + 28, headY + 8),
+        width: 14,
+        height: 10,
+      ),
+      Paint()..color = darkPink.withValues(alpha: 0.45),
     );
 
-    // Beak (small and cute)
+    // Beak
     final beakPath = Path()
-      ..moveTo(centerX + 20, headY)
-      ..lineTo(centerX + 30, headY + 3)
-      ..lineTo(centerX + 20, headY + 6)
+      ..moveTo(centerX + 30, headY - 2)
+      ..lineTo(centerX + 45, headY + 4)
+      ..lineTo(centerX + 30, headY + 10)
       ..close();
     canvas.drawPath(beakPath, Paint()..color = beakOrange);
 
+    // Beak highlight
+    canvas.drawPath(
+      Path()
+        ..moveTo(centerX + 32, headY)
+        ..lineTo(centerX + 40, headY + 3)
+        ..lineTo(centerX + 32, headY + 5)
+        ..close(),
+      Paint()..color = Colors.white.withValues(alpha: 0.3),
+    );
+
     // Floating hearts
-    _drawHeart(canvas, centerX + 40, chickenY - 50 - (heartProgress * 30),
-               heartProgress, darkPink);
-    _drawHeart(canvas, centerX - 35, chickenY - 40 - ((heartProgress + 0.3) % 1 * 30),
-               (heartProgress + 0.3) % 1, combRed);
+    _drawHeart(canvas, centerX + 55, chickenY - 60 - (heartProgress * 25),
+        heartProgress, darkPink);
+    _drawHeart(canvas, centerX - 50, chickenY - 50 - ((heartProgress + 0.4) % 1 * 25),
+        (heartProgress + 0.4) % 1, combRed);
   }
 
   void _drawNest(Canvas canvas, double centerX, double y) {
-    const strawColor = Color(0xFFDEB887);
-    const strawDark = Color(0xFFD2691E);
+    // Nest colors
+    const strawLight = Color(0xFFDEB887);
+    const strawMedium = Color(0xFFD2961E);
+    const strawDark = Color(0xFFA0522D);
 
-    final paint = Paint()
-      ..color = strawColor
+    // Nest base (oval bowl shape)
+    final nestBasePath = Path()
+      ..moveTo(centerX - 60, y - 5)
+      ..quadraticBezierTo(centerX - 70, y + 25, centerX - 50, y + 30)
+      ..lineTo(centerX + 50, y + 30)
+      ..quadraticBezierTo(centerX + 70, y + 25, centerX + 60, y - 5)
+      ..quadraticBezierTo(centerX, y + 15, centerX - 60, y - 5);
+
+    // Nest shadow
+    canvas.drawPath(
+      nestBasePath.shift(const Offset(3, 3)),
+      Paint()..color = Colors.black.withValues(alpha: 0.1),
+    );
+
+    // Nest fill
+    canvas.drawPath(nestBasePath, Paint()..color = strawMedium);
+
+    // Inner nest darker area
+    final innerNestPath = Path()
+      ..moveTo(centerX - 45, y)
+      ..quadraticBezierTo(centerX - 50, y + 15, centerX - 35, y + 18)
+      ..lineTo(centerX + 35, y + 18)
+      ..quadraticBezierTo(centerX + 50, y + 15, centerX + 45, y)
+      ..quadraticBezierTo(centerX, y + 10, centerX - 45, y);
+    canvas.drawPath(innerNestPath, Paint()..color = strawDark.withValues(alpha: 0.4));
+
+    // Straw texture - horizontal strokes
+    final strawPaint = Paint()
       ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
 
-    final darkPaint = Paint()
-      ..color = strawDark
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-
-    // Draw straw pieces
-    for (int i = 0; i < 12; i++) {
-      final x = centerX - 40 + (i * 7);
-      final wobble = sin(i * 0.8) * 5;
+    for (int i = 0; i < 8; i++) {
+      final xStart = centerX - 55 + (i * 14);
+      final yOffset = sin(i * 0.7) * 4;
+      strawPaint.color = i % 2 == 0 ? strawLight : strawDark;
       canvas.drawLine(
-        Offset(x, y + wobble),
-        Offset(x + 15, y - 8 + wobble),
-        i % 2 == 0 ? paint : darkPaint,
+        Offset(xStart, y + 5 + yOffset),
+        Offset(xStart + 20, y + 8 + yOffset),
+        strawPaint,
       );
     }
 
-    // Nest base curve
-    final nestPath = Path()
-      ..moveTo(centerX - 50, y)
-      ..quadraticBezierTo(centerX, y + 20, centerX + 50, y);
+    // Straw pieces sticking out on edges
+    final stickingStrawPaint = Paint()
+      ..color = strawLight
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+
+    // Left side straws
+    canvas.drawLine(Offset(centerX - 58, y), Offset(centerX - 68, y - 12), stickingStrawPaint);
+    canvas.drawLine(Offset(centerX - 52, y + 5), Offset(centerX - 65, y - 5), stickingStrawPaint);
+    canvas.drawLine(Offset(centerX - 55, y + 10), Offset(centerX - 70, y + 5), stickingStrawPaint);
+
+    // Right side straws
+    stickingStrawPaint.color = strawMedium;
+    canvas.drawLine(Offset(centerX + 58, y), Offset(centerX + 68, y - 10), stickingStrawPaint);
+    canvas.drawLine(Offset(centerX + 52, y + 5), Offset(centerX + 65, y - 3), stickingStrawPaint);
+    canvas.drawLine(Offset(centerX + 55, y + 10), Offset(centerX + 70, y + 8), stickingStrawPaint);
+
+    // Nest rim highlight
+    final rimPath = Path()
+      ..moveTo(centerX - 55, y)
+      ..quadraticBezierTo(centerX, y - 8, centerX + 55, y);
     canvas.drawPath(
-      nestPath,
+      rimPath,
       Paint()
-        ..color = strawDark
-        ..strokeWidth = 8
+        ..color = strawLight
+        ..strokeWidth = 5
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round,
     );
@@ -325,8 +411,8 @@ class _ChickenWithEggPainter extends CustomPainter {
 
     final path = Path()
       ..moveTo(0, 4)
-      ..cubicTo(-8, -4, -14, 4, 0, 14)
-      ..cubicTo(14, 4, 8, -4, 0, 4);
+      ..cubicTo(-10, -6, -18, 4, 0, 18)
+      ..cubicTo(18, 4, 10, -6, 0, 4);
 
     canvas.drawPath(
       path,

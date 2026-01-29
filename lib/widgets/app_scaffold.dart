@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/locale_provider.dart';
-import '../services/logout_manager.dart';
 import '../state/theme_provider.dart';
 import 'app_drawer.dart';
 
@@ -19,51 +17,6 @@ class AppScaffold extends StatelessWidget {
     this.fab,
     this.additionalActions,
   });
-
-  /// Handle sign out - sign out from Supabase and clear navigation stack
-  Future<void> _handleSignOut(BuildContext context) async {
-    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
-    final navigator = Navigator.of(context);
-
-    // Show confirmation dialog
-    final shouldSignOut = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(locale == 'pt' ? 'Terminar Sessão?' : 'Sign Out?'),
-        content: Text(
-          locale == 'pt'
-              ? 'Tem a certeza que deseja sair?'
-              : 'Are you sure you want to sign out?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(
-              locale == 'pt' ? 'Sair' : 'Sign Out',
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldSignOut != true) return;
-
-    // Clear all provider data to prevent data leakage
-    LogoutManager.instance().clearAllProviders(context);
-
-    // Sign out from Supabase
-    await Supabase.instance.client.auth.signOut();
-
-    // Clear the navigation stack to go back to AuthGate (which shows LoginPage)
-    navigator.popUntil((route) => route.isFirst);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,9 +63,6 @@ class AppScaffold extends StatelessWidget {
               break;
             case 'toggle_theme':
               themeProvider.toggleTheme();
-              break;
-            case 'sign_out':
-              await _handleSignOut(context);
               break;
             case 'profile':
               Navigator.pushNamed(context, '/settings');
@@ -187,19 +137,6 @@ class AppScaffold extends StatelessWidget {
                 ],
               ),
             ),
-            PopupMenuItem<String>(
-              value: 'sign_out',
-              child: Row(
-                children: [
-                  const Icon(Icons.logout, size: 18, color: Colors.red),
-                  const SizedBox(width: 8),
-                  Text(
-                    locale == 'pt' ? 'Terminar Sessão' : 'Sign Out',
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ],
-              ),
-            ),
           ];
         },
       ),
@@ -258,11 +195,6 @@ class AppScaffold extends StatelessWidget {
           themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
         ),
         onPressed: () => themeProvider.toggleTheme(),
-      ),
-      IconButton(
-        tooltip: locale == 'pt' ? 'Terminar Sessão' : 'Sign Out',
-        icon: const Icon(Icons.logout),
-        onPressed: () => _handleSignOut(context),
       ),
       IconButton(
         tooltip: locale == 'pt' ? 'Perfil' : 'Profile',
