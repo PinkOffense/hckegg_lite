@@ -87,7 +87,7 @@ void main() {
         mockRepository.shouldThrowOnSave = true;
         final expense = _createExpense('1', '2024-01-15', ExpenseCategory.feed, 50.0);
 
-        expect(() => provider.saveExpense(expense), throwsException);
+        await expectLater(provider.saveExpense(expense), throwsException);
         expect(provider.error, isNotNull);
       });
     });
@@ -110,7 +110,7 @@ void main() {
       test('sets error and rethrows on repository failure', () async {
         mockRepository.shouldThrowOnDelete = true;
 
-        expect(() => provider.deleteExpense('1'), throwsException);
+        await expectLater(provider.deleteExpense('1'), throwsException);
         expect(provider.error, isNotNull);
       });
     });
