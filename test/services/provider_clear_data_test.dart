@@ -9,13 +9,11 @@ import 'package:hckegg_lite/models/expense.dart';
 import 'package:hckegg_lite/models/egg_sale.dart';
 import 'package:hckegg_lite/models/vet_record.dart';
 import 'package:hckegg_lite/models/feed_stock.dart';
-import 'package:hckegg_lite/models/egg_reservation.dart';
 import 'package:hckegg_lite/state/providers/egg_record_provider.dart';
 import 'package:hckegg_lite/state/providers/expense_provider.dart';
 import 'package:hckegg_lite/state/providers/sale_provider.dart';
 import 'package:hckegg_lite/state/providers/vet_record_provider.dart';
 import 'package:hckegg_lite/state/providers/feed_stock_provider.dart';
-import 'package:hckegg_lite/state/providers/reservation_provider.dart';
 import '../mocks/mock_egg_repository.dart';
 import '../mocks/mock_expense_repository.dart';
 import '../mocks/mock_sale_repository.dart';
@@ -185,15 +183,15 @@ void main() {
       });
 
       test('clearData removes all feed stocks', () async {
+        final now = DateTime.now();
         mockRepository.seedStocks([
           FeedStock(
             id: '1',
-            feedType: 'Layer Feed',
-            quantity: 50.0,
-            unit: 'kg',
-            purchaseDate: '2024-01-15',
-            expiryDate: '2024-06-15',
-            cost: 30.0,
+            type: FeedType.layer,
+            currentQuantityKg: 50.0,
+            minimumQuantityKg: 10.0,
+            lastUpdated: now,
+            createdAt: now,
           ),
         ]);
         await provider.loadFeedStocks();
@@ -207,15 +205,15 @@ void main() {
       });
 
       test('clearData resets stock counts', () async {
+        final now = DateTime.now();
         mockRepository.seedStocks([
           FeedStock(
             id: '1',
-            feedType: 'Layer Feed',
-            quantity: 50.0,
-            unit: 'kg',
-            purchaseDate: '2024-01-15',
-            cost: 30.0,
-            lowStockThreshold: 10.0,
+            type: FeedType.layer,
+            currentQuantityKg: 50.0,
+            minimumQuantityKg: 10.0,
+            lastUpdated: now,
+            createdAt: now,
           ),
         ]);
         await provider.loadFeedStocks();
