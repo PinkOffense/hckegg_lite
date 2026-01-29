@@ -44,9 +44,6 @@ dependencies:
   image_picker: ^1.1.2
   google_mlkit_text_recognition: ^0.13.0
 
-  # 3D model viewer for chicken animations
-  model_viewer_plus: ^1.8.1
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
