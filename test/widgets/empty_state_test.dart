@@ -117,9 +117,11 @@ void main() {
         ),
       );
 
-      // Use pump() instead of pumpAndSettle() because AnimatedChickens has infinite animations
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Pump multiple frames to allow widget tree to build
+      // AnimatedChickens has infinite animations, so we can't use pumpAndSettle
+      for (int i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
 
       expect(find.text('No Records'), findsOneWidget);
       expect(find.text('Start tracking your eggs'), findsOneWidget);
@@ -141,9 +143,10 @@ void main() {
         ),
       );
 
-      // Use pump() instead of pumpAndSettle() because AnimatedChickens has infinite animations
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Pump multiple frames to allow widget tree to build
+      for (int i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
 
       expect(find.text('Add Record'), findsOneWidget);
 
