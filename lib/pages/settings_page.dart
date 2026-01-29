@@ -296,12 +296,9 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => _isLoggingOut = true);
 
     try {
-      // Clear all provider data first (using captured context)
+      // Use the centralized LogoutManager for complete sign-out
       final logoutManager = LogoutManager.instance();
-      logoutManager.clearAllProviders(context);
-
-      // Sign out from Supabase (this will trigger auth state change)
-      await Supabase.instance.client.auth.signOut();
+      await logoutManager.signOut(context);
 
       // Auth state listener will handle navigation to login page
     } catch (e) {
