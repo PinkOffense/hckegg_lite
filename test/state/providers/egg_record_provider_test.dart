@@ -211,8 +211,8 @@ void main() {
           eggsCollected: 10,
         );
 
-        expect(
-          () => provider.saveRecord(record),
+        await expectLater(
+          provider.saveRecord(record),
           throwsException,
         );
         expect(provider.error, isNotNull);
@@ -244,8 +244,8 @@ void main() {
       test('sets error and rethrows on repository failure', () async {
         mockRepository.shouldThrowOnDelete = true;
 
-        expect(
-          () => provider.deleteRecord('2024-01-15'),
+        await expectLater(
+          provider.deleteRecord('2024-01-15'),
           throwsException,
         );
         expect(provider.error, isNotNull);

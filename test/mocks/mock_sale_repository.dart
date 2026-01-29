@@ -1,7 +1,7 @@
 // test/mocks/mock_sale_repository.dart
 
-import '../../lib/domain/repositories/sale_repository.dart';
-import '../../lib/models/egg_sale.dart';
+import 'package:hckegg_lite/domain/repositories/sale_repository.dart';
+import 'package:hckegg_lite/models/egg_sale.dart';
 
 /// Mock implementation of SaleRepository for testing
 class MockSaleRepository implements SaleRepository {

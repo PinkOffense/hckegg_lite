@@ -90,7 +90,7 @@ void main() {
         mockRepository.shouldThrowOnSave = true;
         final record = _createVetRecord('1', '2024-01-15', VetRecordType.vaccine);
 
-        expect(() => provider.saveVetRecord(record), throwsException);
+        await expectLater(provider.saveVetRecord(record), throwsException);
         expect(provider.error, isNotNull);
       });
     });
@@ -113,7 +113,7 @@ void main() {
       test('sets error and rethrows on repository failure', () async {
         mockRepository.shouldThrowOnDelete = true;
 
-        expect(() => provider.deleteVetRecord('1'), throwsException);
+        await expectLater(provider.deleteVetRecord('1'), throwsException);
         expect(provider.error, isNotNull);
       });
     });

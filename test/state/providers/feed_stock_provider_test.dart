@@ -112,7 +112,7 @@ void main() {
       test('sets error and rethrows on repository failure', () async {
         mockRepository.shouldThrowOnDelete = true;
 
-        expect(() => provider.deleteFeedStock('1'), throwsException);
+        await expectLater(provider.deleteFeedStock('1'), throwsException);
         expect(provider.error, isNotNull);
       });
     });

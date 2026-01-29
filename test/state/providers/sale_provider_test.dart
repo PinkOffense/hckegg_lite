@@ -98,7 +98,7 @@ void main() {
         mockRepository.shouldThrowOnSave = true;
         final sale = _createSale('1', '2024-01-15', 12, 0.50);
 
-        expect(() => provider.saveSale(sale), throwsException);
+        await expectLater(provider.saveSale(sale), throwsException);
         expect(provider.error, isNotNull);
       });
     });
@@ -121,7 +121,7 @@ void main() {
       test('sets error and rethrows on repository failure', () async {
         mockRepository.shouldThrowOnDelete = true;
 
-        expect(() => provider.deleteSale('1'), throwsException);
+        await expectLater(provider.deleteSale('1'), throwsException);
         expect(provider.error, isNotNull);
       });
     });

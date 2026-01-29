@@ -1,7 +1,7 @@
 // test/mocks/mock_vet_repository.dart
 
-import '../../lib/domain/repositories/vet_repository.dart';
-import '../../lib/models/vet_record.dart';
+import 'package:hckegg_lite/domain/repositories/vet_repository.dart';
+import 'package:hckegg_lite/models/vet_record.dart';
 
 /// Mock implementation of VetRepository for testing
 class MockVetRepository implements VetRepository {

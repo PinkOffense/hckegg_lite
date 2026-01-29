@@ -1,7 +1,7 @@
 // test/mocks/mock_egg_repository.dart
 
-import '../../lib/domain/repositories/egg_repository.dart';
-import '../../lib/models/daily_egg_record.dart';
+import 'package:hckegg_lite/domain/repositories/egg_repository.dart';
+import 'package:hckegg_lite/models/daily_egg_record.dart';
 
 /// Mock implementation of EggRepository for testing
 class MockEggRepository implements EggRepository {
