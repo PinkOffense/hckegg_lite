@@ -7,6 +7,7 @@ import '../l10n/translations.dart';
 import '../dialogs/vet_record_dialog.dart';
 import '../dialogs/schedule_vet_visit_dialog.dart';
 import '../widgets/app_scaffold.dart';
+import '../widgets/gradient_fab.dart';
 
 class VetCalendarPage extends StatefulWidget {
   const VetCalendarPage({super.key});
@@ -100,10 +101,11 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
               ),
             ]
           : null,
-      fab: FloatingActionButton.extended(
+      fab: GradientFAB(
+        extended: true,
+        icon: Icons.add,
+        label: locale == 'pt' ? 'Agendar Visita' : 'Schedule Visit',
         onPressed: () => _scheduleVisit(context, _selectedDate),
-        icon: const Icon(Icons.add),
-        label: Text(locale == 'pt' ? 'Agendar Visita' : 'Schedule Visit'),
       ),
       body: Column(
         children: [

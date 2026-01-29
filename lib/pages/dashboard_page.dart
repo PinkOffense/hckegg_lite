@@ -94,10 +94,11 @@ class _DashboardPageState extends State<DashboardPage>
               final recentSales = saleProvider.getRecentSales(7);
 
             if (records.isEmpty) {
-              return EmptyState(
-                icon: Icons.egg_outlined,
+              return ChickenEmptyState(
                 title: locale == 'pt' ? 'Sem Registos' : 'No Records Yet',
-                message: locale == 'pt' ? 'Comece a registar a sua recolha diária de ovos' : 'Start tracking your daily egg collection',
+                message: locale == 'pt'
+                    ? 'Comece a registar a sua recolha diária de ovos'
+                    : 'Start tracking your daily egg collection',
                 actionLabel: locale == 'pt' ? 'Adicionar Registo de Hoje' : 'Add Today\'s Record',
                 onAction: () => showDialog(
                   context: context,

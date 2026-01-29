@@ -6,6 +6,8 @@ import '../state/providers/providers.dart';
 import '../dialogs/reservation_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../widgets/app_scaffold.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/gradient_fab.dart';
 
 class ReservationsPage extends StatelessWidget {
   const ReservationsPage({super.key});
@@ -28,46 +30,32 @@ class ReservationsPage extends StatelessWidget {
 
     return AppScaffold(
       title: locale == 'pt' ? 'Reservas de Ovos' : 'Egg Reservations',
-      fab: FloatingActionButton.extended(
+      fab: GradientFAB(
+        extended: true,
+        icon: Icons.add,
+        label: locale == 'pt' ? 'Nova Reserva' : 'New Reservation',
         onPressed: () {
           showDialog(
             context: context,
             builder: (context) => const ReservationDialog(),
           );
         },
-        icon: const Icon(Icons.add),
-        label: Text(locale == 'pt' ? 'Nova Reserva' : 'New Reservation'),
       ),
       body: reservations.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.bookmark_border,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    locale == 'pt'
-                        ? 'Nenhuma reserva encontrada'
-                        : 'No reservations found',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    locale == 'pt'
-                        ? 'Toque no + para adicionar uma reserva'
-                        : 'Tap + to add a reservation',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ],
-              ),
+          ? ChickenEmptyState(
+              title: locale == 'pt'
+                  ? 'Nenhuma reserva encontrada'
+                  : 'No reservations found',
+              message: locale == 'pt'
+                  ? 'Reserve ovos para os seus clientes'
+                  : 'Reserve eggs for your customers',
+              actionLabel: locale == 'pt' ? 'Nova Reserva' : 'New Reservation',
+              onAction: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => const ReservationDialog(),
+                );
+              },
             )
           : ListView(
               padding: const EdgeInsets.all(16),

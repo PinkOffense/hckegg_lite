@@ -6,6 +6,8 @@ import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../dialogs/vet_record_dialog.dart';
 import '../widgets/app_scaffold.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/gradient_fab.dart';
 
 class HenHealthPage extends StatefulWidget {
   const HenHealthPage({super.key});
@@ -39,10 +41,11 @@ class _HenHealthPageState extends State<HenHealthPage> {
 
     return AppScaffold(
       title: t('hen_health'),
-      fab: FloatingActionButton.extended(
+      fab: GradientFAB(
+        extended: true,
+        icon: Icons.add,
+        label: t('add_vet_record'),
         onPressed: () => _addRecord(context),
-        icon: const Icon(Icons.add),
-        label: Text(t('add_vet_record')),
       ),
       body: Column(
         children: [
@@ -113,35 +116,15 @@ class _HenHealthPageState extends State<HenHealthPage> {
           // Records List
           Expanded(
             child: allRecords.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.health_and_safety_outlined,
-                          size: 64,
-                          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          locale == 'pt'
-                              ? 'Nenhum registo veterinário'
-                              : 'No veterinary records',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          locale == 'pt'
-                              ? 'Toque em + para adicionar'
-                              : 'Tap + to add a record',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ],
-                    ),
+                ? ChickenEmptyState(
+                    title: locale == 'pt'
+                        ? 'Nenhum registo veterinário'
+                        : 'No veterinary records',
+                    message: locale == 'pt'
+                        ? 'Registe vacinas, tratamentos e mortes das suas galinhas'
+                        : 'Record vaccinations, treatments and deaths for your chickens',
+                    actionLabel: t('add_vet_record'),
+                    onAction: () => _addRecord(context),
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

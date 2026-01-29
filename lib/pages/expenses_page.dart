@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/gradient_fab.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/expense.dart';
@@ -297,38 +299,18 @@ class ExpensesPage extends StatelessWidget {
                     const SizedBox(height: 12),
 
                     if (sortedStandaloneExpenses.isEmpty)
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.add_circle_outline,
-                                  size: 64,
-                                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  locale == 'pt'
-                                      ? 'Nenhuma despesa independente'
-                                      : 'No standalone expenses',
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  locale == 'pt'
-                                      ? 'Toque no + para adicionar'
-                                      : 'Tap + to add',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                      EmptyState(
+                        icon: Icons.receipt_long_outlined,
+                        title: locale == 'pt'
+                            ? 'Nenhuma despesa independente'
+                            : 'No standalone expenses',
+                        message: locale == 'pt'
+                            ? 'Registe despesas como ração, manutenção, etc.'
+                            : 'Record expenses like feed, maintenance, etc.',
+                        actionLabel: locale == 'pt' ? 'Adicionar Despesa' : 'Add Expense',
+                        onAction: () => showDialog(
+                          context: context,
+                          builder: (_) => const ExpenseDialog(),
                         ),
                       )
                     else
@@ -349,13 +331,14 @@ class ExpensesPage extends StatelessWidget {
               Positioned(
                 bottom: 16,
                 right: 16,
-                child: FloatingActionButton.extended(
+                child: GradientFAB(
+                  extended: true,
+                  icon: Icons.add,
+                  label: t('add_expense'),
                   onPressed: () => showDialog(
                     context: context,
                     builder: (_) => const ExpenseDialog(),
                   ),
-                  icon: const Icon(Icons.add),
-                  label: Text(t('add_expense')),
                 ),
               ),
             ],

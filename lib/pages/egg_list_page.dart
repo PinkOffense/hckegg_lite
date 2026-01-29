@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/gradient_fab.dart';
 import '../dialogs/daily_record_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
@@ -46,11 +47,12 @@ class _EggListPageState extends State<EggListPage> {
               : eggProvider.search(_searchQuery);
 
           if (eggProvider.records.isEmpty) {
-            return EmptyState(
-              icon: Icons.egg_outlined,
-              title: 'No Records Yet',
-              message: 'Start tracking your daily egg collection',
-              actionLabel: 'Add First Record',
+            return ChickenEmptyState(
+              title: locale == 'pt' ? 'Sem Registos' : 'No Records Yet',
+              message: locale == 'pt'
+                  ? 'Comece a registar a sua recolha diária de ovos'
+                  : 'Start tracking your daily egg collection',
+              actionLabel: locale == 'pt' ? 'Adicionar Primeiro Registo' : 'Add First Record',
               onAction: () => showDialog(
                 context: context,
                 builder: (_) => const DailyRecordDialog(),
@@ -87,29 +89,12 @@ class _EggListPageState extends State<EggListPage> {
               // Records List
               Expanded(
                 child: records.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.search_off,
-                              size: 64,
-                              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No records found',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Try a different search term',
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
+                    ? SearchEmptyState(
+                        query: _searchQuery,
+                        onClear: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -167,12 +152,13 @@ class _EggListPageState extends State<EggListPage> {
           );
         },
       ),
-      fab: FloatingActionButton(
+      fab: GradientFAB(
+        icon: Icons.add,
+        tooltip: locale == 'pt' ? 'Adicionar Registo' : 'Add Record',
         onPressed: () => showDialog(
           context: context,
           builder: (_) => const DailyRecordDialog(),
         ),
-        child: const Icon(Icons.add),
       ),
     );
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/gradient_fab.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/egg_sale.dart';
@@ -160,37 +162,13 @@ class SalesPage extends StatelessWidget {
 
                     // Sales List
                     if (sales.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.inventory_2_outlined,
-                                size: 64,
-                                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                locale == 'pt'
-                                    ? 'Nenhuma venda registada'
-                                    : 'No sales recorded',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                locale == 'pt'
-                                    ? 'Toque no + para adicionar uma venda'
-                                    : 'Tap + to add a sale',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      ChickenEmptyState(
+                        title: locale == 'pt' ? 'Nenhuma venda registada' : 'No sales recorded',
+                        message: locale == 'pt'
+                            ? 'Toque no botão para adicionar uma venda'
+                            : 'Tap the button to add a sale',
+                        actionLabel: locale == 'pt' ? 'Nova Venda' : 'New Sale',
+                        onAction: () => _showSaleDialog(context, null),
                       )
                     else
                       ...sales.map((sale) => _SaleCard(
@@ -207,10 +185,11 @@ class SalesPage extends StatelessWidget {
               Positioned(
                 right: 16,
                 bottom: 16,
-                child: FloatingActionButton.extended(
+                child: GradientFAB(
+                  extended: true,
+                  icon: Icons.add,
+                  label: locale == 'pt' ? 'Nova Venda' : 'New Sale',
                   onPressed: () => _showSaleDialog(context, null),
-                  icon: const Icon(Icons.add),
-                  label: Text(locale == 'pt' ? 'Nova Venda' : 'New Sale'),
                 ),
               ),
             ],
