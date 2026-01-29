@@ -464,59 +464,56 @@ class _LoginPageState extends State<LoginPage>
 
     return Scaffold(
       body: SafeArea(
-        child: Stack(
-          children: [
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 140.0),
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 440),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // 3D Chicken model
-                            const SizedBox(
-                              height: 180,
-                              child: AnimatedChickens(),
+        child: Center(
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Cute chicken with egg animation
+                          const AnimatedChickens(),
+                          const SizedBox(height: 16),
+
+                          // App name
+                          Text(
+                            t('app_title'),
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
+                              letterSpacing: 1.2,
                             ),
-                            const SizedBox(height: 8),
-
-                        // App name
-                        Text(
-                          t('app_title'),
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.primary,
-                            letterSpacing: 1.2,
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                        // Title
-                        Text(
-                          _isSignup ? t('join_us') : t('welcome_back'),
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
+                          // Title
+                          Text(
+                            _isSignup ? t('join_us') : t('welcome_back'),
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
+                          const SizedBox(height: 8),
 
-                        // Subtitle
-                        Text(
-                          _isSignup
-                              ? t('create_account_to_start')
-                              : t('sign_in_to_continue'),
-                          style: theme.textTheme.bodyLarge?.copyWith(
+                          // Subtitle
+                          Text(
+                            _isSignup
+                                ? t('create_account_to_start')
+                                : t('sign_in_to_continue'),
+                            style: theme.textTheme.bodyLarge?.copyWith(
                             color: colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                           textAlign: TextAlign.center,
@@ -785,11 +782,9 @@ class _LoginPageState extends State<LoginPage>
             ),
           ),
         ),
-          ],
-        ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 // Password strength enum
