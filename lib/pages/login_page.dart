@@ -481,38 +481,12 @@ class _LoginPageState extends State<LoginPage>
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                        // App logo/icon
-                        Hero(
-                          tag: 'app_logo',
-                          child: Container(
-                            height: 100,
-                            width: 100,
-                            margin: const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  colorScheme.primary,
-                                  colorScheme.primaryContainer,
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colorScheme.primary.withValues(alpha: 0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
+                            // 3D Chicken model
+                            const SizedBox(
+                              height: 180,
+                              child: AnimatedChickens(),
                             ),
-                            child: const Icon(
-                              Icons.egg_outlined,
-                              size: 50,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
+                            const SizedBox(height: 8),
 
                         // App name
                         Text(
@@ -810,15 +784,6 @@ class _LoginPageState extends State<LoginPage>
               ),
             ),
           ),
-        ),
-            // Animated chickens at the bottom
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: AnimatedChickens(),
-            ),
-          ],
         ),
       ),
     );
