@@ -1,7 +1,7 @@
 // test/mocks/mock_expense_repository.dart
 
-import '../../lib/domain/repositories/expense_repository.dart';
-import '../../lib/models/expense.dart';
+import 'package:hckegg_lite/domain/repositories/expense_repository.dart';
+import 'package:hckegg_lite/models/expense.dart';
 
 /// Mock implementation of ExpenseRepository for testing
 class MockExpenseRepository implements ExpenseRepository {

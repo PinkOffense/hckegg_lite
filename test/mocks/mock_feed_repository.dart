@@ -1,7 +1,7 @@
 // test/mocks/mock_feed_repository.dart
 
-import '../../lib/domain/repositories/feed_repository.dart';
-import '../../lib/models/feed_stock.dart';
+import 'package:hckegg_lite/domain/repositories/feed_repository.dart';
+import 'package:hckegg_lite/models/feed_stock.dart';
 
 /// Mock implementation of FeedRepository for testing
 class MockFeedRepository implements FeedRepository {
