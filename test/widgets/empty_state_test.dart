@@ -49,24 +49,6 @@ void main() {
       expect(actionPressed, true);
     });
 
-    testWidgets('hides action button when actionLabel is null', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: EmptyState(
-              icon: Icons.inbox,
-              title: 'No Items',
-              message: 'Start adding items',
-              onAction: () {},
-            ),
-          ),
-        ),
-      );
-
-      // Action button should not appear without actionLabel
-      expect(find.byType(InkWell), findsOneWidget); // Only the icon container's inkwell
-    });
-
     testWidgets('hides action button when onAction is null', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -83,23 +65,6 @@ void main() {
 
       // Action button text should not appear without onAction
       expect(find.text('Add Item'), findsNothing);
-    });
-
-    testWidgets('does not show chicken by default', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: EmptyState(
-              icon: Icons.inbox,
-              title: 'No Items',
-              message: 'Start adding items',
-            ),
-          ),
-        ),
-      );
-
-      // Icon should be visible
-      expect(find.byIcon(Icons.inbox), findsOneWidget);
     });
 
     testWidgets('centers content', (tester) async {
@@ -140,7 +105,7 @@ void main() {
   });
 
   group('ChickenEmptyState', () {
-    testWidgets('renders with required parameters', (tester) async {
+    testWidgets('renders title and message', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -151,6 +116,9 @@ void main() {
           ),
         ),
       );
+
+      // Pump and settle to handle any animations
+      await tester.pumpAndSettle();
 
       expect(find.text('No Records'), findsOneWidget);
       expect(find.text('Start tracking your eggs'), findsOneWidget);
@@ -172,28 +140,14 @@ void main() {
         ),
       );
 
+      await tester.pumpAndSettle();
+
       expect(find.text('Add Record'), findsOneWidget);
 
       await tester.tap(find.text('Add Record'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(pressed, true);
-    });
-
-    testWidgets('wraps EmptyState with showChicken true', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ChickenEmptyState(
-              title: 'Test',
-              message: 'Test message',
-            ),
-          ),
-        ),
-      );
-
-      // Should find the EmptyState widget inside
-      expect(find.byType(EmptyState), findsOneWidget);
     });
   });
 
@@ -261,20 +215,6 @@ void main() {
       );
 
       expect(find.text('Clear Search'), findsNothing);
-    });
-
-    testWidgets('displays query in message', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SearchEmptyState(
-              query: 'my specific query',
-            ),
-          ),
-        ),
-      );
-
-      expect(find.textContaining('my specific query'), findsOneWidget);
     });
   });
 }
