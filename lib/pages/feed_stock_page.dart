@@ -6,6 +6,8 @@ import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../widgets/app_scaffold.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/gradient_fab.dart';
 import '../dialogs/feed_stock_dialog.dart';
 
 class FeedStockPage extends StatefulWidget {
@@ -29,10 +31,11 @@ class _FeedStockPageState extends State<FeedStockPage> {
 
     return AppScaffold(
       title: locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
-      fab: FloatingActionButton.extended(
+      fab: GradientFAB(
+        extended: true,
+        icon: Icons.add,
+        label: locale == 'pt' ? 'Adicionar' : 'Add',
         onPressed: () => _addStock(context, locale),
-        icon: const Icon(Icons.add),
-        label: Text(locale == 'pt' ? 'Adicionar' : 'Add'),
       ),
       body: Column(
         children: [
@@ -89,35 +92,14 @@ class _FeedStockPageState extends State<FeedStockPage> {
           // Stock List
           Expanded(
             child: stocks.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 64,
-                          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          locale == 'pt'
-                              ? 'Nenhum stock registado'
-                              : 'No stock registered',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          locale == 'pt'
-                              ? 'Toque em + para adicionar ração'
-                              : 'Tap + to add feed',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ],
-                    ),
+                ? EmptyState(
+                    icon: Icons.grass_outlined,
+                    title: locale == 'pt' ? 'Nenhum stock registado' : 'No stock registered',
+                    message: locale == 'pt'
+                        ? 'Adicione e controle o stock de ração das suas galinhas'
+                        : 'Add and track your chicken feed stock',
+                    actionLabel: locale == 'pt' ? 'Adicionar Ração' : 'Add Feed',
+                    onAction: () => _addStock(context, locale),
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
