@@ -106,22 +106,23 @@ void main() {
 
   group('ChickenEmptyState', () {
     testWidgets('renders title and message', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ChickenEmptyState(
-              title: 'No Records',
-              message: 'Start tracking your eggs',
+      // Use runAsync because AnimatedChickens has real async operations (Future.delayed)
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: ChickenEmptyState(
+                title: 'No Records',
+                message: 'Start tracking your eggs',
+              ),
             ),
           ),
-        ),
-      );
+        );
+        // Allow widget tree to fully build
+        await Future.delayed(const Duration(milliseconds: 100));
+      });
 
-      // Pump multiple frames to allow widget tree to build
-      // AnimatedChickens has infinite animations, so we can't use pumpAndSettle
-      for (int i = 0; i < 5; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
+      await tester.pump();
 
       expect(find.text('No Records'), findsOneWidget);
       expect(find.text('Start tracking your eggs'), findsOneWidget);
@@ -130,23 +131,25 @@ void main() {
     testWidgets('shows action button when provided', (tester) async {
       bool pressed = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ChickenEmptyState(
-              title: 'No Records',
-              message: 'Start tracking',
-              actionLabel: 'Add Record',
-              onAction: () => pressed = true,
+      // Use runAsync because AnimatedChickens has real async operations (Future.delayed)
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ChickenEmptyState(
+                title: 'No Records',
+                message: 'Start tracking',
+                actionLabel: 'Add Record',
+                onAction: () => pressed = true,
+              ),
             ),
           ),
-        ),
-      );
+        );
+        // Allow widget tree to fully build
+        await Future.delayed(const Duration(milliseconds: 100));
+      });
 
-      // Pump multiple frames to allow widget tree to build
-      for (int i = 0; i < 5; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
+      await tester.pump();
 
       expect(find.text('Add Record'), findsOneWidget);
 
