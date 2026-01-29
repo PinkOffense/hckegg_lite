@@ -978,6 +978,42 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
 
+            // Sign Out
+            Card(
+              child: ListTile(
+                leading: _isLoggingOut
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        Icons.logout_rounded,
+                        color: theme.colorScheme.primary,
+                      ),
+                title: Text(
+                  _isLoggingOut
+                      ? (locale == 'pt' ? 'A sair...' : 'Signing out...')
+                      : (locale == 'pt' ? 'Terminar Sessão' : 'Sign Out'),
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(locale == 'pt'
+                    ? 'Sair da sua conta neste dispositivo'
+                    : 'Sign out of your account on this device'),
+                trailing: _isLoggingOut
+                    ? null
+                    : Icon(
+                        Icons.chevron_right,
+                        color: theme.colorScheme.primary,
+                      ),
+                onTap: _isLoggingOut ? null : () => _handleLogout(locale),
+              ),
+            ),
+            const SizedBox(height: 8),
+
             // Delete Account
             Card(
               color: Theme.of(context).brightness == Brightness.light
