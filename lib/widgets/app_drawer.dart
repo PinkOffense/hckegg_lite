@@ -39,17 +39,23 @@ class _AppDrawerState extends State<AppDrawer> {
     final t = (String k) => Translations.of(locale, k);
     final user = Supabase.instance.client.auth.currentUser;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final currentRoute = ModalRoute.of(context)?.settings.name ?? '/';
 
     // Get display name and avatar
     final displayName = _profile?.displayName ?? user?.email?.split('@').first ?? 'User';
     final avatarUrl = _profile?.avatarUrl;
     final initial = displayName.substring(0, 1).toUpperCase();
 
+    // Theme colors
+    const accentPink = Color(0xFFFF69B4);
+    const warmPink = Color(0xFFFFB6C1);
+
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
-            // User Profile Section (fixed at top)
+            // User Profile Section with gradient
             GestureDetector(
               onTap: () {
                 Navigator.pop(context);
@@ -59,26 +65,48 @@ class _AppDrawerState extends State<AppDrawer> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            const Color(0xFF2D2D44),
+                            const Color(0xFF1A1A2E),
+                          ]
+                        : [
+                            warmPink.withValues(alpha: 0.3),
+                            accentPink.withValues(alpha: 0.1),
+                          ],
+                  ),
                 ),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: theme.colorScheme.primary,
-                      backgroundImage: avatarUrl != null
-                          ? NetworkImage(avatarUrl)
-                          : null,
-                      child: avatarUrl == null
-                          ? Text(
-                              initial,
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onPrimary,
-                              ),
-                            )
-                          : null,
+                    // Avatar with border
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [accentPink, warmPink],
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 28,
+                        backgroundColor: theme.colorScheme.surface,
+                        backgroundImage: avatarUrl != null
+                            ? NetworkImage(avatarUrl)
+                            : null,
+                        child: avatarUrl == null
+                            ? Text(
+                                initial,
+                                style: TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.bold,
+                                  color: accentPink,
+                                ),
+                              )
+                            : null,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -105,94 +133,125 @@ class _AppDrawerState extends State<AppDrawer> {
                         ],
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: accentPink.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.chevron_right,
+                        color: accentPink,
+                        size: 20,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-            const Divider(height: 1),
 
             // Scrollable menu items
             Expanded(
               child: ListView(
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
-                  ListTile(
-                    leading: const Icon(Icons.dashboard),
-                    title: Text(t('dashboard')),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/');
-                    },
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.home_rounded,
+                    emoji: '🏠',
+                    title: t('dashboard'),
+                    route: '/',
+                    currentRoute: currentRoute,
+                    color: const Color(0xFF6C63FF),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.list),
-                    title: Text(t('egg_records')),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/eggs');
-                    },
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.egg_rounded,
+                    emoji: '🥚',
+                    title: t('egg_records'),
+                    route: '/eggs',
+                    currentRoute: currentRoute,
+                    color: const Color(0xFFFFB347),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.sell),
-                    title: Text(locale == 'pt' ? 'Vendas' : 'Sales'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/sales');
-                    },
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.store_rounded,
+                    emoji: '💰',
+                    title: locale == 'pt' ? 'Vendas' : 'Sales',
+                    route: '/sales',
+                    currentRoute: currentRoute,
+                    color: const Color(0xFF4CAF50),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.payment),
-                    title: Text(locale == 'pt' ? 'Pagamentos' : 'Payments'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/payments');
-                    },
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.credit_card_rounded,
+                    emoji: '💳',
+                    title: locale == 'pt' ? 'Pagamentos' : 'Payments',
+                    route: '/payments',
+                    currentRoute: currentRoute,
+                    color: const Color(0xFF2196F3),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.bookmark),
-                    title: Text(locale == 'pt' ? 'Reservas' : 'Reservations'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/reservations');
-                    },
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.calendar_month_rounded,
+                    emoji: '📅',
+                    title: locale == 'pt' ? 'Reservas' : 'Reservations',
+                    route: '/reservations',
+                    currentRoute: currentRoute,
+                    color: const Color(0xFF9C27B0),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.account_balance_wallet),
-                    title: Text(t('expenses')),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/expenses');
-                    },
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.receipt_long_rounded,
+                    emoji: '📊',
+                    title: t('expenses'),
+                    route: '/expenses',
+                    currentRoute: currentRoute,
+                    color: const Color(0xFFE91E63),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.health_and_safety),
-                    title: Text(t('hen_health')),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/health');
-                    },
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.favorite_rounded,
+                    emoji: '🐔',
+                    title: t('hen_health'),
+                    route: '/health',
+                    currentRoute: currentRoute,
+                    color: const Color(0xFFFF5722),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.inventory_2),
-                    title: Text(locale == 'pt' ? 'Stock de Ração' : 'Feed Stock'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/feed-stock');
-                    },
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.grass_rounded,
+                    emoji: '🌾',
+                    title: locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
+                    route: '/feed-stock',
+                    currentRoute: currentRoute,
+                    color: const Color(0xFF8BC34A),
                   ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.info_outline),
-                    title: Text(t('about')),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Divider(),
+                  ),
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.info_outline_rounded,
+                    emoji: 'ℹ️',
+                    title: t('about'),
+                    route: null,
+                    currentRoute: currentRoute,
+                    color: Colors.grey,
                     onTap: () {
                       showAboutDialog(
                         context: context,
                         applicationName: t('app_title'),
                         applicationVersion: '1.0.0',
+                        applicationIcon: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: warmPink.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text('🐔', style: TextStyle(fontSize: 40)),
+                        ),
                         children: [Text(t('offline_description'))],
                       );
                     },
@@ -200,7 +259,118 @@ class _AppDrawerState extends State<AppDrawer> {
                 ],
               ),
             ),
+
+            // Bottom branding
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '🐔',
+                    style: TextStyle(fontSize: 20),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    t('app_title'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '🥚',
+                    style: TextStyle(fontSize: 20),
+                  ),
+                ],
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({
+    required BuildContext context,
+    required IconData icon,
+    required String emoji,
+    required String title,
+    required String? route,
+    required String currentRoute,
+    required Color color,
+    VoidCallback? onTap,
+  }) {
+    final theme = Theme.of(context);
+    final isSelected = route != null && currentRoute == route;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap ?? () {
+            Navigator.pop(context);
+            if (route != null) {
+              Navigator.pushReplacementNamed(context, route);
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? color.withValues(alpha: isDark ? 0.2 : 0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: isSelected
+                  ? Border.all(color: color.withValues(alpha: 0.3), width: 1)
+                  : null,
+            ),
+            child: Row(
+              children: [
+                // Emoji or Icon with colored background
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: isDark ? 0.2 : 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: Text(
+                      emoji,
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected
+                          ? color
+                          : theme.textTheme.bodyLarge?.color,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
