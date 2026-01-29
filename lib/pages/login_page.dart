@@ -786,6 +786,7 @@ class _LoginPageState extends State<LoginPage>
     ),
   );
 }
+}
 
 // Password strength enum
 enum _PasswordStrength { none, weak, medium, strong, veryStrong }
