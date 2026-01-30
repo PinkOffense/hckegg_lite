@@ -165,9 +165,9 @@ class SalesPage extends StatelessWidget {
                       ChickenEmptyState(
                         title: locale == 'pt' ? 'Nenhuma venda registada' : 'No sales recorded',
                         message: locale == 'pt'
-                            ? 'Toque no botão para adicionar uma venda'
-                            : 'Tap the button to add a sale',
-                        actionLabel: locale == 'pt' ? 'Nova Venda' : 'New Sale',
+                            ? 'Registe as vendas de ovos e acompanhe as suas receitas'
+                            : 'Record egg sales and track your revenue',
+                        actionLabel: locale == 'pt' ? 'Adicionar Venda' : 'Add Sale',
                         onAction: () => _showSaleDialog(context, null),
                       )
                     else
@@ -188,7 +188,7 @@ class SalesPage extends StatelessWidget {
                 child: GradientFAB(
                   extended: true,
                   icon: Icons.add,
-                  label: locale == 'pt' ? 'Nova Venda' : 'New Sale',
+                  label: locale == 'pt' ? 'Adicionar Venda' : 'Add Sale',
                   onPressed: () => _showSaleDialog(context, null),
                 ),
               ),

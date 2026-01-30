@@ -34,7 +34,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
       fab: GradientFAB(
         extended: true,
         icon: Icons.add,
-        label: locale == 'pt' ? 'Adicionar' : 'Add',
+        label: locale == 'pt' ? 'Adicionar Ração' : 'Add Feed',
         onPressed: () => _addStock(context, locale),
       ),
       body: Column(

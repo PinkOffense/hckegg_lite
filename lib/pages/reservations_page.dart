@@ -33,7 +33,7 @@ class ReservationsPage extends StatelessWidget {
       fab: GradientFAB(
         extended: true,
         icon: Icons.add,
-        label: locale == 'pt' ? 'Nova Reserva' : 'New Reservation',
+        label: locale == 'pt' ? 'Adicionar Reserva' : 'Add Reservation',
         onPressed: () {
           showDialog(
             context: context,
@@ -47,9 +47,9 @@ class ReservationsPage extends StatelessWidget {
                   ? 'Nenhuma reserva encontrada'
                   : 'No reservations found',
               message: locale == 'pt'
-                  ? 'Reserve ovos para os seus clientes'
-                  : 'Reserve eggs for your customers',
-              actionLabel: locale == 'pt' ? 'Nova Reserva' : 'New Reservation',
+                  ? 'Gira reservas de ovos para os seus clientes'
+                  : 'Manage egg reservations for your customers',
+              actionLabel: locale == 'pt' ? 'Adicionar Reserva' : 'Add Reservation',
               onAction: () {
                 showDialog(
                   context: context,
