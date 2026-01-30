@@ -271,23 +271,27 @@ class _AppDrawerState extends State<AppDrawer> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.flutter_dash,
-                    size: 20,
-                    color: Colors.amber.shade700,
+                    Icons.egg_rounded,
+                    size: 18,
+                    color: accentPink,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    t('app_title'),
+                    'HCKEgg 360',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
-                      fontWeight: FontWeight.w500,
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.egg_alt,
-                    size: 20,
-                    color: Colors.amber.shade600,
+                  const SizedBox(width: 6),
+                  Text(
+                    'v1.0',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: accentPink.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.w500,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
