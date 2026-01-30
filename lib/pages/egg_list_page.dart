@@ -39,7 +39,7 @@ class _EggListPageState extends State<EggListPage> {
     final theme = Theme.of(context);
 
     return AppScaffold(
-      title: 'Daily Records',
+      title: locale == 'pt' ? 'Registos Diários' : 'Daily Records',
       body: Consumer<EggRecordProvider>(
         builder: (context, eggProvider, _) {
           final records = _searchQuery.isEmpty
@@ -50,9 +50,9 @@ class _EggListPageState extends State<EggListPage> {
             return ChickenEmptyState(
               title: locale == 'pt' ? 'Sem Registos' : 'No Records Yet',
               message: locale == 'pt'
-                  ? 'Comece a registar a sua recolha diária de ovos'
-                  : 'Start tracking your daily egg collection',
-              actionLabel: locale == 'pt' ? 'Adicionar Primeiro Registo' : 'Add First Record',
+                  ? 'Registe a sua recolha diária de ovos'
+                  : 'Track your daily egg collection',
+              actionLabel: locale == 'pt' ? 'Adicionar Registo' : 'Add Record',
               onAction: () => showDialog(
                 context: context,
                 builder: (_) => const DailyRecordDialog(),

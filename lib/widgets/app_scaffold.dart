@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/locale_provider.dart';
 import '../state/theme_provider.dart';
+import '../state/providers/vet_record_provider.dart';
 import 'app_drawer.dart';
 
 class AppScaffold extends StatelessWidget {
@@ -43,11 +44,25 @@ class AppScaffold extends StatelessWidget {
   }
 
   List<Widget> _buildMobileActions(BuildContext context, String locale, ThemeProvider themeProvider) {
+    final vetProvider = Provider.of<VetRecordProvider>(context);
+    final todayAppointments = vetProvider.getTodayAppointments();
+    final hasAppointmentsToday = todayAppointments.isNotEmpty;
+
     return [
       if (additionalActions != null) ...additionalActions!,
       IconButton(
-        tooltip: locale == 'pt' ? 'Calendário' : 'Calendar',
-        icon: const Icon(Icons.calendar_month),
+        tooltip: hasAppointmentsToday
+            ? (locale == 'pt' ? 'Veterinário Hoje!' : 'Vet Today!')
+            : (locale == 'pt' ? 'Calendário' : 'Calendar'),
+        icon: Badge(
+          isLabelVisible: hasAppointmentsToday,
+          label: Text('${todayAppointments.length}'),
+          backgroundColor: Colors.red,
+          child: Icon(
+            Icons.calendar_month,
+            color: hasAppointmentsToday ? Colors.red : null,
+          ),
+        ),
         onPressed: () => Navigator.pushNamed(context, '/vet-calendar'),
       ),
       PopupMenuButton<String>(
@@ -144,11 +159,25 @@ class AppScaffold extends StatelessWidget {
   }
 
   List<Widget> _buildDesktopActions(BuildContext context, String locale, ThemeProvider themeProvider) {
+    final vetProvider = Provider.of<VetRecordProvider>(context);
+    final todayAppointments = vetProvider.getTodayAppointments();
+    final hasAppointmentsToday = todayAppointments.isNotEmpty;
+
     return [
       if (additionalActions != null) ...additionalActions!,
       IconButton(
-        tooltip: locale == 'pt' ? 'Calendário' : 'Calendar',
-        icon: const Icon(Icons.calendar_month),
+        tooltip: hasAppointmentsToday
+            ? (locale == 'pt' ? 'Veterinário Hoje!' : 'Vet Today!')
+            : (locale == 'pt' ? 'Calendário' : 'Calendar'),
+        icon: Badge(
+          isLabelVisible: hasAppointmentsToday,
+          label: Text('${todayAppointments.length}'),
+          backgroundColor: Colors.red,
+          child: Icon(
+            Icons.calendar_month,
+            color: hasAppointmentsToday ? Colors.red : null,
+          ),
+        ),
         onPressed: () => Navigator.pushNamed(context, '/vet-calendar'),
       ),
       PopupMenuButton<String>(
