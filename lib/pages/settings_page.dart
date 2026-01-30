@@ -499,12 +499,12 @@ class _SettingsPageState extends State<SettingsPage> {
       // Order matters: delete dependent data first
       await client.from('feed_movements').delete().eq('user_id', userId);
       await client.from('feed_stocks').delete().eq('user_id', userId);
-      await client.from('reservations').delete().eq('user_id', userId);
+      await client.from('egg_reservations').delete().eq('user_id', userId);
       await client.from('egg_sales').delete().eq('user_id', userId);
       await client.from('expenses').delete().eq('user_id', userId);
       await client.from('vet_records').delete().eq('user_id', userId);
       await client.from('daily_egg_records').delete().eq('user_id', userId);
-      await client.from('profiles').delete().eq('id', userId);
+      await client.from('user_profiles').delete().eq('user_id', userId);
 
       debugPrint('User data deleted successfully');
 
