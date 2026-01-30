@@ -5,15 +5,16 @@ import 'package:hckegg_lite/core/result.dart';
 import 'package:hckegg_lite/core/failure.dart';
 import 'package:hckegg_lite/core/use_case.dart';
 import 'package:hckegg_lite/models/vet_record.dart';
-import 'package:hckegg_lite/features/health/domain/use_cases/get_vet_records.dart';
-import 'package:hckegg_lite/features/health/domain/use_cases/get_upcoming_appointments.dart';
-import 'package:hckegg_lite/features/health/domain/use_cases/create_vet_record.dart';
-import 'package:hckegg_lite/features/health/domain/use_cases/update_vet_record.dart';
-import 'package:hckegg_lite/features/health/domain/use_cases/delete_vet_record.dart';
+import 'package:hckegg_lite/features/health/domain/usecases/vet_usecases.dart';
 import 'package:hckegg_lite/state/providers/vet_record_provider.dart';
+
+import 'package:hckegg_lite/features/health/domain/repositories/vet_repository.dart';
 
 // Mock Use Cases
 class MockGetVetRecords implements GetVetRecords {
+  @override
+  VetRepository get repository => throw UnimplementedError();
+
   List<VetRecord> records = [];
   bool shouldFail = false;
   int callCount = 0;
@@ -29,6 +30,9 @@ class MockGetVetRecords implements GetVetRecords {
 }
 
 class MockGetUpcomingAppointments implements GetUpcomingAppointments {
+  @override
+  VetRepository get repository => throw UnimplementedError();
+
   List<VetRecord> records = [];
 
   @override
@@ -38,6 +42,9 @@ class MockGetUpcomingAppointments implements GetUpcomingAppointments {
 }
 
 class MockCreateVetRecord implements CreateVetRecord {
+  @override
+  VetRepository get repository => throw UnimplementedError();
+
   bool shouldFail = false;
   int callCount = 0;
 
@@ -52,6 +59,9 @@ class MockCreateVetRecord implements CreateVetRecord {
 }
 
 class MockUpdateVetRecord implements UpdateVetRecord {
+  @override
+  VetRepository get repository => throw UnimplementedError();
+
   bool shouldFail = false;
   int callCount = 0;
 
@@ -66,6 +76,9 @@ class MockUpdateVetRecord implements UpdateVetRecord {
 }
 
 class MockDeleteVetRecord implements DeleteVetRecord {
+  @override
+  VetRepository get repository => throw UnimplementedError();
+
   bool shouldFail = false;
   int callCount = 0;
 
