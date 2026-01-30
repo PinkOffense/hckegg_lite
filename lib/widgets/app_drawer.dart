@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../services/profile_service.dart';
+import 'animated_chickens.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -242,19 +243,15 @@ class _AppDrawerState extends State<AppDrawer> {
                     onTap: () {
                       showAboutDialog(
                         context: context,
-                        applicationName: t('app_title'),
+                        applicationName: 'HCKEgg 360',
                         applicationVersion: '1.0.0',
                         applicationIcon: Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: warmPink.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Icon(
-                            Icons.flutter_dash,
-                            size: 40,
-                            color: Colors.amber.shade700,
-                          ),
+                          child: const MiniChickenIcon(size: 48),
                         ),
                         children: [Text(t('offline_description'))],
                       );
@@ -270,11 +267,7 @@ class _AppDrawerState extends State<AppDrawer> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.egg_rounded,
-                    size: 18,
-                    color: accentPink,
-                  ),
+                  const MiniChickenIcon(size: 22),
                   const SizedBox(width: 8),
                   Text(
                     'HCKEgg 360',

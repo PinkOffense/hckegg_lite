@@ -1,6 +1,100 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
+/// Mini chicken icon for footer and about dialog
+class MiniChickenIcon extends StatelessWidget {
+  final double size;
+
+  const MiniChickenIcon({super.key, this.size = 24});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(size, size),
+      painter: _MiniChickenPainter(),
+    );
+  }
+}
+
+class _MiniChickenPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width;
+    final centerX = s / 2;
+    final centerY = s / 2 + 2;
+
+    // Colors
+    const bodyPink = Color(0xFFFFB6C1);
+    const darkPink = Color(0xFFFF69B4);
+    const beakOrange = Color(0xFFFF8C00);
+    const combRed = Color(0xFFFF4757);
+
+    // Head
+    canvas.drawCircle(
+      Offset(centerX, centerY),
+      s * 0.38,
+      Paint()..color = bodyPink,
+    );
+
+    // Head highlight
+    canvas.drawCircle(
+      Offset(centerX - s * 0.08, centerY - s * 0.12),
+      s * 0.12,
+      Paint()..color = Colors.white.withValues(alpha: 0.4),
+    );
+
+    // Comb
+    final combPath = Path()
+      ..moveTo(centerX - s * 0.12, centerY - s * 0.32)
+      ..quadraticBezierTo(centerX - s * 0.05, centerY - s * 0.52, centerX + s * 0.02, centerY - s * 0.34)
+      ..quadraticBezierTo(centerX + s * 0.1, centerY - s * 0.5, centerX + s * 0.18, centerY - s * 0.3)
+      ..close();
+    canvas.drawPath(combPath, Paint()..color = combRed);
+
+    // Eye (happy closed)
+    final eyePath = Path()
+      ..moveTo(centerX - s * 0.08, centerY - s * 0.04)
+      ..quadraticBezierTo(centerX + s * 0.02, centerY - s * 0.14, centerX + s * 0.14, centerY - s * 0.04);
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = Colors.black87
+        ..strokeWidth = s * 0.06
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round,
+    );
+
+    // Blush
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(centerX - s * 0.18, centerY + s * 0.08),
+        width: s * 0.14,
+        height: s * 0.1,
+      ),
+      Paint()..color = darkPink.withValues(alpha: 0.5),
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(centerX + s * 0.22, centerY + s * 0.08),
+        width: s * 0.14,
+        height: s * 0.1,
+      ),
+      Paint()..color = darkPink.withValues(alpha: 0.5),
+    );
+
+    // Beak
+    final beakPath = Path()
+      ..moveTo(centerX + s * 0.28, centerY - s * 0.02)
+      ..lineTo(centerX + s * 0.46, centerY + s * 0.06)
+      ..lineTo(centerX + s * 0.28, centerY + s * 0.14)
+      ..close();
+    canvas.drawPath(beakPath, Paint()..color = beakOrange);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 /// Cute animated pink chicken with egg - for the login page
 class AnimatedChickens extends StatefulWidget {
   final double height;
