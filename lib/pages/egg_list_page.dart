@@ -153,8 +153,9 @@ class _EggListPageState extends State<EggListPage> {
         },
       ),
       fab: GradientFAB(
+        extended: true,
         icon: Icons.add,
-        tooltip: locale == 'pt' ? 'Adicionar Registo' : 'Add Record',
+        label: locale == 'pt' ? 'Adicionar Registo' : 'Add Record',
         onPressed: () => showDialog(
           context: context,
           builder: (_) => const DailyRecordDialog(),
