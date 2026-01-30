@@ -966,7 +966,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
     );
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     final now = DateTime.now();
@@ -982,7 +982,30 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
       createdAt: widget.existingStock?.createdAt ?? now,
     );
 
-    context.read<FeedStockProvider>().saveFeedStock(stock);
-    Navigator.pop(context);
+    try {
+      final success = await context.read<FeedStockProvider>().saveFeedStock(stock);
+      if (mounted) {
+        if (success) {
+          Navigator.pop(context);
+        } else {
+          final error = context.read<FeedStockProvider>().error;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao guardar: ${error ?? "Erro desconhecido"}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao guardar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
