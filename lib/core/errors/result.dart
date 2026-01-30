@@ -5,6 +5,12 @@ import 'failures.dart';
 sealed class Result<T> {
   const Result();
 
+  /// Factory constructor for success
+  static Result<T> success<T>(T data) => Success(data);
+
+  /// Factory constructor for failure
+  static Result<T> failure<T>(Failure failure) => Fail(failure);
+
   /// Returns true if this is a success
   bool get isSuccess => this is Success<T>;
 
