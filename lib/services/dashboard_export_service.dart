@@ -4,7 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../core/models/week_stats.dart';
 import '../models/daily_egg_record.dart';
-import '../models/feed_stock.dart' show FeedType;
+import '../models/feed_stock.dart';
 import '../pages/dashboard_page.dart' show TodayAlertsData, FeedStockAlertItem, ReservationAlertItem, VetAppointmentAlertItem;
 import 'production_analytics_service.dart';
 
