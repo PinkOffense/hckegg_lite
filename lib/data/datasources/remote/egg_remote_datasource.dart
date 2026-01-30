@@ -71,7 +71,13 @@ class EggRemoteDatasource {
 
   /// Criar um novo registo
   Future<DailyEggRecord> create(DailyEggRecord record) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
     final json = _toSupabaseJson(record);
+    json['user_id'] = userId;
 
     final response = await _client
         .from(_tableName)
