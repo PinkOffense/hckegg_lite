@@ -35,6 +35,7 @@ class ExpenseProvider extends ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+  String? get error => _errorMessage; // Backward compatibility
 
   bool get isLoading => _state == ExpenseState.loading;
   bool get hasError => _state == ExpenseState.error;

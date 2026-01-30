@@ -7,6 +7,7 @@ import '../../domain/domain.dart';
 enum VetState { initial, loading, loaded, error }
 
 /// Provider for vet records following clean architecture
+/// Maintains backward compatibility with VetRecordProvider interface
 class VetProvider extends ChangeNotifier {
   final GetVetRecords _getVetRecords;
   final GetUpcomingAppointments _getUpcomingAppointments;
@@ -33,11 +34,28 @@ class VetProvider extends ChangeNotifier {
   List<VetRecord> _records = [];
   List<VetRecord> get records => List.unmodifiable(_records);
 
+  // Backward compatibility alias
+  List<VetRecord> get vetRecords => records;
+
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+  String? get error => _errorMessage; // Backward compatibility
 
   bool get isLoading => _state == VetState.loading;
   bool get hasError => _state == VetState.error;
+
+  // Statistics
+  int get totalVetRecords => _records.length;
+
+  int get totalDeaths => _records.where((r) => r.type == VetRecordType.death).length;
+
+  double get totalVetCosts => _records.fold<double>(0.0, (sum, r) => sum + (r.cost ?? 0.0));
+
+  int get totalHensAffected => _records.fold<int>(0, (sum, r) => sum + r.hensAffected);
+
+  String _toIsoDateString(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
 
   /// Load all vet records
   Future<void> loadRecords() async {
@@ -61,7 +79,41 @@ class VetProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Get upcoming appointments
+  /// Backward compatibility alias
+  Future<void> loadVetRecords() => loadRecords();
+
+  /// Get today's appointments
+  List<VetRecord> getTodayAppointments() {
+    final todayStr = _toIsoDateString(DateTime.now());
+    return _records.where((r) => r.nextActionDate == todayStr).toList();
+  }
+
+  /// Get all vet records sorted by date
+  List<VetRecord> getVetRecords() {
+    final sorted = List<VetRecord>.from(_records);
+    sorted.sort((a, b) => b.date.compareTo(a.date));
+    return sorted;
+  }
+
+  /// Get records by type
+  List<VetRecord> getVetRecordsByType(VetRecordType type) {
+    return _records.where((r) => r.type == type).toList();
+  }
+
+  /// Get upcoming vet actions
+  List<VetRecord> getUpcomingVetActions() {
+    final now = DateTime.now();
+    return _records
+        .where((r) => r.nextActionDate != null)
+        .where((r) {
+          final nextDate = DateTime.parse(r.nextActionDate!);
+          return nextDate.isAfter(now);
+        })
+        .toList()
+      ..sort((a, b) => a.nextActionDate!.compareTo(b.nextActionDate!));
+  }
+
+  /// Get upcoming appointments (async)
   Future<List<VetRecord>> getUpcomingAppointments() async {
     final result = await _getUpcomingAppointments(const NoParams());
     return result.fold(
@@ -72,15 +124,14 @@ class VetProvider extends ChangeNotifier {
 
   /// Get upcoming appointments (local filtering)
   List<VetRecord> getUpcomingAppointmentsLocal() {
-    final today = DateTime.now();
-    final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final todayStr = _toIsoDateString(DateTime.now());
     return _records.where((r) =>
       r.nextActionDate != null && r.nextActionDate!.compareTo(todayStr) >= 0
     ).toList();
   }
 
   /// Save a vet record (create or update)
-  Future<bool> saveRecord(VetRecord record) async {
+  Future<void> saveVetRecord(VetRecord record) async {
     _state = VetState.loading;
     notifyListeners();
 
@@ -92,7 +143,7 @@ class VetProvider extends ChangeNotifier {
       result = await _updateVetRecord(UpdateVetRecordParams(record: record));
     }
 
-    final success = result.fold(
+    result.fold(
       onSuccess: (savedRecord) {
         final index = _records.indexWhere((r) => r.id == savedRecord.id);
         if (index >= 0) {
@@ -102,41 +153,48 @@ class VetProvider extends ChangeNotifier {
         }
         _records.sort((a, b) => b.date.compareTo(a.date));
         _state = VetState.loaded;
-        return true;
+        _errorMessage = null;
       },
       onFailure: (failure) {
         _errorMessage = failure.message;
         _state = VetState.error;
-        return false;
       },
     );
 
     notifyListeners();
-    return success;
+  }
+
+  /// Alias for backward compatibility
+  Future<bool> saveRecord(VetRecord record) async {
+    await saveVetRecord(record);
+    return !hasError;
   }
 
   /// Delete a vet record
-  Future<bool> deleteRecord(String id) async {
+  Future<void> deleteVetRecord(String id) async {
     _state = VetState.loading;
     notifyListeners();
 
     final result = await _deleteVetRecord(DeleteVetRecordParams(id: id));
 
-    final success = result.fold(
+    result.fold(
       onSuccess: (_) {
         _records.removeWhere((r) => r.id == id);
         _state = VetState.loaded;
-        return true;
       },
       onFailure: (failure) {
         _errorMessage = failure.message;
         _state = VetState.error;
-        return false;
       },
     );
 
     notifyListeners();
-    return success;
+  }
+
+  /// Alias for backward compatibility
+  Future<bool> deleteRecord(String id) async {
+    await deleteVetRecord(id);
+    return !hasError;
   }
 
   /// Clear error
@@ -153,3 +211,6 @@ class VetProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+/// Type alias for backward compatibility
+typedef VetRecordProvider = VetProvider;
