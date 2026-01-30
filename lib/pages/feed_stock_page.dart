@@ -21,6 +21,7 @@ class FeedStockPage extends StatefulWidget {
 
 class _FeedStockPageState extends State<FeedStockPage> {
   final _searchController = TextEditingController();
+  final _analyticsService = ProductionAnalyticsService();
   String _searchQuery = '';
 
   @override
@@ -45,13 +46,12 @@ class _FeedStockPageState extends State<FeedStockPage> {
 
     // Calculate feed efficiency
     final eggProvider = Provider.of<EggRecordProvider>(context);
-    final analyticsService = ProductionAnalyticsService();
 
     // Get total feed consumed (from movements) and total eggs produced
     final totalFeedConsumed = feedProvider.totalFeedConsumed;
     final totalEggsProduced = eggProvider.totalEggsCollected;
 
-    final feedEfficiency = analyticsService.calculateFeedEfficiency(
+    final feedEfficiency = _analyticsService.calculateFeedEfficiency(
       totalFeedKg: totalFeedConsumed,
       totalEggsProduced: totalEggsProduced,
       periodDays: 30, // Last 30 days

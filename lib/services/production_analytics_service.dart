@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../models/daily_egg_record.dart';
 
 class ProductionAnalyticsService {
@@ -26,7 +28,7 @@ class ProductionAnalyticsService {
       final diff = r.eggsCollected - average;
       return sum + (diff * diff);
     }) / recentRecords.length;
-    final stdDev = variance > 0 ? _sqrt(variance) : 0.0;
+    final stdDev = variance > 0 ? math.sqrt(variance) : 0.0;
 
     // Confidence is higher when variance is low
     final confidence = stdDev < average * 0.1
@@ -129,15 +131,6 @@ class ProductionAnalyticsService {
     );
   }
 
-  // Simple square root implementation
-  double _sqrt(double x) {
-    if (x <= 0) return 0;
-    double guess = x / 2;
-    for (int i = 0; i < 10; i++) {
-      guess = (guess + x / guess) / 2;
-    }
-    return guess;
-  }
 }
 
 class ProductionPrediction {
