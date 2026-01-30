@@ -48,12 +48,12 @@ class MockFeedStockRepository implements FeedStockRepository {
   }
 
   @override
-  Future<Result<List<FeedMovement>>> getFeedMovements(String feedStockId) async {
+  Future<Result<List<FeedMovement>>> getMovements(String feedStockId) async {
     return Result.success(movementsToReturn);
   }
 
   @override
-  Future<Result<FeedMovement>> addFeedMovement(FeedMovement movement) async {
+  Future<Result<FeedMovement>> addMovement(FeedMovement movement) async {
     if (failureToReturn != null) return Result.fail(failureToReturn!);
     return Result.success(movement);
   }
