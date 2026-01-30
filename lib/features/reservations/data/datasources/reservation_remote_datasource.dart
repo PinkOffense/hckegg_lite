@@ -62,9 +62,17 @@ class ReservationRemoteDataSourceImpl implements ReservationRemoteDataSource {
 
   @override
   Future<EggReservationModel> createReservation(EggReservationModel reservation) async {
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    final data = reservation.toJson();
+    data['user_id'] = userId;
+
     final response = await client
         .from('egg_reservations')
-        .insert(reservation.toJson())
+        .insert(data)
         .select()
         .single();
 

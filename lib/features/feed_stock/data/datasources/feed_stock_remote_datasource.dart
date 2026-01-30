@@ -49,9 +49,17 @@ class FeedStockRemoteDataSourceImpl implements FeedStockRemoteDataSource {
 
   @override
   Future<FeedStockModel> createFeedStock(FeedStockModel stock) async {
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    final data = stock.toJson();
+    data['user_id'] = userId;
+
     final response = await client
         .from('feed_stocks')
-        .insert(stock.toJson())
+        .insert(data)
         .select()
         .single();
 
@@ -90,9 +98,17 @@ class FeedStockRemoteDataSourceImpl implements FeedStockRemoteDataSource {
 
   @override
   Future<FeedMovementModel> addMovement(FeedMovementModel movement) async {
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    final data = movement.toJson();
+    data['user_id'] = userId;
+
     final response = await client
         .from('feed_movements')
-        .insert(movement.toJson())
+        .insert(data)
         .select()
         .single();
 
