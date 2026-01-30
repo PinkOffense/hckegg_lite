@@ -422,7 +422,7 @@ class _ReservationDialogState extends State<ReservationDialog> {
     }
   }
 
-  void _saveReservation() {
+  Future<void> _saveReservation() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -447,8 +447,20 @@ class _ReservationDialogState extends State<ReservationDialog> {
       createdAt: widget.existingReservation?.createdAt ?? DateTime.now(),
     );
 
-    context.read<ReservationProvider>().saveReservation(reservation);
-
-    Navigator.pop(context);
+    try {
+      await context.read<ReservationProvider>().saveReservation(reservation);
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao guardar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
