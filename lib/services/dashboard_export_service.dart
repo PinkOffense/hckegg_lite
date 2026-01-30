@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../core/models/week_stats.dart';
 import '../models/daily_egg_record.dart';
+import '../models/feed_stock.dart' show FeedType;
 import '../pages/dashboard_page.dart' show TodayAlertsData, FeedStockAlertItem, ReservationAlertItem, VetAppointmentAlertItem;
 import 'production_analytics_service.dart';
 
@@ -601,8 +602,8 @@ class DashboardExportService {
               locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
               PdfColors.orange,
               alerts.feedAlerts.map((a) => locale == 'pt'
-                  ? '${a.feedType}: ${a.currentKg.toStringAsFixed(1)}kg (~${a.estimatedDaysRemaining} dias)${a.isLowStock ? " ⚠️" : ""}'
-                  : '${a.feedType}: ${a.currentKg.toStringAsFixed(1)}kg (~${a.estimatedDaysRemaining} days)${a.isLowStock ? " ⚠️" : ""}'
+                  ? '${a.feedType.displayName('pt')}: ${a.currentKg.toStringAsFixed(1)}kg (~${a.estimatedDaysRemaining} dias)${a.isLowStock ? " ⚠️" : ""}'
+                  : '${a.feedType.displayName('en')}: ${a.currentKg.toStringAsFixed(1)}kg (~${a.estimatedDaysRemaining} days)${a.isLowStock ? " ⚠️" : ""}'
               ).toList(),
             ),
             pw.SizedBox(height: 12),

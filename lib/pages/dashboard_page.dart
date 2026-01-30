@@ -9,6 +9,7 @@ import '../dialogs/daily_record_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/daily_egg_record.dart';
+import '../models/feed_stock.dart';
 import '../widgets/charts/production_chart.dart';
 import '../widgets/charts/revenue_chart.dart';
 import '../widgets/charts/revenue_vs_expenses_chart.dart';
@@ -92,7 +93,7 @@ class _DashboardPageState extends State<DashboardPage>
 
       if (stock.isLowStock || estimatedDays <= 7) {
         feedAlerts.add(FeedStockAlertItem(
-          feedType: stock.feedType,
+          feedType: stock.type,
           currentKg: stock.currentQuantityKg,
           estimatedDaysRemaining: estimatedDays,
           isLowStock: stock.isLowStock,
@@ -942,7 +943,7 @@ class TodayAlertsData {
 }
 
 class FeedStockAlertItem {
-  final String feedType;
+  final FeedType feedType;
   final double currentKg;
   final int estimatedDaysRemaining;
   final bool isLowStock;
@@ -1065,8 +1066,8 @@ class _TodayAlertsCard extends StatelessWidget {
                 title: locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
                 children: alertsData.feedAlerts.map((alert) => _AlertItem(
                   text: locale == 'pt'
-                      ? '${alert.feedType}: ${alert.currentKg.toStringAsFixed(1)}kg (~${alert.estimatedDaysRemaining} dias)'
-                      : '${alert.feedType}: ${alert.currentKg.toStringAsFixed(1)}kg (~${alert.estimatedDaysRemaining} days)',
+                      ? '${alert.feedType.displayName('pt')}: ${alert.currentKg.toStringAsFixed(1)}kg (~${alert.estimatedDaysRemaining} dias)'
+                      : '${alert.feedType.displayName('en')}: ${alert.currentKg.toStringAsFixed(1)}kg (~${alert.estimatedDaysRemaining} days)',
                   isWarning: alert.isLowStock,
                 )).toList(),
               ),
