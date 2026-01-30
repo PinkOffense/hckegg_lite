@@ -65,7 +65,29 @@ class _FeedStockPageState extends State<FeedStockPage> {
         label: locale == 'pt' ? 'Adicionar Ração' : 'Add Feed',
         onPressed: () => _addStock(context, locale),
       ),
-      body: Column(
+      body: feedProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : feedProvider.hasError
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text(
+                        feedProvider.errorMessage ?? 'Erro desconhecido',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => feedProvider.loadFeedStocks(),
+                        child: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
         children: [
           // Overview Card
           Container(
