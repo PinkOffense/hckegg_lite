@@ -15,7 +15,7 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
       final stocks = await remoteDataSource.getFeedStocks();
       return Result.success(stocks);
     } catch (e) {
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -26,9 +26,9 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
       return Result.success(stock);
     } catch (e) {
       if (e.toString().contains('no rows')) {
-        return Result.failure(NotFoundFailure(message: 'Feed stock not found'));
+        return Result.fail(NotFoundFailure(message: 'Feed stock not found'));
       }
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -38,7 +38,7 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
       final stocks = await remoteDataSource.getLowStockItems();
       return Result.success(stocks);
     } catch (e) {
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -49,7 +49,7 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
       final created = await remoteDataSource.createFeedStock(model);
       return Result.success(created);
     } catch (e) {
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -60,7 +60,7 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
       final updated = await remoteDataSource.updateFeedStock(model);
       return Result.success(updated);
     } catch (e) {
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -70,7 +70,7 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
       await remoteDataSource.deleteFeedStock(id);
       return Result.success(null);
     } catch (e) {
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -80,7 +80,7 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
       final movements = await remoteDataSource.getMovements(feedStockId);
       return Result.success(movements);
     } catch (e) {
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -91,7 +91,7 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
       final created = await remoteDataSource.addMovement(model);
       return Result.success(created);
     } catch (e) {
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 }

@@ -42,10 +42,10 @@ class ServiceLocator {
     _client = Supabase.instance.client;
 
     // Initialize Data Sources
-    _eggDataSource = EggRemoteDataSourceImpl(client: _client);
-    _saleDataSource = SaleRemoteDataSourceImpl(client: _client);
-    _expenseDataSource = ExpenseRemoteDataSourceImpl(client: _client);
-    _vetDataSource = VetRemoteDataSourceImpl(client: _client);
+    _eggDataSource = EggRemoteDataSourceImpl(_client);
+    _saleDataSource = SaleRemoteDataSourceImpl(_client);
+    _expenseDataSource = ExpenseRemoteDataSourceImpl(_client);
+    _vetDataSource = VetRemoteDataSourceImpl(_client);
     _feedStockDataSource = FeedStockRemoteDataSourceImpl(client: _client);
     _reservationDataSource = ReservationRemoteDataSourceImpl(client: _client);
 
