@@ -1,7 +1,7 @@
 import '../../domain/entities/expense.dart';
 
 class ExpenseModel extends Expense {
-  const ExpenseModel({
+  ExpenseModel({
     required super.id,
     required super.date,
     required super.category,

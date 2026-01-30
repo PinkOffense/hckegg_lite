@@ -1,7 +1,7 @@
 import '../../domain/entities/egg_sale.dart';
 
 class EggSaleModel extends EggSale {
-  const EggSaleModel({
+  EggSaleModel({
     required super.id,
     required super.date,
     required super.quantitySold,

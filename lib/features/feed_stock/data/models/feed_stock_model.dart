@@ -1,7 +1,7 @@
 import '../../domain/entities/feed_stock.dart';
 
 class FeedStockModel extends FeedStock {
-  const FeedStockModel({
+  FeedStockModel({
     required super.id,
     required super.type,
     super.brand,
@@ -60,7 +60,7 @@ class FeedStockModel extends FeedStock {
 }
 
 class FeedMovementModel extends FeedMovement {
-  const FeedMovementModel({
+  FeedMovementModel({
     required super.id,
     required super.feedStockId,
     required super.movementType,

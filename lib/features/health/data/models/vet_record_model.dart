@@ -1,7 +1,7 @@
 import '../../domain/entities/vet_record.dart';
 
 class VetRecordModel extends VetRecord {
-  const VetRecordModel({
+  VetRecordModel({
     required super.id,
     required super.date,
     required super.type,
