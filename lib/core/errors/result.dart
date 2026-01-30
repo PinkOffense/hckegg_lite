@@ -15,7 +15,7 @@ sealed class Result<T> {
   bool get isSuccess => this is Success<T>;
 
   /// Returns true if this is a failure
-  bool get isFailure => this is Failure;
+  bool get isFailure => this is Fail<T>;
 
   /// Gets the value if success, throws if failure
   T get value {

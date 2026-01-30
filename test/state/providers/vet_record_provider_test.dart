@@ -1,14 +1,11 @@
 // test/state/providers/vet_record_provider_test.dart
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hckegg_lite/core/result.dart';
-import 'package:hckegg_lite/core/failure.dart';
-import 'package:hckegg_lite/core/use_case.dart';
+import 'package:hckegg_lite/core/core.dart';
 import 'package:hckegg_lite/models/vet_record.dart';
 import 'package:hckegg_lite/features/health/domain/usecases/vet_usecases.dart';
-import 'package:hckegg_lite/state/providers/vet_record_provider.dart';
-
 import 'package:hckegg_lite/features/health/domain/repositories/vet_repository.dart';
+import 'package:hckegg_lite/state/providers/vet_record_provider.dart';
 
 // Mock Use Cases
 class MockGetVetRecords implements GetVetRecords {
@@ -23,7 +20,7 @@ class MockGetVetRecords implements GetVetRecords {
   Future<Result<List<VetRecord>>> call(NoParams params) async {
     callCount++;
     if (shouldFail) {
-      return Result.fail(Failure('Simulated load error'));
+      return Result.fail(ServerFailure(message: 'Simulated load error'));
     }
     return Result.success(List.from(records));
   }
@@ -52,7 +49,7 @@ class MockCreateVetRecord implements CreateVetRecord {
   Future<Result<VetRecord>> call(CreateVetRecordParams params) async {
     callCount++;
     if (shouldFail) {
-      return Result.fail(Failure('Simulated save error'));
+      return Result.fail(ServerFailure(message: 'Simulated save error'));
     }
     return Result.success(params.record);
   }
@@ -69,7 +66,7 @@ class MockUpdateVetRecord implements UpdateVetRecord {
   Future<Result<VetRecord>> call(UpdateVetRecordParams params) async {
     callCount++;
     if (shouldFail) {
-      return Result.fail(Failure('Simulated update error'));
+      return Result.fail(ServerFailure(message: 'Simulated update error'));
     }
     return Result.success(params.record);
   }
@@ -86,7 +83,7 @@ class MockDeleteVetRecord implements DeleteVetRecord {
   Future<Result<void>> call(DeleteVetRecordParams params) async {
     callCount++;
     if (shouldFail) {
-      return Result.fail(Failure('Simulated delete error'));
+      return Result.fail(ServerFailure(message: 'Simulated delete error'));
     }
     return Result.success(null);
   }
