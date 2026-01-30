@@ -41,7 +41,7 @@ class FeedStockProvider extends ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
-  String? get error => _errorMessage; // Backward compatibility
+  String? get error => _errorMessage;
 
   bool get isLoading => _state == FeedStockState.loading;
   bool get hasError => _state == FeedStockState.error;
@@ -74,50 +74,52 @@ class FeedStockProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final result = await _getFeedStocks(const NoParams());
+    try {
+      final result = await _getFeedStocks(const NoParams());
 
-    await result.fold(
-      onSuccess: (data) async {
-        _feedStocks = data;
+      if (result.isSuccess) {
+        _feedStocks = List.from(result.value);
         _invalidateCache();
-
-        // Load total consumed from all movements
-        _totalFeedConsumed = 0.0;
-        for (final stock in _feedStocks) {
-          final movementsResult = await _getFeedMovements(
-            GetFeedMovementsParams(feedStockId: stock.id),
-          );
-          movementsResult.fold(
-            onSuccess: (movements) {
-              for (final movement in movements) {
-                if (movement.movementType == StockMovementType.consumption ||
-                    movement.movementType == StockMovementType.loss) {
-                  _totalFeedConsumed += movement.quantityKg;
-                }
-              }
-            },
-            onFailure: (_) {},
-          );
-        }
-
+        await _loadTotalConsumed();
         _state = FeedStockState.loaded;
-      },
-      onFailure: (failure) {
-        _errorMessage = failure.message;
+      } else {
+        _errorMessage = result.failure.message;
         _state = FeedStockState.error;
-      },
-    );
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      _state = FeedStockState.error;
+    }
 
     notifyListeners();
+  }
+
+  /// Load total consumed from movements
+  Future<void> _loadTotalConsumed() async {
+    _totalFeedConsumed = 0.0;
+    for (final stock in _feedStocks) {
+      try {
+        final movementsResult = await _getFeedMovements(
+          GetFeedMovementsParams(feedStockId: stock.id),
+        );
+        if (movementsResult.isSuccess) {
+          for (final movement in movementsResult.value) {
+            if (movement.movementType == StockMovementType.consumption ||
+                movement.movementType == StockMovementType.loss) {
+              _totalFeedConsumed += movement.quantityKg;
+            }
+          }
+        }
+      } catch (_) {
+        // Ignore movement loading errors
+      }
+    }
   }
 
   /// Get low stock items
   Future<List<FeedStock>> getLowStockItems() async {
     final result = await _getLowStockItems(const NoParams());
-    return result.fold(
-      onSuccess: (data) => data,
-      onFailure: (_) => [],
-    );
+    return result.isSuccess ? result.value : [];
   }
 
   /// Get low stock items (local filtering)
@@ -125,7 +127,7 @@ class FeedStockProvider extends ChangeNotifier {
     return _feedStocks.where((s) => s.isLowStock).toList();
   }
 
-  /// Pesquisar stocks de ração por tipo, marca ou notas
+  /// Search stocks by type, brand or notes
   List<FeedStock> search(String query) {
     if (query.isEmpty) return _feedStocks;
     final q = query.toLowerCase();
@@ -142,18 +144,15 @@ class FeedStockProvider extends ChangeNotifier {
     _state = FeedStockState.loading;
     notifyListeners();
 
-    final Result<FeedStock> result;
+    try {
+      final isNew = stock.id.isEmpty || !_feedStocks.any((s) => s.id == stock.id);
+      final Result<FeedStock> result = isNew
+          ? await _createFeedStock(CreateFeedStockParams(stock: stock))
+          : await _updateFeedStock(UpdateFeedStockParams(stock: stock));
 
-    if (stock.id.isEmpty || !_feedStocks.any((s) => s.id == stock.id)) {
-      result = await _createFeedStock(CreateFeedStockParams(stock: stock));
-    } else {
-      result = await _updateFeedStock(UpdateFeedStockParams(stock: stock));
-    }
-
-    final success = result.fold(
-      onSuccess: (savedStock) {
+      if (result.isSuccess) {
+        final savedStock = result.value;
         final index = _feedStocks.indexWhere((s) => s.id == savedStock.id);
-        // Create new list to ensure UI rebuilds
         _feedStocks = List.from(_feedStocks);
         if (index >= 0) {
           _feedStocks[index] = savedStock;
@@ -162,17 +161,20 @@ class FeedStockProvider extends ChangeNotifier {
         }
         _invalidateCache();
         _state = FeedStockState.loaded;
+        notifyListeners();
         return true;
-      },
-      onFailure: (failure) {
-        _errorMessage = failure.message;
+      } else {
+        _errorMessage = result.failure.message;
         _state = FeedStockState.error;
+        notifyListeners();
         return false;
-      },
-    );
-
-    notifyListeners();
-    return success;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      _state = FeedStockState.error;
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Delete a feed stock
@@ -180,25 +182,27 @@ class FeedStockProvider extends ChangeNotifier {
     _state = FeedStockState.loading;
     notifyListeners();
 
-    final result = await _deleteFeedStock(DeleteFeedStockParams(id: id));
+    try {
+      final result = await _deleteFeedStock(DeleteFeedStockParams(id: id));
 
-    final success = result.fold(
-      onSuccess: (_) {
-        // Create new list to ensure UI rebuilds
+      if (result.isSuccess) {
         _feedStocks = _feedStocks.where((s) => s.id != id).toList();
         _invalidateCache();
         _state = FeedStockState.loaded;
+        notifyListeners();
         return true;
-      },
-      onFailure: (failure) {
-        _errorMessage = failure.message;
+      } else {
+        _errorMessage = result.failure.message;
         _state = FeedStockState.error;
+        notifyListeners();
         return false;
-      },
-    );
-
-    notifyListeners();
-    return success;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      _state = FeedStockState.error;
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Add movement (purchase, consumption, etc.)
@@ -206,71 +210,76 @@ class FeedStockProvider extends ChangeNotifier {
     _state = FeedStockState.loading;
     notifyListeners();
 
-    final movementResult = await _addFeedMovement(
-      AddFeedMovementParams(movement: movement),
-    );
+    try {
+      // First, save the movement
+      final movementResult = await _addFeedMovement(
+        AddFeedMovementParams(movement: movement),
+      );
 
-    final success = await movementResult.fold(
-      onSuccess: (savedMovement) async {
-        double newQuantity = stock.currentQuantityKg;
-        if (movement.movementType == StockMovementType.purchase) {
-          newQuantity += movement.quantityKg;
-        } else {
-          newQuantity -= movement.quantityKg;
-          if (movement.movementType == StockMovementType.consumption ||
-              movement.movementType == StockMovementType.loss) {
-            _totalFeedConsumed += movement.quantityKg;
-          }
-        }
-
-        final updatedStock = stock.copyWith(
-          currentQuantityKg: newQuantity < 0 ? 0 : newQuantity,
-          lastUpdated: DateTime.now(),
-        );
-
-        final updateResult = await _updateFeedStock(
-          UpdateFeedStockParams(stock: updatedStock),
-        );
-
-        return updateResult.fold(
-          onSuccess: (saved) {
-            final index = _feedStocks.indexWhere((s) => s.id == saved.id);
-            if (index >= 0) {
-              // Create new list to ensure UI rebuilds
-              _feedStocks = List.from(_feedStocks);
-              _feedStocks[index] = saved;
-            }
-            _invalidateCache();
-            _state = FeedStockState.loaded;
-            return true;
-          },
-          onFailure: (failure) {
-            _errorMessage = failure.message;
-            _state = FeedStockState.error;
-            return false;
-          },
-        );
-      },
-      onFailure: (failure) async {
-        _errorMessage = failure.message;
+      if (!movementResult.isSuccess) {
+        _errorMessage = movementResult.failure.message;
         _state = FeedStockState.error;
+        notifyListeners();
         return false;
-      },
-    );
+      }
 
-    notifyListeners();
-    return success;
+      // Calculate new quantity
+      double newQuantity = stock.currentQuantityKg;
+      if (movement.movementType == StockMovementType.purchase) {
+        newQuantity += movement.quantityKg;
+      } else {
+        newQuantity -= movement.quantityKg;
+        if (movement.movementType == StockMovementType.consumption ||
+            movement.movementType == StockMovementType.loss) {
+          _totalFeedConsumed += movement.quantityKg;
+        }
+      }
+
+      // Update stock with new quantity
+      final updatedStock = stock.copyWith(
+        currentQuantityKg: newQuantity < 0 ? 0 : newQuantity,
+        lastUpdated: DateTime.now(),
+      );
+
+      final updateResult = await _updateFeedStock(
+        UpdateFeedStockParams(stock: updatedStock),
+      );
+
+      if (updateResult.isSuccess) {
+        final saved = updateResult.value;
+        final index = _feedStocks.indexWhere((s) => s.id == saved.id);
+        if (index >= 0) {
+          _feedStocks = List.from(_feedStocks);
+          _feedStocks[index] = saved;
+        }
+        _invalidateCache();
+        _state = FeedStockState.loaded;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = updateResult.failure.message;
+        _state = FeedStockState.error;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      _state = FeedStockState.error;
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Get movements for a stock
   Future<List<FeedMovement>> getFeedMovements(String feedStockId) async {
-    final result = await _getFeedMovements(
-      GetFeedMovementsParams(feedStockId: feedStockId),
-    );
-    return result.fold(
-      onSuccess: (data) => data,
-      onFailure: (_) => [],
-    );
+    try {
+      final result = await _getFeedMovements(
+        GetFeedMovementsParams(feedStockId: feedStockId),
+      );
+      return result.isSuccess ? result.value : [];
+    } catch (_) {
+      return [];
+    }
   }
 
   /// Clear error
