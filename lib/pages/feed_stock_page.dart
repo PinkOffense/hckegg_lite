@@ -1010,7 +1010,7 @@ class _MovementDialogState extends State<_MovementDialog> {
     );
   }
 
-  void _save() {
+  Future<void> _save() async {
     final quantity = double.tryParse(_quantityController.text);
     if (quantity == null || quantity <= 0) {
       setState(() {
@@ -1040,21 +1040,30 @@ class _MovementDialogState extends State<_MovementDialog> {
       createdAt: now,
     );
 
-    context.read<FeedStockProvider>().addFeedMovement(movement, widget.stock);
-    Navigator.pop(context);
+    final provider = context.read<FeedStockProvider>();
+    final success = await provider.addFeedMovement(movement, widget.stock);
 
-    // Show confirmation snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _movementType == StockMovementType.purchase
-              ? (widget.locale == 'pt' ? 'Compra registada com sucesso!' : 'Purchase recorded successfully!')
-              : (widget.locale == 'pt' ? 'Consumo registado com sucesso!' : 'Consumption recorded successfully!'),
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _movementType == StockMovementType.purchase
+                ? (widget.locale == 'pt' ? 'Compra registada com sucesso!' : 'Purchase recorded successfully!')
+                : (widget.locale == 'pt' ? 'Consumo registado com sucesso!' : 'Consumption recorded successfully!'),
+          ),
+          backgroundColor: _movementType == StockMovementType.purchase ? Colors.green : Colors.orange,
+          behavior: SnackBarBehavior.floating,
         ),
-        backgroundColor: _movementType == StockMovementType.purchase ? Colors.green : Colors.orange,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      );
+    } else {
+      setState(() {
+        _errorMessage = provider.errorMessage ??
+            (widget.locale == 'pt' ? 'Erro ao guardar movimento' : 'Error saving movement');
+      });
+    }
   }
 }
 
