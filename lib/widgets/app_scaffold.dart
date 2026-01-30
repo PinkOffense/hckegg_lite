@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/locale_provider.dart';
 import '../state/theme_provider.dart';
-import '../state/providers/vet_record_provider.dart';
+import '../features/health/presentation/providers/vet_provider.dart';
 import 'app_drawer.dart';
 
 class AppScaffold extends StatelessWidget {
