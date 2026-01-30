@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+
 import '../models/feed_stock.dart';
 import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
@@ -30,32 +31,16 @@ class _FeedStockPageState extends State<FeedStockPage> {
     super.dispose();
   }
 
+  Future<void> _refresh() async {
+    await context.read<FeedStockProvider>().loadFeedStocks();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final locale = Provider.of<LocaleProvider>(context).code;
-    final t = (String k) => Translations.of(locale, k);
     final feedProvider = Provider.of<FeedStockProvider>(context);
-
-    final allStocks = feedProvider.feedStocks;
-    final stocks = _searchQuery.isEmpty
-        ? allStocks
-        : feedProvider.search(_searchQuery);
-    final lowStockCount = feedProvider.lowStockCount;
-    final totalStock = feedProvider.totalFeedStock;
-
-    // Calculate feed efficiency
     final eggProvider = Provider.of<EggRecordProvider>(context);
-
-    // Get total feed consumed (from movements) and total eggs produced
-    final totalFeedConsumed = feedProvider.totalFeedConsumed;
-    final totalEggsProduced = eggProvider.totalEggsCollected;
-
-    final feedEfficiency = _analyticsService.calculateFeedEfficiency(
-      totalFeedKg: totalFeedConsumed,
-      totalEggsProduced: totalEggsProduced,
-      periodDays: 30, // Last 30 days
-    );
 
     return AppScaffold(
       title: locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
@@ -63,147 +48,226 @@ class _FeedStockPageState extends State<FeedStockPage> {
         extended: true,
         icon: Icons.add,
         label: locale == 'pt' ? 'Adicionar Ração' : 'Add Feed',
-        onPressed: () => _addStock(context, locale),
+        onPressed: () => _showAddDialog(context),
       ),
-      body: feedProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : feedProvider.hasError
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text(
-                        feedProvider.errorMessage ?? 'Erro desconhecido',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.red),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => feedProvider.loadFeedStocks(),
-                        child: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
-                      ),
-                    ],
-                  ),
-                )
-              : Column(
-        children: [
-          // Overview Card
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  locale == 'pt' ? 'Resumo do Stock' : 'Stock Overview',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 12,
-                  children: [
-                    _StatCard(
-                      icon: Icons.inventory_2,
-                      label: locale == 'pt' ? 'Total em Stock' : 'Total Stock',
-                      value: '${totalStock.toStringAsFixed(1)} kg',
-                      color: Colors.blue,
-                    ),
-                    _StatCard(
-                      icon: Icons.warning_amber,
-                      label: locale == 'pt' ? 'Stock Baixo' : 'Low Stock',
-                      value: lowStockCount.toString(),
-                      color: lowStockCount > 0 ? Colors.red : Colors.green,
-                    ),
-                    _StatCard(
-                      icon: Icons.category,
-                      label: locale == 'pt' ? 'Tipos' : 'Types',
-                      value: stocks.length.toString(),
-                      color: Colors.purple,
-                    ),
-                  ],
-                ),
-                // Feed Efficiency Card
-                if (feedEfficiency != null) ...[
-                  const SizedBox(height: 16),
-                  _FeedEfficiencyCard(
-                    efficiency: feedEfficiency,
-                    locale: locale,
-                  ),
-                ],
-              ],
+      body: _buildBody(context, theme, locale, feedProvider, eggProvider),
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    ThemeData theme,
+    String locale,
+    FeedStockProvider feedProvider,
+    EggRecordProvider eggProvider,
+  ) {
+    // Loading state
+    if (feedProvider.isLoading && feedProvider.feedStocks.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Error state
+    if (feedProvider.hasError && feedProvider.feedStocks.isEmpty) {
+      return _buildErrorState(locale, feedProvider);
+    }
+
+    // Content
+    final allStocks = feedProvider.feedStocks;
+    final stocks = _searchQuery.isEmpty
+        ? allStocks
+        : feedProvider.search(_searchQuery);
+
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          // Overview Section
+          SliverToBoxAdapter(
+            child: _buildOverviewCard(
+              context,
+              theme,
+              locale,
+              feedProvider,
+              eggProvider,
+              stocks,
             ),
           ),
 
-          // Search Bar (only show if there are stocks)
+          // Search Bar
           if (allStocks.isNotEmpty)
-            AppSearchBar(
-              controller: _searchController,
-              hintText: locale == 'pt' ? 'Pesquisar ração...' : 'Search feed...',
-              hasContent: _searchQuery.isNotEmpty,
-              onChanged: (value) {
-                setState(() => _searchQuery = value);
-              },
-              onClear: () {
-                _searchController.clear();
-                setState(() => _searchQuery = '');
-              },
+            SliverToBoxAdapter(
+              child: AppSearchBar(
+                controller: _searchController,
+                hintText: locale == 'pt' ? 'Pesquisar ração...' : 'Search feed...',
+                hasContent: _searchQuery.isNotEmpty,
+                onChanged: (value) => setState(() => _searchQuery = value),
+                onClear: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
+              ),
             ),
 
-          // Stock List
-          Expanded(
-            child: allStocks.isEmpty
-                ? EmptyState(
-                    icon: Icons.grass_outlined,
-                    title: locale == 'pt' ? 'Nenhum stock registado' : 'No stock registered',
-                    message: locale == 'pt'
-                        ? 'Adicione e controle o stock de ração das suas galinhas'
-                        : 'Add and track your chicken feed stock',
-                    actionLabel: locale == 'pt' ? 'Adicionar Ração' : 'Add Feed',
-                    onAction: () => _addStock(context, locale),
-                  )
-                : stocks.isEmpty
-                    ? SearchEmptyState(
-                        query: _searchQuery,
-                        locale: locale,
-                        onClear: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: stocks.length,
-                    itemBuilder: (context, index) {
-                      final stock = stocks[index];
-                      return _FeedStockCard(
-                        stock: stock,
-                        locale: locale,
-                        onTap: () => _showStockDetails(context, locale, stock),
-                        onQuickConsume: () => _quickConsume(context, locale, stock),
-                        onDelete: () => _deleteStock(context, locale, stock),
-                      );
-                    },
-                  ),
+          // Content
+          if (allStocks.isEmpty)
+            SliverFillRemaining(
+              child: EmptyState(
+                icon: Icons.grass_outlined,
+                title: locale == 'pt' ? 'Nenhum stock registado' : 'No stock registered',
+                message: locale == 'pt'
+                    ? 'Adicione e controle o stock de ração das suas galinhas'
+                    : 'Add and track your chicken feed stock',
+                actionLabel: locale == 'pt' ? 'Adicionar Ração' : 'Add Feed',
+                onAction: () => _showAddDialog(context),
+              ),
+            )
+          else if (stocks.isEmpty)
+            SliverFillRemaining(
+              child: SearchEmptyState(
+                query: _searchQuery,
+                locale: locale,
+                onClear: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final stock = stocks[index];
+                    return _FeedStockCard(
+                      stock: stock,
+                      locale: locale,
+                      onTap: () => _showStockDetails(context, locale, stock),
+                      onQuickConsume: () => _showConsumeDialog(context, locale, stock),
+                      onDelete: () => _showDeleteDialog(context, locale, stock),
+                    );
+                  },
+                  childCount: stocks.length,
+                ),
+              ),
+            ),
+
+          // Bottom padding for FAB
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 80),
           ),
         ],
       ),
     );
   }
 
-  void _addStock(BuildContext context, String locale) {
+  Widget _buildErrorState(String locale, FeedStockProvider provider) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              locale == 'pt' ? 'Erro ao carregar dados' : 'Error loading data',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              provider.errorMessage ?? (locale == 'pt' ? 'Erro desconhecido' : 'Unknown error'),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _refresh,
+              icon: const Icon(Icons.refresh),
+              label: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverviewCard(
+    BuildContext context,
+    ThemeData theme,
+    String locale,
+    FeedStockProvider feedProvider,
+    EggRecordProvider eggProvider,
+    List<FeedStock> stocks,
+  ) {
+    final totalStock = feedProvider.totalFeedStock;
+    final lowStockCount = feedProvider.lowStockCount;
+    final totalFeedConsumed = feedProvider.totalFeedConsumed;
+    final totalEggsProduced = eggProvider.totalEggsCollected;
+
+    final feedEfficiency = _analyticsService.calculateFeedEfficiency(
+      totalFeedKg: totalFeedConsumed,
+      totalEggsProduced: totalEggsProduced,
+      periodDays: 30,
+    );
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            locale == 'pt' ? 'Resumo do Stock' : 'Stock Overview',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
+            children: [
+              _StatCard(
+                icon: Icons.inventory_2,
+                label: locale == 'pt' ? 'Total em Stock' : 'Total Stock',
+                value: '${totalStock.toStringAsFixed(1)} kg',
+                color: Colors.blue,
+              ),
+              _StatCard(
+                icon: Icons.warning_amber,
+                label: locale == 'pt' ? 'Stock Baixo' : 'Low Stock',
+                value: lowStockCount.toString(),
+                color: lowStockCount > 0 ? Colors.red : Colors.green,
+              ),
+              _StatCard(
+                icon: Icons.category,
+                label: locale == 'pt' ? 'Tipos' : 'Types',
+                value: stocks.length.toString(),
+                color: Colors.purple,
+              ),
+            ],
+          ),
+          if (feedEfficiency != null) ...[
+            const SizedBox(height: 16),
+            _FeedEfficiencyCard(efficiency: feedEfficiency, locale: locale),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showAddDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => const FeedStockDialog(),
@@ -221,7 +285,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
     );
   }
 
-  void _quickConsume(BuildContext context, String locale, FeedStock stock) {
+  void _showConsumeDialog(BuildContext context, String locale, FeedStock stock) {
     showDialog(
       context: context,
       builder: (context) => _MovementDialog(
@@ -232,7 +296,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
     );
   }
 
-  void _deleteStock(BuildContext context, String locale, FeedStock stock) {
+  void _showDeleteDialog(BuildContext context, String locale, FeedStock stock) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -248,9 +312,10 @@ class _FeedStockPageState extends State<FeedStockPage> {
             child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              context.read<FeedStockProvider>().deleteFeedStock(stock.id);
+            onPressed: () async {
+              final provider = context.read<FeedStockProvider>();
               Navigator.pop(context);
+              await provider.deleteFeedStock(stock.id);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: Text(locale == 'pt' ? 'Eliminar' : 'Delete'),
@@ -260,6 +325,10 @@ class _FeedStockPageState extends State<FeedStockPage> {
     );
   }
 }
+
+// ============================================================================
+// WIDGETS
+// ============================================================================
 
 class _StatCard extends StatelessWidget {
   final IconData icon;
@@ -280,7 +349,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -294,7 +363,7 @@ class _StatCard extends StatelessWidget {
               Text(
                 label,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                 ),
               ),
               Text(
@@ -327,18 +396,15 @@ class _FeedStockCard extends StatelessWidget {
     required this.onDelete,
   });
 
+  Color get _stockColor {
+    if (stock.isLowStock) return Colors.red;
+    if (stock.currentQuantityKg < stock.minimumQuantityKg * 2) return Colors.orange;
+    return Colors.green;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    Color stockColor;
-    if (stock.isLowStock) {
-      stockColor = Colors.red;
-    } else if (stock.currentQuantityKg < stock.minimumQuantityKg * 2) {
-      stockColor = Colors.orange;
-    } else {
-      stockColor = Colors.green;
-    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -350,22 +416,18 @@ class _FeedStockCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header
               Row(
                 children: [
-                  // Type Icon
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(
-                      stock.type.icon,
-                      style: const TextStyle(fontSize: 24),
-                    ),
+                    child: Text(stock.type.icon, style: const TextStyle(fontSize: 24)),
                   ),
                   const SizedBox(width: 12),
-                  // Info
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,13 +442,12 @@ class _FeedStockCard extends StatelessWidget {
                           Text(
                             stock.brand!,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                             ),
                           ),
                       ],
                     ),
                   ),
-                  // Stock indicator
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -394,14 +455,14 @@ class _FeedStockCard extends StatelessWidget {
                         '${stock.currentQuantityKg.toStringAsFixed(1)} kg',
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: stockColor,
+                          color: _stockColor,
                         ),
                       ),
                       if (stock.isLowStock)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.1),
+                            color: Colors.red.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -417,7 +478,9 @@ class _FeedStockCard extends StatelessWidget {
                   ),
                 ],
               ),
+
               const SizedBox(height: 12),
+
               // Progress bar
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,7 +495,7 @@ class _FeedStockCard extends StatelessWidget {
                       Text(
                         '${locale == 'pt' ? 'Mín' : 'Min'}: ${stock.minimumQuantityKg.toStringAsFixed(0)} kg',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                          color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                         ),
                       ),
                     ],
@@ -441,17 +504,18 @@ class _FeedStockCard extends StatelessWidget {
                   LinearProgressIndicator(
                     value: (stock.currentQuantityKg / (stock.minimumQuantityKg * 3)).clamp(0.0, 1.0),
                     backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                    color: stockColor,
+                    color: _stockColor,
                     minHeight: 8,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ],
               ),
+
               const SizedBox(height: 12),
-              // Quick Actions
+
+              // Actions
               Row(
                 children: [
-                  // Quick Consume Button
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: stock.currentQuantityKg > 0 ? onQuickConsume : null,
@@ -463,11 +527,10 @@ class _FeedStockCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Delete Button
                   IconButton(
                     onPressed: onDelete,
                     icon: const Icon(Icons.delete_outline),
-                    color: Colors.red.withValues(alpha: 0.7),
+                    color: Colors.red.withOpacity(0.7),
                     tooltip: locale == 'pt' ? 'Eliminar' : 'Delete',
                   ),
                 ],
@@ -480,15 +543,15 @@ class _FeedStockCard extends StatelessWidget {
   }
 }
 
-// Stock Details Bottom Sheet
+// ============================================================================
+// STOCK DETAILS SHEET
+// ============================================================================
+
 class _StockDetailsSheet extends StatefulWidget {
   final FeedStock stock;
   final String locale;
 
-  const _StockDetailsSheet({
-    required this.stock,
-    required this.locale,
-  });
+  const _StockDetailsSheet({required this.stock, required this.locale});
 
   @override
   State<_StockDetailsSheet> createState() => _StockDetailsSheetState();
@@ -505,8 +568,8 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
   }
 
   Future<void> _loadMovements() async {
-    final feedProvider = Provider.of<FeedStockProvider>(context, listen: false);
-    final movements = await feedProvider.getFeedMovements(widget.stock.id);
+    final provider = context.read<FeedStockProvider>();
+    final movements = await provider.getFeedMovements(widget.stock.id);
     if (mounted) {
       setState(() {
         _movements = movements;
@@ -533,19 +596,17 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+                color: theme.colorScheme.onSurface.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
+
             // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Row(
                 children: [
-                  Text(
-                    widget.stock.type.icon,
-                    style: const TextStyle(fontSize: 32),
-                  ),
+                  Text(widget.stock.type.icon, style: const TextStyle(fontSize: 32)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -553,15 +614,13 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                       children: [
                         Text(
                           widget.stock.type.displayName(widget.locale),
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         if (widget.stock.brand != null)
                           Text(
                             widget.stock.brand!,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
                             ),
                           ),
                       ],
@@ -586,7 +645,9 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                 ],
               ),
             ),
+
             const Divider(),
+
             // Actions
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -599,7 +660,7 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                               Navigator.pop(context);
                               showDialog(
                                 context: context,
-                                builder: (context) => _MovementDialog(
+                                builder: (ctx) => _MovementDialog(
                                   locale: widget.locale,
                                   stock: widget.stock,
                                   initialType: StockMovementType.consumption,
@@ -620,9 +681,7 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                       Navigator.pop(context);
                       showDialog(
                         context: context,
-                        builder: (context) => FeedStockDialog(
-                          existingStock: widget.stock,
-                        ),
+                        builder: (ctx) => FeedStockDialog(existingStock: widget.stock),
                       );
                     },
                     icon: const Icon(Icons.edit),
@@ -631,7 +690,8 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                 ],
               ),
             ),
-            // Movement History
+
+            // Movement History Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Row(
@@ -640,13 +700,13 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                   const SizedBox(width: 8),
                   Text(
                     widget.locale == 'pt' ? 'Histórico de Movimentos' : 'Movement History',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
             ),
+
+            // Movement List
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -657,7 +717,7 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                                 ? 'Nenhum movimento registado'
                                 : 'No movements recorded',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
                             ),
                           ),
                         )
@@ -666,9 +726,8 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           itemCount: _movements.length,
                           itemBuilder: (context, index) {
-                            final movement = _movements[index];
                             return _MovementTile(
-                              movement: movement,
+                              movement: _movements[index],
                               locale: widget.locale,
                             );
                           },
@@ -681,45 +740,26 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
   }
 }
 
+// ============================================================================
+// MOVEMENT TILE
+// ============================================================================
+
 class _MovementTile extends StatelessWidget {
   final FeedMovement movement;
   final String locale;
 
-  const _MovementTile({
-    required this.movement,
-    required this.locale,
-  });
+  const _MovementTile({required this.movement, required this.locale});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    IconData icon;
-    Color color;
-    String sign;
-
-    switch (movement.movementType) {
-      case StockMovementType.purchase:
-        icon = Icons.add_shopping_cart;
-        color = Colors.green;
-        sign = '+';
-        break;
-      case StockMovementType.consumption:
-        icon = Icons.restaurant;
-        color = Colors.orange;
-        sign = '-';
-        break;
-      case StockMovementType.adjustment:
-        icon = Icons.tune;
-        color = Colors.blue;
-        sign = '';
-        break;
-      case StockMovementType.loss:
-        icon = Icons.warning;
-        color = Colors.red;
-        sign = '-';
-        break;
-    }
+    final (icon, color, sign) = switch (movement.movementType) {
+      StockMovementType.purchase => (Icons.add_shopping_cart, Colors.green, '+'),
+      StockMovementType.consumption => (Icons.restaurant, Colors.orange, '-'),
+      StockMovementType.adjustment => (Icons.tune, Colors.blue, ''),
+      StockMovementType.loss => (Icons.warning, Colors.red, '-'),
+    };
 
     final date = DateTime.parse(movement.date);
     final formattedDate = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
@@ -728,16 +768,16 @@ class _MovementTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
+        color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -749,14 +789,12 @@ class _MovementTile extends StatelessWidget {
               children: [
                 Text(
                   movement.movementType.displayName(locale),
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   formattedDate,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                   ),
                 ),
                 if (movement.notes != null)
@@ -783,7 +821,7 @@ class _MovementTile extends StatelessWidget {
                 Text(
                   '€${movement.cost!.toStringAsFixed(2)}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                   ),
                 ),
             ],
@@ -793,6 +831,10 @@ class _MovementTile extends StatelessWidget {
     );
   }
 }
+
+// ============================================================================
+// MOVEMENT DIALOG
+// ============================================================================
 
 class _MovementDialog extends StatefulWidget {
   final String locale;
@@ -815,6 +857,7 @@ class _MovementDialogState extends State<_MovementDialog> {
   final _costController = TextEditingController();
   final _notesController = TextEditingController();
   String? _errorMessage;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -835,9 +878,8 @@ class _MovementDialogState extends State<_MovementDialog> {
   double get _newStock {
     if (_movementType == StockMovementType.purchase) {
       return widget.stock.currentQuantityKg + _enteredQuantity;
-    } else {
-      return widget.stock.currentQuantityKg - _enteredQuantity;
     }
+    return widget.stock.currentQuantityKg - _enteredQuantity;
   }
 
   bool get _isValid {
@@ -859,10 +901,12 @@ class _MovementDialogState extends State<_MovementDialog> {
             color: isPurchase ? Colors.green : Colors.orange,
           ),
           const SizedBox(width: 8),
-          Text(
-            isPurchase
-                ? (widget.locale == 'pt' ? 'Registar Compra' : 'Record Purchase')
-                : (widget.locale == 'pt' ? 'Registar Consumo' : 'Record Consumption'),
+          Expanded(
+            child: Text(
+              isPurchase
+                  ? (widget.locale == 'pt' ? 'Registar Compra' : 'Record Purchase')
+                  : (widget.locale == 'pt' ? 'Registar Consumo' : 'Record Consumption'),
+            ),
           ),
         ],
       ),
@@ -875,7 +919,7 @@ class _MovementDialogState extends State<_MovementDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -888,9 +932,7 @@ class _MovementDialogState extends State<_MovementDialog> {
                       children: [
                         Text(
                           widget.stock.type.displayName(widget.locale),
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Text(
                           '${widget.locale == 'pt' ? 'Stock actual' : 'Current stock'}: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
@@ -904,29 +946,6 @@ class _MovementDialogState extends State<_MovementDialog> {
             ),
             const SizedBox(height: 16),
 
-            // Movement type (only show if not pre-selected)
-            if (widget.initialType == StockMovementType.purchase || widget.initialType == StockMovementType.consumption) ...[
-              // Show other options in dropdown
-            ] else ...[
-              DropdownButtonFormField<StockMovementType>(
-                value: _movementType,
-                decoration: InputDecoration(
-                  labelText: widget.locale == 'pt' ? 'Tipo de Movimento' : 'Movement Type',
-                  border: const OutlineInputBorder(),
-                ),
-                items: StockMovementType.values.map((type) {
-                  return DropdownMenuItem(
-                    value: type,
-                    child: Text(type.displayName(widget.locale)),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) setState(() => _movementType = value);
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
-
             // Quantity
             TextFormField(
               controller: _quantityController,
@@ -938,21 +957,19 @@ class _MovementDialogState extends State<_MovementDialog> {
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               autofocus: true,
-              onChanged: (_) => setState(() {
-                _errorMessage = null;
-              }),
+              onChanged: (_) => setState(() => _errorMessage = null),
             ),
             const SizedBox(height: 12),
 
-            // Preview of new stock
+            // Preview
             if (_enteredQuantity > 0)
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: (_newStock < 0 ? Colors.red : (isPurchase ? Colors.green : Colors.orange)).withValues(alpha: 0.1),
+                  color: (_newStock < 0 ? Colors.red : (isPurchase ? Colors.green : Colors.orange)).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: (_newStock < 0 ? Colors.red : (isPurchase ? Colors.green : Colors.orange)).withValues(alpha: 0.3),
+                    color: (_newStock < 0 ? Colors.red : (isPurchase ? Colors.green : Colors.orange)).withOpacity(0.3),
                   ),
                 ),
                 child: Row(
@@ -988,16 +1005,13 @@ class _MovementDialogState extends State<_MovementDialog> {
             const SizedBox(height: 16),
 
             // Cost (for purchases)
-            if (_movementType == StockMovementType.purchase) ...[
+            if (isPurchase) ...[
               TextFormField(
                 controller: _costController,
                 decoration: InputDecoration(
                   labelText: widget.locale == 'pt' ? 'Custo total (opcional)' : 'Total cost (optional)',
                   border: const OutlineInputBorder(),
                   prefixText: '€ ',
-                  helperText: widget.locale == 'pt'
-                      ? 'Custo total da compra'
-                      : 'Total purchase cost',
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
@@ -1018,15 +1032,21 @@ class _MovementDialogState extends State<_MovementDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: _isSaving ? null : () => Navigator.pop(context),
           child: Text(widget.locale == 'pt' ? 'Cancelar' : 'Cancel'),
         ),
         FilledButton(
-          onPressed: _isValid ? _save : null,
+          onPressed: (_isValid && !_isSaving) ? _save : null,
           style: FilledButton.styleFrom(
             backgroundColor: isPurchase ? Colors.green : Colors.orange,
           ),
-          child: Text(widget.locale == 'pt' ? 'Confirmar' : 'Confirm'),
+          child: _isSaving
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : Text(widget.locale == 'pt' ? 'Confirmar' : 'Confirm'),
         ),
       ],
     );
@@ -1047,6 +1067,8 @@ class _MovementDialogState extends State<_MovementDialog> {
       });
       return;
     }
+
+    setState(() => _isSaving = true);
 
     final now = DateTime.now();
     final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
@@ -1082,6 +1104,7 @@ class _MovementDialogState extends State<_MovementDialog> {
       );
     } else {
       setState(() {
+        _isSaving = false;
         _errorMessage = provider.errorMessage ??
             (widget.locale == 'pt' ? 'Erro ao guardar movimento' : 'Error saving movement');
       });
@@ -1089,34 +1112,26 @@ class _MovementDialogState extends State<_MovementDialog> {
   }
 }
 
+// ============================================================================
+// FEED EFFICIENCY CARD
+// ============================================================================
+
 class _FeedEfficiencyCard extends StatelessWidget {
   final FeedEfficiency efficiency;
   final String locale;
 
-  const _FeedEfficiencyCard({
-    required this.efficiency,
-    required this.locale,
-  });
+  const _FeedEfficiencyCard({required this.efficiency, required this.locale});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    Color ratingColor;
-    switch (efficiency.rating) {
-      case EfficiencyRating.excellent:
-        ratingColor = Colors.green;
-        break;
-      case EfficiencyRating.good:
-        ratingColor = Colors.lightGreen;
-        break;
-      case EfficiencyRating.average:
-        ratingColor = Colors.orange;
-        break;
-      case EfficiencyRating.poor:
-        ratingColor = Colors.red;
-        break;
-    }
+    final ratingColor = switch (efficiency.rating) {
+      EfficiencyRating.excellent => Colors.green,
+      EfficiencyRating.good => Colors.lightGreen,
+      EfficiencyRating.average => Colors.orange,
+      EfficiencyRating.poor => Colors.red,
+    };
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1125,14 +1140,12 @@ class _FeedEfficiencyCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            ratingColor.withValues(alpha: 0.15),
-            ratingColor.withValues(alpha: 0.05),
+            ratingColor.withOpacity(0.15),
+            ratingColor.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: ratingColor.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: ratingColor.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1142,14 +1155,10 @@ class _FeedEfficiencyCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: ratingColor.withValues(alpha: 0.2),
+                  color: ratingColor.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  Icons.analytics,
-                  color: ratingColor,
-                  size: 24,
-                ),
+                child: Icon(Icons.analytics, color: ratingColor, size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1180,7 +1189,6 @@ class _FeedEfficiencyCard extends StatelessWidget {
                   label: locale == 'pt' ? 'Kg por Ovo' : 'Kg per Egg',
                   value: '${efficiency.kgPerEgg.toStringAsFixed(3)} kg',
                   icon: Icons.egg_alt,
-                  locale: locale,
                 ),
               ),
               const SizedBox(width: 12),
@@ -1189,7 +1197,6 @@ class _FeedEfficiencyCard extends StatelessWidget {
                   label: locale == 'pt' ? 'Ovos por Kg' : 'Eggs per Kg',
                   value: '${efficiency.eggsPerKg.toStringAsFixed(1)}',
                   icon: Icons.grass,
-                  locale: locale,
                 ),
               ),
             ],
@@ -1204,9 +1211,7 @@ class _FeedEfficiencyCard extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  efficiency.comparedToBenchmark >= 0
-                      ? Icons.trending_up
-                      : Icons.trending_down,
+                  efficiency.comparedToBenchmark >= 0 ? Icons.trending_up : Icons.trending_down,
                   size: 18,
                   color: efficiency.comparedToBenchmark >= 0 ? Colors.green : Colors.red,
                 ),
@@ -1221,7 +1226,7 @@ class _FeedEfficiencyCard extends StatelessWidget {
                             ? '${efficiency.comparedToBenchmark.abs().toStringAsFixed(0)}% abaixo do benchmark da indústria'
                             : '${efficiency.comparedToBenchmark.abs().toStringAsFixed(0)}% below industry benchmark'),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.8),
+                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.8),
                     ),
                   ),
                 ),
@@ -1238,13 +1243,11 @@ class _EfficiencyMetric extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
-  final String locale;
 
   const _EfficiencyMetric({
     required this.label,
     required this.value,
     required this.icon,
-    required this.locale,
   });
 
   @override
@@ -1263,9 +1266,7 @@ class _EfficiencyMetric extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           Text(
             label,
