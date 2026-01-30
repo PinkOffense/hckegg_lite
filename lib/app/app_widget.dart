@@ -4,13 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../state/theme_provider.dart';
-import '../core/di/service_locator.dart';
-import '../features/eggs/eggs.dart';
-import '../features/sales/sales.dart';
-import '../features/expenses/expenses.dart';
-import '../features/health/health.dart';
-import '../features/feed_stock/feed_stock.dart';
-import '../features/reservations/reservations.dart';
+import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 
@@ -23,17 +17,16 @@ class HckEggApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sl = ServiceLocator.instance;
-
     return MultiProvider(
       providers: [
-        // Clean Architecture providers (using use cases)
-        ChangeNotifierProvider<EggProvider>(create: (_) => sl.createEggProvider()),
-        ChangeNotifierProvider<SaleProvider>(create: (_) => sl.createSaleProvider()),
-        ChangeNotifierProvider<ExpenseProvider>(create: (_) => sl.createExpenseProvider()),
-        ChangeNotifierProvider<VetProvider>(create: (_) => sl.createVetProvider()),
-        ChangeNotifierProvider<FeedStockProvider>(create: (_) => sl.createFeedStockProvider()),
-        ChangeNotifierProvider<ReservationProvider>(create: (_) => sl.createReservationProvider()),
+        // Domain-specific providers
+        ChangeNotifierProvider(create: (_) => EggProvider()),
+        ChangeNotifierProvider(create: (_) => EggRecordProvider()),
+        ChangeNotifierProvider(create: (_) => ExpenseProvider()),
+        ChangeNotifierProvider(create: (_) => VetRecordProvider()),
+        ChangeNotifierProvider(create: (_) => SaleProvider()),
+        ChangeNotifierProvider(create: (_) => ReservationProvider()),
+        ChangeNotifierProvider(create: (_) => FeedStockProvider()),
         // UI providers
         ChangeNotifierProvider(create: (_) => LocaleProvider('en')),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
