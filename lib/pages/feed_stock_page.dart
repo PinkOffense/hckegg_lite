@@ -5,13 +5,11 @@ import 'package:uuid/uuid.dart';
 import '../models/feed_stock.dart';
 import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
-import '../l10n/translations.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/gradient_fab.dart';
 import '../dialogs/feed_stock_dialog.dart';
-import '../services/production_analytics_service.dart';
 
 class FeedStockPage extends StatefulWidget {
   const FeedStockPage({super.key});
@@ -22,7 +20,6 @@ class FeedStockPage extends StatefulWidget {
 
 class _FeedStockPageState extends State<FeedStockPage> {
   final _searchController = TextEditingController();
-  final _analyticsService = ProductionAnalyticsService();
   String _searchQuery = '';
 
   @override
@@ -37,69 +34,68 @@ class _FeedStockPageState extends State<FeedStockPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final locale = Provider.of<LocaleProvider>(context).code;
-    final feedProvider = Provider.of<FeedStockProvider>(context);
-    final eggProvider = Provider.of<EggRecordProvider>(context);
 
     return AppScaffold(
       title: locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
       fab: GradientFAB(
         extended: true,
         icon: Icons.add,
-        label: locale == 'pt' ? 'Adicionar Ração' : 'Add Feed',
+        label: locale == 'pt' ? 'Adicionar' : 'Add',
         onPressed: () => _showAddDialog(context),
       ),
-      body: _buildBody(context, theme, locale, feedProvider, eggProvider),
+      body: Consumer<FeedStockProvider>(
+        builder: (context, provider, _) {
+          return _buildContent(context, locale, provider);
+        },
+      ),
     );
   }
 
-  Widget _buildBody(
-    BuildContext context,
-    ThemeData theme,
-    String locale,
-    FeedStockProvider feedProvider,
-    EggRecordProvider eggProvider,
-  ) {
+  Widget _buildContent(BuildContext context, String locale, FeedStockProvider provider) {
+    final theme = Theme.of(context);
+
     // Loading state
-    if (feedProvider.isLoading && feedProvider.feedStocks.isEmpty) {
+    if (provider.isLoading && provider.feedStocks.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
     // Error state
-    if (feedProvider.hasError && feedProvider.feedStocks.isEmpty) {
-      return _buildErrorState(locale, feedProvider);
+    if (provider.hasError && provider.feedStocks.isEmpty) {
+      return _ErrorView(
+        locale: locale,
+        errorMessage: provider.errorMessage,
+        onRetry: _refresh,
+      );
     }
 
     // Content
-    final allStocks = feedProvider.feedStocks;
+    final allStocks = provider.feedStocks;
     final stocks = _searchQuery.isEmpty
         ? allStocks
-        : feedProvider.search(_searchQuery);
+        : provider.search(_searchQuery);
 
     return RefreshIndicator(
       onRefresh: _refresh,
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          // Overview Section
+          // Overview
           SliverToBoxAdapter(
-            child: _buildOverviewCard(
-              context,
-              theme,
-              locale,
-              feedProvider,
-              eggProvider,
-              stocks,
+            child: _OverviewCard(
+              locale: locale,
+              totalStock: provider.totalFeedStock,
+              lowStockCount: provider.lowStockCount,
+              stockCount: allStocks.length,
             ),
           ),
 
-          // Search Bar
+          // Search
           if (allStocks.isNotEmpty)
             SliverToBoxAdapter(
               child: AppSearchBar(
                 controller: _searchController,
-                hintText: locale == 'pt' ? 'Pesquisar ração...' : 'Search feed...',
+                hintText: locale == 'pt' ? 'Pesquisar...' : 'Search...',
                 hasContent: _searchQuery.isNotEmpty,
                 onChanged: (value) => setState(() => _searchQuery = value),
                 onClear: () {
@@ -109,16 +105,16 @@ class _FeedStockPageState extends State<FeedStockPage> {
               ),
             ),
 
-          // Content
+          // Empty state
           if (allStocks.isEmpty)
             SliverFillRemaining(
               child: EmptyState(
                 icon: Icons.grass_outlined,
-                title: locale == 'pt' ? 'Nenhum stock registado' : 'No stock registered',
+                title: locale == 'pt' ? 'Sem stock' : 'No stock',
                 message: locale == 'pt'
-                    ? 'Adicione e controle o stock de ração das suas galinhas'
-                    : 'Add and track your chicken feed stock',
-                actionLabel: locale == 'pt' ? 'Adicionar Ração' : 'Add Feed',
+                    ? 'Adicione ração para começar'
+                    : 'Add feed to get started',
+                actionLabel: locale == 'pt' ? 'Adicionar' : 'Add',
                 onAction: () => _showAddDialog(context),
               ),
             )
@@ -135,133 +131,25 @@ class _FeedStockPageState extends State<FeedStockPage> {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final stock = stocks[index];
-                    return _FeedStockCard(
-                      stock: stock,
-                      locale: locale,
-                      onTap: () => _showStockDetails(context, locale, stock),
-                      onQuickConsume: () => _showConsumeDialog(context, locale, stock),
-                      onDelete: () => _showDeleteDialog(context, locale, stock),
-                    );
-                  },
-                  childCount: stocks.length,
-                ),
+              padding: const EdgeInsets.all(16),
+              sliver: SliverList.separated(
+                itemCount: stocks.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final stock = stocks[index];
+                  return _StockCard(
+                    stock: stock,
+                    locale: locale,
+                    onConsume: () => _showConsumeDialog(context, locale, stock),
+                    onEdit: () => _showEditDialog(context, stock),
+                    onDelete: () => _showDeleteDialog(context, locale, stock),
+                  );
+                },
               ),
             ),
 
-          // Bottom padding for FAB
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 80),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String locale, FeedStockProvider provider) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
-            Text(
-              locale == 'pt' ? 'Erro ao carregar dados' : 'Error loading data',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              provider.errorMessage ?? (locale == 'pt' ? 'Erro desconhecido' : 'Unknown error'),
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _refresh,
-              icon: const Icon(Icons.refresh),
-              label: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOverviewCard(
-    BuildContext context,
-    ThemeData theme,
-    String locale,
-    FeedStockProvider feedProvider,
-    EggRecordProvider eggProvider,
-    List<FeedStock> stocks,
-  ) {
-    final totalStock = feedProvider.totalFeedStock;
-    final lowStockCount = feedProvider.lowStockCount;
-    final totalFeedConsumed = feedProvider.totalFeedConsumed;
-    final totalEggsProduced = eggProvider.totalEggsCollected;
-
-    final feedEfficiency = _analyticsService.calculateFeedEfficiency(
-      totalFeedKg: totalFeedConsumed,
-      totalEggsProduced: totalEggsProduced,
-      periodDays: 30,
-    );
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.primary.withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            locale == 'pt' ? 'Resumo do Stock' : 'Stock Overview',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 16,
-            runSpacing: 12,
-            children: [
-              _StatCard(
-                icon: Icons.inventory_2,
-                label: locale == 'pt' ? 'Total em Stock' : 'Total Stock',
-                value: '${totalStock.toStringAsFixed(1)} kg',
-                color: Colors.blue,
-              ),
-              _StatCard(
-                icon: Icons.warning_amber,
-                label: locale == 'pt' ? 'Stock Baixo' : 'Low Stock',
-                value: lowStockCount.toString(),
-                color: lowStockCount > 0 ? Colors.red : Colors.green,
-              ),
-              _StatCard(
-                icon: Icons.category,
-                label: locale == 'pt' ? 'Tipos' : 'Types',
-                value: stocks.length.toString(),
-                color: Colors.purple,
-              ),
-            ],
-          ),
-          if (feedEfficiency != null) ...[
-            const SizedBox(height: 16),
-            _FeedEfficiencyCard(efficiency: feedEfficiency, locale: locale),
-          ],
+          // FAB spacing
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
@@ -270,41 +158,33 @@ class _FeedStockPageState extends State<FeedStockPage> {
   void _showAddDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => const FeedStockDialog(),
+      builder: (_) => const FeedStockDialog(),
     );
   }
 
-  void _showStockDetails(BuildContext context, String locale, FeedStock stock) {
-    showModalBottomSheet(
+  void _showEditDialog(BuildContext context, FeedStock stock) {
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _StockDetailsSheet(stock: stock, locale: locale),
+      builder: (_) => FeedStockDialog(existingStock: stock),
     );
   }
 
   void _showConsumeDialog(BuildContext context, String locale, FeedStock stock) {
     showDialog(
       context: context,
-      builder: (context) => _MovementDialog(
-        locale: locale,
-        stock: stock,
-        initialType: StockMovementType.consumption,
-      ),
+      builder: (_) => _ConsumeDialog(locale: locale, stock: stock),
     );
   }
 
   void _showDeleteDialog(BuildContext context, String locale, FeedStock stock) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(locale == 'pt' ? 'Eliminar Stock' : 'Delete Stock'),
+      builder: (_) => AlertDialog(
+        title: Text(locale == 'pt' ? 'Eliminar?' : 'Delete?'),
         content: Text(
           locale == 'pt'
-              ? 'Tem certeza que deseja eliminar este stock? Todo o histórico de movimentos será perdido.'
-              : 'Are you sure you want to delete this stock? All movement history will be lost.',
+              ? 'Eliminar "${stock.type.displayName(locale)}"?'
+              : 'Delete "${stock.type.displayName(locale)}"?',
         ),
         actions: [
           TextButton(
@@ -313,9 +193,8 @@ class _FeedStockPageState extends State<FeedStockPage> {
           ),
           TextButton(
             onPressed: () async {
-              final provider = context.read<FeedStockProvider>();
               Navigator.pop(context);
-              await provider.deleteFeedStock(stock.id);
+              await context.read<FeedStockProvider>().deleteFeedStock(stock.id);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: Text(locale == 'pt' ? 'Eliminar' : 'Delete'),
@@ -326,51 +205,125 @@ class _FeedStockPageState extends State<FeedStockPage> {
   }
 }
 
-// ============================================================================
-// WIDGETS
-// ============================================================================
+// =============================================================================
+// ERROR VIEW
+// =============================================================================
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
+class _ErrorView extends StatelessWidget {
+  final String locale;
+  final String? errorMessage;
+  final VoidCallback onRetry;
 
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
+  const _ErrorView({
+    required this.locale,
+    required this.errorMessage,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              locale == 'pt' ? 'Erro ao carregar' : 'Error loading',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              errorMessage ?? '',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              locale == 'pt'
+                  ? 'Verifique se as tabelas feed_stocks e feed_movements existem no Supabase'
+                  : 'Check if feed_stocks and feed_movements tables exist in Supabase',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.orange[700], fontSize: 12),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: Text(locale == 'pt' ? 'Tentar novamente' : 'Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// OVERVIEW CARD
+// =============================================================================
+
+class _OverviewCard extends StatelessWidget {
+  final String locale;
+  final double totalStock;
+  final int lowStockCount;
+  final int stockCount;
+
+  const _OverviewCard({
+    required this.locale,
+    required this.totalStock,
+    required this.lowStockCount,
+    required this.stockCount,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Text(
+            locale == 'pt' ? 'Resumo' : 'Overview',
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Row(
             children: [
-              Text(
-                label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+              Expanded(
+                child: _StatItem(
+                  icon: Icons.inventory_2,
+                  label: locale == 'pt' ? 'Total' : 'Total',
+                  value: '${totalStock.toStringAsFixed(1)} kg',
+                  color: Colors.blue,
                 ),
               ),
-              Text(
-                value,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatItem(
+                  icon: Icons.warning_amber,
+                  label: locale == 'pt' ? 'Baixo' : 'Low',
+                  value: lowStockCount.toString(),
+                  color: lowStockCount > 0 ? Colors.red : Colors.green,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatItem(
+                  icon: Icons.category,
+                  label: locale == 'pt' ? 'Tipos' : 'Types',
+                  value: stockCount.toString(),
+                  color: Colors.purple,
                 ),
               ),
             ],
@@ -381,22 +334,65 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _FeedStockCard extends StatelessWidget {
+class _StatItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _StatItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// =============================================================================
+// STOCK CARD
+// =============================================================================
+
+class _StockCard extends StatelessWidget {
   final FeedStock stock;
   final String locale;
-  final VoidCallback onTap;
-  final VoidCallback onQuickConsume;
+  final VoidCallback onConsume;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  const _FeedStockCard({
+  const _StockCard({
     required this.stock,
     required this.locale,
-    required this.onTap,
-    required this.onQuickConsume,
+    required this.onConsume,
+    required this.onEdit,
     required this.onDelete,
   });
 
-  Color get _stockColor {
+  Color get _levelColor {
     if (stock.isLowStock) return Colors.red;
     if (stock.currentQuantityKg < stock.minimumQuantityKg * 2) return Colors.orange;
     return Colors.green;
@@ -407,9 +403,8 @@ class _FeedStockCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: onTap,
+        onTap: onEdit,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -419,14 +414,7 @@ class _FeedStockCard extends StatelessWidget {
               // Header
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(stock.type.icon, style: const TextStyle(fontSize: 24)),
-                  ),
+                  Text(stock.type.icon, style: const TextStyle(fontSize: 32)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -442,7 +430,7 @@ class _FeedStockCard extends StatelessWidget {
                           Text(
                             stock.brand!,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                              color: Colors.grey[600],
                             ),
                           ),
                       ],
@@ -453,9 +441,10 @@ class _FeedStockCard extends StatelessWidget {
                     children: [
                       Text(
                         '${stock.currentQuantityKg.toStringAsFixed(1)} kg',
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        style: TextStyle(
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: _stockColor,
+                          color: _levelColor,
                         ),
                       ),
                       if (stock.isLowStock)
@@ -482,31 +471,24 @@ class _FeedStockCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // Progress bar
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: (stock.currentQuantityKg / (stock.minimumQuantityKg * 3)).clamp(0.0, 1.0),
+                  backgroundColor: Colors.grey[300],
+                  color: _levelColor,
+                  minHeight: 8,
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        locale == 'pt' ? 'Nível de stock' : 'Stock level',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      Text(
-                        '${locale == 'pt' ? 'Mín' : 'Min'}: ${stock.minimumQuantityKg.toStringAsFixed(0)} kg',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  LinearProgressIndicator(
-                    value: (stock.currentQuantityKg / (stock.minimumQuantityKg * 3)).clamp(0.0, 1.0),
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                    color: _stockColor,
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(4),
+                  Text(
+                    '${locale == 'pt' ? 'Mín' : 'Min'}: ${stock.minimumQuantityKg.toStringAsFixed(0)} kg',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -518,19 +500,19 @@ class _FeedStockCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: stock.currentQuantityKg > 0 ? onQuickConsume : null,
+                      onPressed: stock.currentQuantityKg > 0 ? onConsume : null,
                       icon: const Icon(Icons.restaurant, size: 18),
-                      label: Text(locale == 'pt' ? 'Registar Consumo' : 'Record Consumption'),
+                      label: Text(locale == 'pt' ? 'Consumir' : 'Consume'),
                       style: FilledButton.styleFrom(
-                        backgroundColor: stock.currentQuantityKg > 0 ? Colors.orange : Colors.grey,
+                        backgroundColor: Colors.orange,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
                     onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline),
-                    color: Colors.red.withOpacity(0.7),
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
                     tooltip: locale == 'pt' ? 'Eliminar' : 'Delete',
                   ),
                 ],
@@ -543,37 +525,82 @@ class _FeedStockCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
-// STOCK DETAILS SHEET
-// ============================================================================
+// =============================================================================
+// CONSUME DIALOG
+// =============================================================================
 
-class _StockDetailsSheet extends StatefulWidget {
-  final FeedStock stock;
+class _ConsumeDialog extends StatefulWidget {
   final String locale;
+  final FeedStock stock;
 
-  const _StockDetailsSheet({required this.stock, required this.locale});
+  const _ConsumeDialog({required this.locale, required this.stock});
 
   @override
-  State<_StockDetailsSheet> createState() => _StockDetailsSheetState();
+  State<_ConsumeDialog> createState() => _ConsumeDialogState();
 }
 
-class _StockDetailsSheetState extends State<_StockDetailsSheet> {
-  List<FeedMovement> _movements = [];
-  bool _isLoading = true;
+class _ConsumeDialogState extends State<_ConsumeDialog> {
+  final _controller = TextEditingController();
+  String? _error;
+  bool _saving = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadMovements();
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
-  Future<void> _loadMovements() async {
-    final provider = context.read<FeedStockProvider>();
-    final movements = await provider.getFeedMovements(widget.stock.id);
-    if (mounted) {
+  double get _quantity => double.tryParse(_controller.text) ?? 0;
+  double get _newStock => widget.stock.currentQuantityKg - _quantity;
+  bool get _isValid => _quantity > 0 && _newStock >= 0;
+
+  Future<void> _save() async {
+    if (!_isValid) return;
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+
+    try {
+      final now = DateTime.now();
+      final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+      final movement = FeedMovement(
+        id: const Uuid().v4(),
+        feedStockId: widget.stock.id,
+        movementType: StockMovementType.consumption,
+        quantityKg: _quantity,
+        date: dateStr,
+        createdAt: now,
+      );
+
+      final provider = context.read<FeedStockProvider>();
+      final success = await provider.addFeedMovement(movement, widget.stock);
+
+      if (!mounted) return;
+
+      if (success) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.locale == 'pt' ? 'Consumo registado!' : 'Consumption recorded!',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        setState(() {
+          _saving = false;
+          _error = provider.errorMessage ?? 'Error';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _movements = movements;
-        _isLoading = false;
+        _saving = false;
+        _error = e.toString();
       });
     }
   }
@@ -582,330 +609,14 @@ class _StockDetailsSheetState extends State<_StockDetailsSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            // Handle
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
-                children: [
-                  Text(widget.stock.type.icon, style: const TextStyle(fontSize: 32)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.stock.type.displayName(widget.locale),
-                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        if (widget.stock.brand != null)
-                          Text(
-                            widget.stock.brand!,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: widget.stock.isLowStock ? Colors.red : Colors.green,
-                        ),
-                      ),
-                      Text(
-                        widget.locale == 'pt' ? 'em stock' : 'in stock',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const Divider(),
-
-            // Actions
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: widget.stock.currentQuantityKg > 0
-                          ? () {
-                              Navigator.pop(context);
-                              showDialog(
-                                context: context,
-                                builder: (ctx) => _MovementDialog(
-                                  locale: widget.locale,
-                                  stock: widget.stock,
-                                  initialType: StockMovementType.consumption,
-                                ),
-                              );
-                            }
-                          : null,
-                      icon: const Icon(Icons.restaurant),
-                      label: Text(widget.locale == 'pt' ? 'Registar Consumo' : 'Record Consumption'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: widget.stock.currentQuantityKg > 0 ? Colors.orange : Colors.grey,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      showDialog(
-                        context: context,
-                        builder: (ctx) => FeedStockDialog(existingStock: widget.stock),
-                      );
-                    },
-                    icon: const Icon(Icons.edit),
-                    tooltip: widget.locale == 'pt' ? 'Editar' : 'Edit',
-                  ),
-                ],
-              ),
-            ),
-
-            // Movement History Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
-                children: [
-                  Icon(Icons.history, size: 20, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.locale == 'pt' ? 'Histórico de Movimentos' : 'Movement History',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-
-            // Movement List
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _movements.isEmpty
-                      ? Center(
-                          child: Text(
-                            widget.locale == 'pt'
-                                ? 'Nenhum movimento registado'
-                                : 'No movements recorded',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          controller: scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          itemCount: _movements.length,
-                          itemBuilder: (context, index) {
-                            return _MovementTile(
-                              movement: _movements[index],
-                              locale: widget.locale,
-                            );
-                          },
-                        ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-// ============================================================================
-// MOVEMENT TILE
-// ============================================================================
-
-class _MovementTile extends StatelessWidget {
-  final FeedMovement movement;
-  final String locale;
-
-  const _MovementTile({required this.movement, required this.locale});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final (icon, color, sign) = switch (movement.movementType) {
-      StockMovementType.purchase => (Icons.add_shopping_cart, Colors.green, '+'),
-      StockMovementType.consumption => (Icons.restaurant, Colors.orange, '-'),
-      StockMovementType.adjustment => (Icons.tune, Colors.blue, ''),
-      StockMovementType.loss => (Icons.warning, Colors.red, '-'),
-    };
-
-    final date = DateTime.parse(movement.date);
-    final formattedDate = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  movement.movementType.displayName(locale),
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  formattedDate,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-                  ),
-                ),
-                if (movement.notes != null)
-                  Text(
-                    movement.notes!,
-                    style: theme.textTheme.bodySmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$sign${movement.quantityKg.toStringAsFixed(1)} kg',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              if (movement.cost != null)
-                Text(
-                  '€${movement.cost!.toStringAsFixed(2)}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// MOVEMENT DIALOG
-// ============================================================================
-
-class _MovementDialog extends StatefulWidget {
-  final String locale;
-  final FeedStock stock;
-  final StockMovementType initialType;
-
-  const _MovementDialog({
-    required this.locale,
-    required this.stock,
-    this.initialType = StockMovementType.purchase,
-  });
-
-  @override
-  State<_MovementDialog> createState() => _MovementDialogState();
-}
-
-class _MovementDialogState extends State<_MovementDialog> {
-  late StockMovementType _movementType;
-  final _quantityController = TextEditingController();
-  final _costController = TextEditingController();
-  final _notesController = TextEditingController();
-  String? _errorMessage;
-  bool _isSaving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _movementType = widget.initialType;
-  }
-
-  @override
-  void dispose() {
-    _quantityController.dispose();
-    _costController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  double get _enteredQuantity => double.tryParse(_quantityController.text) ?? 0;
-
-  double get _newStock {
-    if (_movementType == StockMovementType.purchase) {
-      return widget.stock.currentQuantityKg + _enteredQuantity;
-    }
-    return widget.stock.currentQuantityKg - _enteredQuantity;
-  }
-
-  bool get _isValid {
-    if (_enteredQuantity <= 0) return false;
-    if (_movementType != StockMovementType.purchase && _newStock < 0) return false;
-    return true;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isPurchase = _movementType == StockMovementType.purchase;
-
     return AlertDialog(
       title: Row(
         children: [
-          Icon(
-            isPurchase ? Icons.add_shopping_cart : Icons.restaurant,
-            color: isPurchase ? Colors.green : Colors.orange,
-          ),
+          const Icon(Icons.restaurant, color: Colors.orange),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              isPurchase
-                  ? (widget.locale == 'pt' ? 'Registar Compra' : 'Record Purchase')
-                  : (widget.locale == 'pt' ? 'Registar Consumo' : 'Record Consumption'),
+              widget.locale == 'pt' ? 'Registar Consumo' : 'Record Consumption',
             ),
           ),
         ],
@@ -915,11 +626,11 @@ class _MovementDialogState extends State<_MovementDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Current Stock Info
+            // Stock info
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                color: Colors.grey[100],
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -932,11 +643,11 @@ class _MovementDialogState extends State<_MovementDialog> {
                       children: [
                         Text(
                           widget.stock.type.displayName(widget.locale),
-                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          '${widget.locale == 'pt' ? 'Stock actual' : 'Current stock'}: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
-                          style: theme.textTheme.bodySmall,
+                          '${widget.locale == 'pt' ? 'Actual' : 'Current'}: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
                       ],
                     ),
@@ -944,103 +655,69 @@ class _MovementDialogState extends State<_MovementDialog> {
                 ],
               ),
             ),
+
             const SizedBox(height: 16),
 
-            // Quantity
-            TextFormField(
-              controller: _quantityController,
+            // Quantity input
+            TextField(
+              controller: _controller,
               decoration: InputDecoration(
                 labelText: widget.locale == 'pt' ? 'Quantidade (kg)' : 'Quantity (kg)',
                 border: const OutlineInputBorder(),
                 suffixText: 'kg',
-                errorText: _errorMessage,
+                errorText: _error,
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               autofocus: true,
-              onChanged: (_) => setState(() => _errorMessage = null),
+              onChanged: (_) => setState(() => _error = null),
             ),
-            const SizedBox(height: 12),
 
             // Preview
-            if (_enteredQuantity > 0)
+            if (_quantity > 0) ...[
+              const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: (_newStock < 0 ? Colors.red : (isPurchase ? Colors.green : Colors.orange)).withOpacity(0.1),
+                  color: _newStock < 0 ? Colors.red.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: (_newStock < 0 ? Colors.red : (isPurchase ? Colors.green : Colors.orange)).withOpacity(0.3),
-                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      widget.locale == 'pt' ? 'Stock após movimento:' : 'Stock after movement:',
-                      style: theme.textTheme.bodyMedium,
-                    ),
+                    Text(widget.locale == 'pt' ? 'Após consumo:' : 'After consumption:'),
                     Text(
                       '${_newStock.toStringAsFixed(1)} kg',
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: _newStock < 0
-                            ? Colors.red
-                            : (_newStock <= widget.stock.minimumQuantityKg ? Colors.orange : Colors.green),
+                        color: _newStock < 0 ? Colors.red : Colors.orange,
                       ),
                     ),
                   ],
                 ),
               ),
+            ],
 
-            if (_newStock < 0 && _enteredQuantity > 0) ...[
+            if (_newStock < 0 && _quantity > 0) ...[
               const SizedBox(height: 8),
               Text(
                 widget.locale == 'pt'
-                    ? 'Stock insuficiente! Máximo: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg'
-                    : 'Insufficient stock! Maximum: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
+                    ? 'Máx: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg'
+                    : 'Max: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
                 style: const TextStyle(color: Colors.red, fontSize: 12),
               ),
             ],
-
-            const SizedBox(height: 16),
-
-            // Cost (for purchases)
-            if (isPurchase) ...[
-              TextFormField(
-                controller: _costController,
-                decoration: InputDecoration(
-                  labelText: widget.locale == 'pt' ? 'Custo total (opcional)' : 'Total cost (optional)',
-                  border: const OutlineInputBorder(),
-                  prefixText: '€ ',
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Notes
-            TextFormField(
-              controller: _notesController,
-              decoration: InputDecoration(
-                labelText: widget.locale == 'pt' ? 'Notas (opcional)' : 'Notes (optional)',
-                border: const OutlineInputBorder(),
-              ),
-              maxLines: 2,
-            ),
           ],
         ),
       ),
       actions: [
         TextButton(
-          onPressed: _isSaving ? null : () => Navigator.pop(context),
+          onPressed: _saving ? null : () => Navigator.pop(context),
           child: Text(widget.locale == 'pt' ? 'Cancelar' : 'Cancel'),
         ),
         FilledButton(
-          onPressed: (_isValid && !_isSaving) ? _save : null,
-          style: FilledButton.styleFrom(
-            backgroundColor: isPurchase ? Colors.green : Colors.orange,
-          ),
-          child: _isSaving
+          onPressed: (_isValid && !_saving) ? _save : null,
+          style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+          child: _saving
               ? const SizedBox(
                   width: 20,
                   height: 20,
@@ -1049,232 +726,6 @@ class _MovementDialogState extends State<_MovementDialog> {
               : Text(widget.locale == 'pt' ? 'Confirmar' : 'Confirm'),
         ),
       ],
-    );
-  }
-
-  Future<void> _save() async {
-    final quantity = double.tryParse(_quantityController.text);
-    if (quantity == null || quantity <= 0) {
-      setState(() {
-        _errorMessage = widget.locale == 'pt' ? 'Quantidade inválida' : 'Invalid quantity';
-      });
-      return;
-    }
-
-    if (_movementType != StockMovementType.purchase && quantity > widget.stock.currentQuantityKg) {
-      setState(() {
-        _errorMessage = widget.locale == 'pt' ? 'Stock insuficiente' : 'Insufficient stock';
-      });
-      return;
-    }
-
-    setState(() => _isSaving = true);
-
-    final now = DateTime.now();
-    final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-
-    final movement = FeedMovement(
-      id: const Uuid().v4(),
-      feedStockId: widget.stock.id,
-      movementType: _movementType,
-      quantityKg: quantity,
-      cost: double.tryParse(_costController.text),
-      date: dateStr,
-      notes: _notesController.text.isEmpty ? null : _notesController.text,
-      createdAt: now,
-    );
-
-    final provider = context.read<FeedStockProvider>();
-    final success = await provider.addFeedMovement(movement, widget.stock);
-
-    if (!mounted) return;
-
-    if (success) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _movementType == StockMovementType.purchase
-                ? (widget.locale == 'pt' ? 'Compra registada com sucesso!' : 'Purchase recorded successfully!')
-                : (widget.locale == 'pt' ? 'Consumo registado com sucesso!' : 'Consumption recorded successfully!'),
-          ),
-          backgroundColor: _movementType == StockMovementType.purchase ? Colors.green : Colors.orange,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } else {
-      setState(() {
-        _isSaving = false;
-        _errorMessage = provider.errorMessage ??
-            (widget.locale == 'pt' ? 'Erro ao guardar movimento' : 'Error saving movement');
-      });
-    }
-  }
-}
-
-// ============================================================================
-// FEED EFFICIENCY CARD
-// ============================================================================
-
-class _FeedEfficiencyCard extends StatelessWidget {
-  final FeedEfficiency efficiency;
-  final String locale;
-
-  const _FeedEfficiencyCard({required this.efficiency, required this.locale});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final ratingColor = switch (efficiency.rating) {
-      EfficiencyRating.excellent => Colors.green,
-      EfficiencyRating.good => Colors.lightGreen,
-      EfficiencyRating.average => Colors.orange,
-      EfficiencyRating.poor => Colors.red,
-    };
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            ratingColor.withOpacity(0.15),
-            ratingColor.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ratingColor.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: ratingColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.analytics, color: ratingColor, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      locale == 'pt' ? 'Eficiência de Ração' : 'Feed Efficiency',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: ratingColor,
-                      ),
-                    ),
-                    Text(
-                      '${efficiency.rating.emoji} ${efficiency.rating.displayName(locale)}',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _EfficiencyMetric(
-                  label: locale == 'pt' ? 'Kg por Ovo' : 'Kg per Egg',
-                  value: '${efficiency.kgPerEgg.toStringAsFixed(3)} kg',
-                  icon: Icons.egg_alt,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _EfficiencyMetric(
-                  label: locale == 'pt' ? 'Ovos por Kg' : 'Eggs per Kg',
-                  value: '${efficiency.eggsPerKg.toStringAsFixed(1)}',
-                  icon: Icons.grass,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  efficiency.comparedToBenchmark >= 0 ? Icons.trending_up : Icons.trending_down,
-                  size: 18,
-                  color: efficiency.comparedToBenchmark >= 0 ? Colors.green : Colors.red,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    efficiency.comparedToBenchmark >= 0
-                        ? (locale == 'pt'
-                            ? '${efficiency.comparedToBenchmark.abs().toStringAsFixed(0)}% acima do benchmark da indústria'
-                            : '${efficiency.comparedToBenchmark.abs().toStringAsFixed(0)}% above industry benchmark')
-                        : (locale == 'pt'
-                            ? '${efficiency.comparedToBenchmark.abs().toStringAsFixed(0)}% abaixo do benchmark da indústria'
-                            : '${efficiency.comparedToBenchmark.abs().toStringAsFixed(0)}% below industry benchmark'),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EfficiencyMetric extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  const _EfficiencyMetric({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 24, color: theme.colorScheme.primary),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
     );
   }
 }
