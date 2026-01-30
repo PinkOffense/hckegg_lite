@@ -25,7 +25,7 @@ class HckEggApp extends StatelessWidget {
         // Clean Architecture providers (using use cases via ServiceLocator)
         ChangeNotifierProvider<SaleProvider>(create: (_) => sl.createSaleProvider()),
         ChangeNotifierProvider<ExpenseProvider>(create: (_) => sl.createExpenseProvider()),
-        ChangeNotifierProvider<VetProvider>(create: (_) => sl.createVetProvider()),
+        ChangeNotifierProvider<VetRecordProvider>(create: (_) => sl.createVetProvider()),
         ChangeNotifierProvider<FeedStockProvider>(create: (_) => sl.createFeedStockProvider()),
         ChangeNotifierProvider<ReservationProvider>(create: (_) => sl.createReservationProvider()),
         // Legacy providers (still needed for egg functionality)
