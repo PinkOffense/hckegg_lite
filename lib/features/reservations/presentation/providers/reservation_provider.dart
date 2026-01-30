@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/core.dart';
-import '../../domain/domain.dart';
+import '../../../../models/egg_reservation.dart';
+import '../../../../models/egg_sale.dart';
 import '../../../sales/domain/domain.dart' as sales;
+import '../../../sales/presentation/providers/sale_provider.dart';
+import '../../domain/domain.dart';
 
 /// State for the reservations feature
 enum ReservationState { initial, loading, loaded, error }
@@ -39,6 +42,7 @@ class ReservationProvider extends ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+  String? get error => _errorMessage; // Backward compatibility
 
   bool get isLoading => _state == ReservationState.loading;
   bool get hasError => _state == ReservationState.error;
@@ -90,7 +94,7 @@ class ReservationProvider extends ChangeNotifier {
   }
 
   /// Save a reservation (create or update)
-  Future<bool> saveReservation(EggReservation reservation) async {
+  Future<void> saveReservation(EggReservation reservation) async {
     _state = ReservationState.loading;
     notifyListeners();
 
@@ -102,7 +106,7 @@ class ReservationProvider extends ChangeNotifier {
       result = await _updateReservation(UpdateReservationParams(reservation: reservation));
     }
 
-    final success = result.fold(
+    result.fold(
       onSuccess: (savedReservation) {
         final index = _reservations.indexWhere((r) => r.id == savedReservation.id);
         if (index >= 0) {
@@ -112,57 +116,55 @@ class ReservationProvider extends ChangeNotifier {
         }
         _reservations.sort((a, b) => b.date.compareTo(a.date));
         _state = ReservationState.loaded;
-        return true;
+        _errorMessage = null;
       },
       onFailure: (failure) {
         _errorMessage = failure.message;
         _state = ReservationState.error;
-        return false;
       },
     );
 
     notifyListeners();
-    return success;
   }
 
   /// Delete a reservation
-  Future<bool> deleteReservation(String id) async {
+  Future<void> deleteReservation(String id) async {
     _state = ReservationState.loading;
     notifyListeners();
 
     final result = await _deleteReservation(DeleteReservationParams(id: id));
 
-    final success = result.fold(
+    result.fold(
       onSuccess: (_) {
         _reservations.removeWhere((r) => r.id == id);
         _state = ReservationState.loaded;
-        return true;
       },
       onFailure: (failure) {
         _errorMessage = failure.message;
         _state = ReservationState.error;
-        return false;
       },
     );
 
     notifyListeners();
-    return success;
   }
 
   /// Convert reservation to sale
-  Future<bool> convertReservationToSale(
+  /// Third parameter (saleProvider) kept for backward compatibility but not used
+  Future<void> convertReservationToSale(
     EggReservation reservation,
-    sales.PaymentStatus paymentStatus,
+    PaymentStatus paymentStatus,
+    [SaleProvider? saleProvider]
   ) async {
     if (_createSale == null) {
       _errorMessage = 'Sale creation not available';
-      return false;
+      notifyListeners();
+      return;
     }
 
     _state = ReservationState.loading;
     notifyListeners();
 
-    final sale = sales.EggSale(
+    final sale = EggSale(
       id: reservation.id,
       date: _toIsoDateString(DateTime.now()),
       quantitySold: reservation.quantity,
@@ -175,8 +177,8 @@ class ReservationProvider extends ChangeNotifier {
           ? 'Converted from reservation on ${reservation.date}. ${reservation.notes}'
           : 'Converted from reservation on ${reservation.date}',
       paymentStatus: paymentStatus,
-      paymentDate: paymentStatus == sales.PaymentStatus.paid ||
-                   paymentStatus == sales.PaymentStatus.advance
+      paymentDate: paymentStatus == PaymentStatus.paid ||
+                   paymentStatus == PaymentStatus.advance
           ? _toIsoDateString(DateTime.now())
           : null,
       isReservation: false,
@@ -187,34 +189,29 @@ class ReservationProvider extends ChangeNotifier {
 
     final saleResult = await _createSale!(sales.CreateSaleParams(sale: sale));
 
-    final success = await saleResult.fold(
+    await saleResult.fold(
       onSuccess: (savedSale) async {
-        // Delete the reservation
         final deleteResult = await _deleteReservation(
           DeleteReservationParams(id: reservation.id),
         );
-        return deleteResult.fold(
+        deleteResult.fold(
           onSuccess: (_) {
             _reservations.removeWhere((r) => r.id == reservation.id);
             _state = ReservationState.loaded;
-            return true;
           },
           onFailure: (failure) {
             _errorMessage = failure.message;
             _state = ReservationState.error;
-            return false;
           },
         );
       },
       onFailure: (failure) async {
         _errorMessage = failure.message;
         _state = ReservationState.error;
-        return false;
       },
     );
 
     notifyListeners();
-    return success;
   }
 
   /// Clear error

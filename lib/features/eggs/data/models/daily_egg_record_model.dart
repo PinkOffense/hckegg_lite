@@ -3,7 +3,7 @@ import '../../domain/entities/daily_egg_record.dart';
 /// Data model for DailyEggRecord with JSON serialization
 /// Extends the domain entity to add serialization capabilities
 class DailyEggRecordModel extends DailyEggRecord {
-  const DailyEggRecordModel({
+  DailyEggRecordModel({
     required super.id,
     required super.date,
     required super.eggsCollected,

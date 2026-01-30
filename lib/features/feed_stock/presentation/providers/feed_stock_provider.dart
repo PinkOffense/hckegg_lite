@@ -41,6 +41,7 @@ class FeedStockProvider extends ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+  String? get error => _errorMessage; // Backward compatibility
 
   bool get isLoading => _state == FeedStockState.loading;
   bool get hasError => _state == FeedStockState.error;
