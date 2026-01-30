@@ -1068,15 +1068,11 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 8),
 
-            // Delete Account (disabled for Google users)
+            // Delete Account
             Card(
-              color: _isGoogleUser
-                  ? (Theme.of(context).brightness == Brightness.light
-                      ? Colors.grey.shade100
-                      : Colors.grey.shade800.withValues(alpha: 0.3))
-                  : (Theme.of(context).brightness == Brightness.light
-                      ? Colors.red.shade50
-                      : Colors.red.shade900.withValues(alpha: 0.2)),
+              color: Theme.of(context).brightness == Brightness.light
+                  ? Colors.red.shade50
+                  : Colors.red.shade900.withValues(alpha: 0.2),
               child: ListTile(
                 leading: _isDeletingAccount
                     ? SizedBox(
@@ -1091,39 +1087,25 @@ class _SettingsPageState extends State<SettingsPage> {
                       )
                     : Icon(
                         Icons.delete_forever,
-                        color: _isGoogleUser
-                            ? Colors.grey
-                            : (Theme.of(context).brightness == Brightness.light
-                                ? Colors.red.shade700
-                                : Colors.red.shade300),
+                        color: Theme.of(context).brightness == Brightness.light
+                            ? Colors.red.shade700
+                            : Colors.red.shade300,
                       ),
                 title: Text(
                   _isDeletingAccount
                       ? (locale == 'pt' ? 'A eliminar...' : 'Deleting...')
                       : (locale == 'pt' ? 'Eliminar Conta' : 'Delete Account'),
                   style: TextStyle(
-                    color: _isGoogleUser
-                        ? Colors.grey
-                        : (Theme.of(context).brightness == Brightness.light
-                            ? Colors.red.shade700
-                            : Colors.red.shade300),
+                    color: Theme.of(context).brightness == Brightness.light
+                        ? Colors.red.shade700
+                        : Colors.red.shade300,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                subtitle: Text(
-                  _isGoogleUser
-                      ? (locale == 'pt'
-                          ? 'Não disponível para contas Google. Gerir em myaccount.google.com'
-                          : 'Not available for Google accounts. Manage at myaccount.google.com')
-                      : (locale == 'pt'
-                          ? 'Eliminar permanentemente a sua conta e dados'
-                          : 'Permanently delete your account and data'),
-                  style: TextStyle(
-                    color: _isGoogleUser ? Colors.grey : null,
-                    fontSize: _isGoogleUser ? 12 : null,
-                  ),
-                ),
-                trailing: _isDeletingAccount || _isGoogleUser
+                subtitle: Text(locale == 'pt'
+                    ? 'Eliminar permanentemente a sua conta e dados'
+                    : 'Permanently delete your account and data'),
+                trailing: _isDeletingAccount
                     ? null
                     : Icon(
                         Icons.arrow_forward_ios,
@@ -1132,7 +1114,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ? Colors.red.shade700
                             : Colors.red.shade300,
                       ),
-                onTap: (_isDeletingAccount || _isGoogleUser) ? null : () => _handleDeleteAccount(locale),
+                onTap: _isDeletingAccount ? null : () => _handleDeleteAccount(locale),
               ),
             ),
             const SizedBox(height: 16),
