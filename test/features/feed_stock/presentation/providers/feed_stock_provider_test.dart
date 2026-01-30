@@ -6,113 +6,74 @@ import 'package:hckegg_lite/features/feed_stock/domain/domain.dart';
 import 'package:hckegg_lite/features/feed_stock/presentation/providers/feed_stock_provider.dart';
 import 'package:hckegg_lite/models/feed_stock.dart';
 
-// Mock Use Cases
-class MockGetFeedStocks implements GetFeedStocks {
+// Mock Repository
+class MockFeedStockRepository implements FeedStockRepository {
   List<FeedStock> stocksToReturn = [];
+  List<FeedMovement> movementsToReturn = [];
   Failure? failureToReturn;
-  int callCount = 0;
 
   @override
-  Future<Result<List<FeedStock>>> call(NoParams params) async {
-    callCount++;
-    if (failureToReturn != null) {
-      return Result.fail(failureToReturn!);
-    }
+  Future<Result<List<FeedStock>>> getFeedStocks() async {
+    if (failureToReturn != null) return Result.fail(failureToReturn!);
     return Result.success(stocksToReturn);
   }
-}
-
-class MockCreateFeedStock implements CreateFeedStock {
-  Failure? failureToReturn;
-  int callCount = 0;
 
   @override
-  Future<Result<FeedStock>> call(CreateFeedStockParams params) async {
-    callCount++;
-    if (failureToReturn != null) {
-      return Result.fail(failureToReturn!);
-    }
-    return Result.success(params.stock);
+  Future<Result<FeedStock>> getFeedStockById(String id) async {
+    final stock = stocksToReturn.firstWhere((s) => s.id == id);
+    return Result.success(stock);
   }
-}
-
-class MockUpdateFeedStock implements UpdateFeedStock {
-  Failure? failureToReturn;
-  int callCount = 0;
 
   @override
-  Future<Result<FeedStock>> call(UpdateFeedStockParams params) async {
-    callCount++;
-    if (failureToReturn != null) {
-      return Result.fail(failureToReturn!);
-    }
-    return Result.success(params.stock);
+  Future<Result<List<FeedStock>>> getLowStockItems() async {
+    return Result.success(stocksToReturn.where((s) => s.isLowStock).toList());
   }
-}
-
-class MockDeleteFeedStock implements DeleteFeedStock {
-  Failure? failureToReturn;
-  int callCount = 0;
 
   @override
-  Future<Result<void>> call(DeleteFeedStockParams params) async {
-    callCount++;
-    if (failureToReturn != null) {
-      return Result.fail(failureToReturn!);
-    }
+  Future<Result<FeedStock>> createFeedStock(FeedStock stock) async {
+    if (failureToReturn != null) return Result.fail(failureToReturn!);
+    return Result.success(stock);
+  }
+
+  @override
+  Future<Result<FeedStock>> updateFeedStock(FeedStock stock) async {
+    if (failureToReturn != null) return Result.fail(failureToReturn!);
+    return Result.success(stock);
+  }
+
+  @override
+  Future<Result<void>> deleteFeedStock(String id) async {
+    if (failureToReturn != null) return Result.fail(failureToReturn!);
     return Result.success(null);
   }
-}
-
-class MockGetFeedMovements implements GetFeedMovements {
-  List<FeedMovement> movementsToReturn = [];
-  int callCount = 0;
 
   @override
-  Future<Result<List<FeedMovement>>> call(GetFeedMovementsParams params) async {
-    callCount++;
+  Future<Result<List<FeedMovement>>> getFeedMovements(String feedStockId) async {
     return Result.success(movementsToReturn);
   }
-}
-
-class MockAddFeedMovement implements AddFeedMovement {
-  Failure? failureToReturn;
-  int callCount = 0;
 
   @override
-  Future<Result<FeedMovement>> call(AddFeedMovementParams params) async {
-    callCount++;
-    if (failureToReturn != null) {
-      return Result.fail(failureToReturn!);
-    }
-    return Result.success(params.movement);
+  Future<Result<FeedMovement>> addFeedMovement(FeedMovement movement) async {
+    if (failureToReturn != null) return Result.fail(failureToReturn!);
+    return Result.success(movement);
   }
 }
 
 void main() {
-  late MockGetFeedStocks mockGetFeedStocks;
-  late MockCreateFeedStock mockCreateFeedStock;
-  late MockUpdateFeedStock mockUpdateFeedStock;
-  late MockDeleteFeedStock mockDeleteFeedStock;
-  late MockGetFeedMovements mockGetFeedMovements;
-  late MockAddFeedMovement mockAddFeedMovement;
+  late MockFeedStockRepository mockRepository;
   late FeedStockProvider provider;
 
   setUp(() {
-    mockGetFeedStocks = MockGetFeedStocks();
-    mockCreateFeedStock = MockCreateFeedStock();
-    mockUpdateFeedStock = MockUpdateFeedStock();
-    mockDeleteFeedStock = MockDeleteFeedStock();
-    mockGetFeedMovements = MockGetFeedMovements();
-    mockAddFeedMovement = MockAddFeedMovement();
+    mockRepository = MockFeedStockRepository();
 
     provider = FeedStockProvider(
-      getFeedStocks: mockGetFeedStocks,
-      createFeedStock: mockCreateFeedStock,
-      updateFeedStock: mockUpdateFeedStock,
-      deleteFeedStock: mockDeleteFeedStock,
-      getFeedMovements: mockGetFeedMovements,
-      addFeedMovement: mockAddFeedMovement,
+      getFeedStocks: GetFeedStocks(mockRepository),
+      getLowStockItems: GetLowStockItems(mockRepository),
+      createFeedStock: CreateFeedStock(mockRepository),
+      updateFeedStock: UpdateFeedStock(mockRepository),
+      deleteFeedStock: DeleteFeedStock(mockRepository),
+      getFeedMovements: GetFeedMovements(mockRepository),
+      addFeedMovement: AddFeedMovement(mockRepository),
     );
   });
 
@@ -138,7 +99,7 @@ void main() {
 
     group('loadFeedStocks', () {
       test('loads stocks successfully', () async {
-        mockGetFeedStocks.stocksToReturn = [
+        mockRepository.stocksToReturn = [
           _createFeedStock('1', FeedType.layer, 50.0),
           _createFeedStock('2', FeedType.grower, 30.0),
         ];
@@ -147,11 +108,10 @@ void main() {
 
         expect(provider.feedStocks.length, 2);
         expect(provider.state, FeedStockState.loaded);
-        expect(mockGetFeedStocks.callCount, 1);
       });
 
       test('sets error state on failure', () async {
-        mockGetFeedStocks.failureToReturn = ServerFailure(message: 'Network error');
+        mockRepository.failureToReturn = ServerFailure(message: 'Network error');
 
         await provider.loadFeedStocks();
 
@@ -168,12 +128,12 @@ void main() {
 
         expect(result, true);
         expect(provider.feedStocks.length, 1);
-        expect(mockCreateFeedStock.callCount, 1);
       });
 
       test('updates existing stock', () async {
-        final stock = _createFeedStock('1', FeedType.layer, 50.0);
-        mockGetFeedStocks.stocksToReturn = [stock];
+        mockRepository.stocksToReturn = [
+          _createFeedStock('1', FeedType.layer, 50.0),
+        ];
         await provider.loadFeedStocks();
 
         final updatedStock = _createFeedStock('1', FeedType.layer, 75.0);
@@ -181,11 +141,10 @@ void main() {
 
         expect(provider.feedStocks.length, 1);
         expect(provider.feedStocks[0].currentQuantityKg, 75.0);
-        expect(mockUpdateFeedStock.callCount, 1);
       });
 
       test('returns false on failure', () async {
-        mockCreateFeedStock.failureToReturn = ServerFailure(message: 'Create failed');
+        mockRepository.failureToReturn = ServerFailure(message: 'Create failed');
         final stock = _createFeedStock('1', FeedType.layer, 50.0);
 
         final result = await provider.saveFeedStock(stock);
@@ -197,11 +156,12 @@ void main() {
 
     group('deleteFeedStock', () {
       test('removes stock from list', () async {
-        mockGetFeedStocks.stocksToReturn = [
+        mockRepository.stocksToReturn = [
           _createFeedStock('1', FeedType.layer, 50.0),
           _createFeedStock('2', FeedType.grower, 30.0),
         ];
         await provider.loadFeedStocks();
+        mockRepository.failureToReturn = null; // Reset for delete
 
         final result = await provider.deleteFeedStock('1');
 
@@ -211,7 +171,7 @@ void main() {
       });
 
       test('returns false on failure', () async {
-        mockDeleteFeedStock.failureToReturn = ServerFailure(message: 'Delete failed');
+        mockRepository.failureToReturn = ServerFailure(message: 'Delete failed');
 
         final result = await provider.deleteFeedStock('1');
 
@@ -222,7 +182,7 @@ void main() {
 
     group('statistics', () {
       test('calculates totalFeedStock correctly', () async {
-        mockGetFeedStocks.stocksToReturn = [
+        mockRepository.stocksToReturn = [
           _createFeedStock('1', FeedType.layer, 50.0),
           _createFeedStock('2', FeedType.grower, 30.5),
           _createFeedStock('3', FeedType.starter, 20.0),
@@ -233,7 +193,7 @@ void main() {
       });
 
       test('calculates lowStockCount correctly', () async {
-        mockGetFeedStocks.stocksToReturn = [
+        mockRepository.stocksToReturn = [
           _createFeedStock('1', FeedType.layer, 50.0, minimumQty: 10.0), // not low
           _createFeedStock('2', FeedType.grower, 5.0, minimumQty: 10.0), // low
           _createFeedStock('3', FeedType.starter, 10.0, minimumQty: 10.0), // low (equal)
@@ -246,7 +206,7 @@ void main() {
 
     group('search', () {
       test('returns all stocks when query is empty', () async {
-        mockGetFeedStocks.stocksToReturn = [
+        mockRepository.stocksToReturn = [
           _createFeedStock('1', FeedType.layer, 50.0),
           _createFeedStock('2', FeedType.grower, 30.0),
         ];
@@ -258,7 +218,7 @@ void main() {
       });
 
       test('filters by feed type', () async {
-        mockGetFeedStocks.stocksToReturn = [
+        mockRepository.stocksToReturn = [
           _createFeedStock('1', FeedType.layer, 50.0),
           _createFeedStock('2', FeedType.grower, 30.0),
           _createFeedStock('3', FeedType.starter, 20.0),
@@ -272,7 +232,7 @@ void main() {
       });
 
       test('filters by brand', () async {
-        mockGetFeedStocks.stocksToReturn = [
+        mockRepository.stocksToReturn = [
           _createFeedStock('1', FeedType.layer, 50.0, brand: 'Premium Feed'),
           _createFeedStock('2', FeedType.grower, 30.0, brand: 'Economy'),
         ];
@@ -285,7 +245,7 @@ void main() {
       });
 
       test('search is case insensitive', () async {
-        mockGetFeedStocks.stocksToReturn = [
+        mockRepository.stocksToReturn = [
           _createFeedStock('1', FeedType.layer, 50.0, brand: 'PREMIUM'),
         ];
         await provider.loadFeedStocks();
@@ -296,7 +256,7 @@ void main() {
       });
 
       test('returns empty list when no matches', () async {
-        mockGetFeedStocks.stocksToReturn = [
+        mockRepository.stocksToReturn = [
           _createFeedStock('1', FeedType.layer, 50.0),
         ];
         await provider.loadFeedStocks();
@@ -309,7 +269,7 @@ void main() {
 
     group('getLowStockFeeds', () {
       test('returns stocks below minimum quantity', () async {
-        mockGetFeedStocks.stocksToReturn = [
+        mockRepository.stocksToReturn = [
           _createFeedStock('1', FeedType.layer, 50.0, minimumQty: 10.0),
           _createFeedStock('2', FeedType.grower, 5.0, minimumQty: 10.0),
           _createFeedStock('3', FeedType.starter, 8.0, minimumQty: 10.0),
@@ -325,7 +285,7 @@ void main() {
 
     group('clearData', () {
       test('clears all stocks and resets state', () async {
-        mockGetFeedStocks.stocksToReturn = [
+        mockRepository.stocksToReturn = [
           _createFeedStock('1', FeedType.layer, 50.0),
         ];
         await provider.loadFeedStocks();
