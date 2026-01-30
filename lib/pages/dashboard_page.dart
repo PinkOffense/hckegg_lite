@@ -85,6 +85,11 @@ class _DashboardPageState extends State<DashboardPage>
     final availableEggs = eggProvider.totalEggsCollected - eggProvider.totalEggsConsumed - saleProvider.totalEggsSold;
     final reservedEggs = reservationProvider.reservations.fold<int>(0, (sum, r) => sum + r.quantity);
 
+    // Get prediction and alert for PDF
+    final analyticsService = ProductionAnalyticsService();
+    final prediction = analyticsService.predictTomorrow(eggProvider.records);
+    final alert = analyticsService.checkProductionDrop(eggProvider.records);
+
     try {
       final exportService = DashboardExportService();
       await exportService.exportToPdf(
@@ -94,6 +99,8 @@ class _DashboardPageState extends State<DashboardPage>
         recentRecords: recentRecords,
         availableEggs: availableEggs,
         reservedEggs: reservedEggs,
+        prediction: prediction,
+        alert: alert,
       );
     } catch (e) {
       if (context.mounted) {

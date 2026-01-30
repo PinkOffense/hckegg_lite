@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../core/models/week_stats.dart';
 import '../models/daily_egg_record.dart';
+import 'production_analytics_service.dart';
 
 class DashboardExportService {
   Future<void> exportToPdf({
@@ -13,6 +14,8 @@ class DashboardExportService {
     required List<DailyEggRecord> recentRecords,
     required int availableEggs,
     required int reservedEggs,
+    ProductionPrediction? prediction,
+    ProductionAlert? alert,
   }) async {
     final pdf = pw.Document();
     final now = DateTime.now();
@@ -27,6 +30,14 @@ class DashboardExportService {
         build: (context) => [
           _buildTodaySection(locale, todayEggs, dateStr),
           pw.SizedBox(height: 20),
+          if (alert != null) ...[
+            _buildAlertSection(locale, alert),
+            pw.SizedBox(height: 20),
+          ],
+          if (prediction != null) ...[
+            _buildPredictionSection(locale, prediction),
+            pw.SizedBox(height: 20),
+          ],
           _buildWeekStatsSection(locale, weekStats),
           pw.SizedBox(height: 20),
           _buildInventorySection(locale, availableEggs, reservedEggs),
@@ -49,6 +60,8 @@ class DashboardExportService {
     required List<DailyEggRecord> recentRecords,
     required int availableEggs,
     required int reservedEggs,
+    ProductionPrediction? prediction,
+    ProductionAlert? alert,
   }) async {
     final pdf = pw.Document();
     final now = DateTime.now();
@@ -63,6 +76,14 @@ class DashboardExportService {
         build: (context) => [
           _buildTodaySection(locale, todayEggs, dateStr),
           pw.SizedBox(height: 20),
+          if (alert != null) ...[
+            _buildAlertSection(locale, alert),
+            pw.SizedBox(height: 20),
+          ],
+          if (prediction != null) ...[
+            _buildPredictionSection(locale, prediction),
+            pw.SizedBox(height: 20),
+          ],
           _buildWeekStatsSection(locale, weekStats),
           pw.SizedBox(height: 20),
           _buildInventorySection(locale, availableEggs, reservedEggs),
@@ -371,5 +392,144 @@ class DashboardExportService {
     } else {
       return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}';
     }
+  }
+
+  pw.Widget _buildPredictionSection(String locale, ProductionPrediction prediction) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.blue50,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColors.blue200),
+      ),
+      child: pw.Row(
+        children: [
+          pw.Container(
+            padding: const pw.EdgeInsets.all(8),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.blue100,
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Text(
+              '📈',
+              style: const pw.TextStyle(fontSize: 24),
+            ),
+          ),
+          pw.SizedBox(width: 16),
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  locale == 'pt' ? 'Previsão para Amanhã' : "Tomorrow's Prediction",
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.blue800,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  '~${prediction.predictedEggs} ${locale == 'pt' ? 'ovos' : 'eggs'}',
+                  style: pw.TextStyle(
+                    fontSize: 20,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.blue900,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  locale == 'pt'
+                      ? 'Intervalo: ${prediction.minRange}-${prediction.maxRange} • Confiança: ${prediction.confidence.displayName(locale)}'
+                      : 'Range: ${prediction.minRange}-${prediction.maxRange} • Confidence: ${prediction.confidence.displayName(locale)}',
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildAlertSection(String locale, ProductionAlert alert) {
+    PdfColor alertColor;
+    String alertEmoji;
+
+    switch (alert.severity) {
+      case AlertSeverity.high:
+        alertColor = PdfColors.red;
+        alertEmoji = '🔴';
+        break;
+      case AlertSeverity.medium:
+        alertColor = PdfColors.orange;
+        alertEmoji = '🟠';
+        break;
+      case AlertSeverity.low:
+        alertColor = PdfColors.amber;
+        alertEmoji = '🟡';
+        break;
+    }
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        color: PdfColor.fromInt(alertColor.toInt()).shade(0.1),
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: alertColor),
+      ),
+      child: pw.Row(
+        children: [
+          pw.Container(
+            padding: const pw.EdgeInsets.all(8),
+            decoration: pw.BoxDecoration(
+              color: PdfColor.fromInt(alertColor.toInt()).shade(0.2),
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Text(
+              alertEmoji,
+              style: const pw.TextStyle(fontSize: 24),
+            ),
+          ),
+          pw.SizedBox(width: 16),
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  locale == 'pt' ? 'Alerta de Produção' : 'Production Alert',
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                    color: alertColor,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  locale == 'pt' ? alert.messagePt : alert.message,
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  locale == 'pt'
+                      ? 'Hoje: ${alert.todayValue} ovos • Média: ${alert.averageValue} ovos'
+                      : 'Today: ${alert.todayValue} eggs • Average: ${alert.averageValue} eggs',
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
