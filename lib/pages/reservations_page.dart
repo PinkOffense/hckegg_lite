@@ -8,9 +8,24 @@ import '../l10n/locale_provider.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/gradient_fab.dart';
+import '../widgets/search_bar.dart';
 
-class ReservationsPage extends StatelessWidget {
+class ReservationsPage extends StatefulWidget {
   const ReservationsPage({super.key});
+
+  @override
+  State<ReservationsPage> createState() => _ReservationsPageState();
+}
+
+class _ReservationsPageState extends State<ReservationsPage> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +33,10 @@ class ReservationsPage extends StatelessWidget {
     final locale = Provider.of<LocaleProvider>(context).code;
     final reservationProvider = Provider.of<ReservationProvider>(context);
 
-    final reservations = reservationProvider.reservations;
+    final allReservations = reservationProvider.reservations;
+    final reservations = _searchQuery.isEmpty
+        ? allReservations
+        : reservationProvider.search(_searchQuery);
     final upcomingReservations = reservations.where((r) {
       if (r.pickupDate == null) return true;
       return DateTime.parse(r.pickupDate!).isAfter(DateTime.now().subtract(const Duration(days: 1)));
@@ -41,7 +59,7 @@ class ReservationsPage extends StatelessWidget {
           );
         },
       ),
-      body: reservations.isEmpty
+      body: allReservations.isEmpty
           ? ChickenEmptyState(
               title: locale == 'pt'
                   ? 'Nenhuma reserva encontrada'
@@ -58,45 +76,85 @@ class ReservationsPage extends StatelessWidget {
               },
             )
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.only(bottom: 16),
               children: [
-                // Upcoming Reservations
-                if (upcomingReservations.isNotEmpty) ...[
-                  Row(
-                    children: [
-                      Icon(Icons.upcoming, color: theme.colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        locale == 'pt' ? 'Reservas Ativas' : 'Active Reservations',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                // Search Bar
+                AppSearchBar(
+                  controller: _searchController,
+                  hintText: locale == 'pt'
+                      ? 'Pesquisar por cliente, telefone...'
+                      : 'Search by customer, phone...',
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value);
+                  },
+                ),
+
+                // Search empty state
+                if (reservations.isEmpty && _searchQuery.isNotEmpty)
+                  SearchEmptyState(
+                    query: _searchQuery,
+                    locale: locale,
+                    onClear: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                else ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Search results indicator
+                        if (_searchQuery.isNotEmpty) ...[
+                          Text(
+                            '${reservations.length} ${locale == 'pt' ? 'resultado(s)' : 'result(s)'}',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Upcoming Reservations
+                        if (upcomingReservations.isNotEmpty) ...[
+                          Row(
+                            children: [
+                              Icon(Icons.upcoming, color: theme.colorScheme.primary),
+                              const SizedBox(width: 8),
+                              Text(
+                                locale == 'pt' ? 'Reservas Ativas' : 'Active Reservations',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          ...upcomingReservations.map((reservation) =>
+                              _ReservationCard(reservation: reservation, locale: locale)),
+                          const SizedBox(height: 24),
+                        ],
+                        // Past/Overdue Reservations
+                        if (pastReservations.isNotEmpty) ...[
+                          Row(
+                            children: [
+                              Icon(Icons.history, color: Colors.orange.shade700),
+                              const SizedBox(width: 8),
+                              Text(
+                                locale == 'pt' ? 'Reservas Atrasadas' : 'Overdue Reservations',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          ...pastReservations.map((reservation) =>
+                              _ReservationCard(reservation: reservation, locale: locale, isOverdue: true)),
+                        ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  ...upcomingReservations.map((reservation) =>
-                      _ReservationCard(reservation: reservation, locale: locale)),
-                  const SizedBox(height: 24),
-                ],
-                // Past/Overdue Reservations
-                if (pastReservations.isNotEmpty) ...[
-                  Row(
-                    children: [
-                      Icon(Icons.history, color: Colors.orange.shade700),
-                      const SizedBox(width: 8),
-                      Text(
-                        locale == 'pt' ? 'Reservas Atrasadas' : 'Overdue Reservations',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  ...pastReservations.map((reservation) =>
-                      _ReservationCard(reservation: reservation, locale: locale, isOverdue: true)),
                 ],
               ],
             ),

@@ -174,6 +174,19 @@ class SaleProvider extends ChangeNotifier {
     ).toList();
   }
 
+  /// Search sales by customer name, notes, or date
+  List<EggSale> search(String query) {
+    if (query.isEmpty) return _sales;
+    final q = query.toLowerCase();
+    return _sales.where((s) {
+      final customerMatch = s.customerName?.toLowerCase().contains(q) ?? false;
+      final notesMatch = s.notes?.toLowerCase().contains(q) ?? false;
+      final dateMatch = s.date.toLowerCase().contains(q);
+      final amountMatch = s.totalAmount.toStringAsFixed(2).contains(q);
+      return customerMatch || notesMatch || dateMatch || amountMatch;
+    }).toList();
+  }
+
   /// Get recent sales
   List<EggSale> getRecentSales(int count) {
     return _sales.take(count).toList();

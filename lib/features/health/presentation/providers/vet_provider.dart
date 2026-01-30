@@ -130,6 +130,21 @@ class VetProvider extends ChangeNotifier {
     ).toList();
   }
 
+  /// Search vet records by type, notes, medication, or date
+  List<VetRecord> search(String query) {
+    if (query.isEmpty) return getVetRecords();
+    final q = query.toLowerCase();
+    final sorted = _records.where((r) {
+      final typeMatch = r.type.name.toLowerCase().contains(q);
+      final notesMatch = r.notes?.toLowerCase().contains(q) ?? false;
+      final medicationMatch = r.medication?.toLowerCase().contains(q) ?? false;
+      final dateMatch = r.date.toLowerCase().contains(q);
+      return typeMatch || notesMatch || medicationMatch || dateMatch;
+    }).toList();
+    sorted.sort((a, b) => b.date.compareTo(a.date));
+    return sorted;
+  }
+
   /// Save a vet record (create or update)
   Future<void> saveVetRecord(VetRecord record) async {
     _state = VetState.loading;

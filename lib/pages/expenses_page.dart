@@ -5,13 +5,28 @@ import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/gradient_fab.dart';
+import '../widgets/search_bar.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/expense.dart';
 import '../dialogs/expense_dialog.dart';
 
-class ExpensesPage extends StatelessWidget {
+class ExpensesPage extends StatefulWidget {
   const ExpensesPage({super.key});
+
+  @override
+  State<ExpensesPage> createState() => _ExpensesPageState();
+}
+
+class _ExpensesPageState extends State<ExpensesPage> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -298,23 +313,86 @@ class ExpensesPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
 
-                    if (sortedStandaloneExpenses.isEmpty)
-                      EmptyState(
-                        icon: Icons.receipt_long_outlined,
-                        title: locale == 'pt'
-                            ? 'Nenhuma despesa independente'
-                            : 'No standalone expenses',
-                        message: locale == 'pt'
-                            ? 'Registe despesas como ração, manutenção, etc.'
-                            : 'Record expenses like feed, maintenance, etc.',
-                        actionLabel: locale == 'pt' ? 'Adicionar Despesa' : 'Add Expense',
-                        onAction: () => showDialog(
-                          context: context,
-                          builder: (_) => const ExpenseDialog(),
+                    // Search Bar for expenses
+                    if (standaloneExpenses.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: locale == 'pt'
+                                ? 'Pesquisar despesas...'
+                                : 'Search expenses...',
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(
+                                      Icons.clear,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                  )
+                                : null,
+                            filled: true,
+                            fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                          onChanged: (value) {
+                            setState(() => _searchQuery = value);
+                          },
                         ),
-                      )
-                    else
-                      ...sortedStandaloneExpenses.map((expense) => _StandaloneExpenseCard(
+                      ),
+
+                    // Filtered expenses
+                    Builder(
+                      builder: (context) {
+                        final filteredExpenses = _searchQuery.isEmpty
+                            ? sortedStandaloneExpenses
+                            : expenseProvider.search(_searchQuery);
+
+                        if (standaloneExpenses.isEmpty) {
+                          return EmptyState(
+                            icon: Icons.receipt_long_outlined,
+                            title: locale == 'pt'
+                                ? 'Nenhuma despesa independente'
+                                : 'No standalone expenses',
+                            message: locale == 'pt'
+                                ? 'Registe despesas como ração, manutenção, etc.'
+                                : 'Record expenses like feed, maintenance, etc.',
+                            actionLabel: locale == 'pt' ? 'Adicionar Despesa' : 'Add Expense',
+                            onAction: () => showDialog(
+                              context: context,
+                              builder: (_) => const ExpenseDialog(),
+                            ),
+                          );
+                        }
+
+                        if (filteredExpenses.isEmpty && _searchQuery.isNotEmpty) {
+                          return SearchEmptyState(
+                            query: _searchQuery,
+                            locale: locale,
+                            onClear: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          );
+                        }
+
+                        return Column(
+                          children: filteredExpenses.map((expense) => _StandaloneExpenseCard(
                             expense: expense,
                             locale: locale,
                             onTap: () => showDialog(
@@ -322,7 +400,10 @@ class ExpensesPage extends StatelessWidget {
                               builder: (_) => ExpenseDialog(existingExpense: expense),
                             ),
                             onDelete: () => _deleteExpense(context, expense, t),
-                          )),
+                          )).toList(),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),

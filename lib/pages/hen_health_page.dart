@@ -8,6 +8,7 @@ import '../dialogs/vet_record_dialog.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/gradient_fab.dart';
+import '../widgets/search_bar.dart';
 
 class HenHealthPage extends StatefulWidget {
   const HenHealthPage({super.key});
@@ -17,6 +18,15 @@ class HenHealthPage extends StatefulWidget {
 }
 
 class _HenHealthPageState extends State<HenHealthPage> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -113,10 +123,61 @@ class _HenHealthPageState extends State<HenHealthPage> {
             ),
           ),
 
+          // Search Bar (only if there are records)
+          if (allRecords.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: locale == 'pt'
+                      ? 'Pesquisar registos...'
+                      : 'Search records...',
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(
+                            Icons.clear,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() => _searchQuery = value);
+                },
+              ),
+            ),
+
+          const SizedBox(height: 8),
+
           // Records List
           Expanded(
-            child: allRecords.isEmpty
-                ? ChickenEmptyState(
+            child: Builder(
+              builder: (context) {
+                final filteredRecords = _searchQuery.isEmpty
+                    ? allRecords
+                    : vetProvider.search(_searchQuery);
+
+                if (allRecords.isEmpty) {
+                  return ChickenEmptyState(
                     title: locale == 'pt'
                         ? 'Nenhum registo veterinário'
                         : 'No veterinary records',
@@ -125,20 +186,35 @@ class _HenHealthPageState extends State<HenHealthPage> {
                         : 'Record vaccinations, treatments and deaths for your chickens',
                     actionLabel: t('add_vet_record'),
                     onAction: () => _addRecord(context),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: allRecords.length,
-                    itemBuilder: (context, index) {
-                      final record = allRecords[index];
-                      return _VetRecordCard(
-                        record: record,
-                        locale: locale,
-                        onTap: () => _editRecord(context, record),
-                        onDelete: () => _deleteRecord(context, record, t),
-                      );
+                  );
+                }
+
+                if (filteredRecords.isEmpty && _searchQuery.isNotEmpty) {
+                  return SearchEmptyState(
+                    query: _searchQuery,
+                    locale: locale,
+                    onClear: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
                     },
-                  ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: filteredRecords.length,
+                  itemBuilder: (context, index) {
+                    final record = filteredRecords[index];
+                    return _VetRecordCard(
+                      record: record,
+                      locale: locale,
+                      onTap: () => _editRecord(context, record),
+                      onDelete: () => _deleteRecord(context, record, t),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),

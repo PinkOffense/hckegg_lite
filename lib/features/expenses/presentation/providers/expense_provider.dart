@@ -91,6 +91,20 @@ class ExpenseProvider extends ChangeNotifier {
     return _expenses.where((e) => e.category == category).toList();
   }
 
+  /// Search expenses by description, notes, category, or amount
+  List<Expense> search(String query) {
+    if (query.isEmpty) return _expenses;
+    final q = query.toLowerCase();
+    return _expenses.where((e) {
+      final descMatch = e.description.toLowerCase().contains(q);
+      final notesMatch = e.notes?.toLowerCase().contains(q) ?? false;
+      final categoryMatch = e.category.name.toLowerCase().contains(q);
+      final dateMatch = e.date.toLowerCase().contains(q);
+      final amountMatch = e.amount.toStringAsFixed(2).contains(q);
+      return descMatch || notesMatch || categoryMatch || dateMatch || amountMatch;
+    }).toList();
+  }
+
   /// Save an expense (create or update)
   Future<bool> saveExpense(Expense expense) async {
     _state = ExpenseState.loading;

@@ -4,13 +4,28 @@ import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/gradient_fab.dart';
+import '../widgets/search_bar.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/egg_sale.dart';
 import '../dialogs/sale_dialog.dart';
 
-class SalesPage extends StatelessWidget {
+class SalesPage extends StatefulWidget {
   const SalesPage({super.key});
+
+  @override
+  State<SalesPage> createState() => _SalesPageState();
+}
+
+class _SalesPageState extends State<SalesPage> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +37,10 @@ class SalesPage extends StatelessWidget {
       title: locale == 'pt' ? 'Vendas de Ovos' : 'Egg Sales',
       body: Consumer<SaleProvider>(
         builder: (context, saleProvider, _) {
-          final sales = saleProvider.sales;
+          final allSales = saleProvider.sales;
+          final sales = _searchQuery.isEmpty
+              ? allSales
+              : saleProvider.search(_searchQuery);
 
           if (saleProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -46,21 +64,38 @@ class SalesPage extends StatelessWidget {
             );
           }
 
-          // Calculate statistics
-          final totalSales = sales.length;
-          final totalQuantity = sales.fold<int>(0, (sum, s) => sum + s.quantitySold);
-          final totalRevenue = sales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
-          final avgPrice = sales.isEmpty
+          // Calculate statistics (always from all sales, not filtered)
+          final totalSales = allSales.length;
+          final totalQuantity = allSales.fold<int>(0, (sum, s) => sum + s.quantitySold);
+          final totalRevenue = allSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
+          final avgPrice = allSales.isEmpty
               ? 0.0
-              : sales.fold<double>(0.0, (sum, s) => sum + s.pricePerEgg) / sales.length;
+              : allSales.fold<double>(0.0, (sum, s) => sum + s.pricePerEgg) / allSales.length;
 
           return Stack(
             children: [
               SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0).copyWith(bottom: 80),
+                padding: const EdgeInsets.only(bottom: 80),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Search Bar (only show if there are sales)
+                    if (allSales.isNotEmpty)
+                      AppSearchBar(
+                        controller: _searchController,
+                        hintText: locale == 'pt'
+                            ? 'Pesquisar por cliente, notas...'
+                            : 'Search by customer, notes...',
+                        onChanged: (value) {
+                          setState(() => _searchQuery = value);
+                        },
+                      ),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                     // Statistics Card
                     Card(
                       elevation: 4,
@@ -148,20 +183,17 @@ class SalesPage extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (sales.isNotEmpty)
-                          TextButton.icon(
-                            onPressed: () {
-                              // TODO: Add filter/sort functionality
-                            },
-                            icon: const Icon(Icons.filter_list),
-                            label: Text(locale == 'pt' ? 'Filtrar' : 'Filter'),
+                        if (_searchQuery.isNotEmpty)
+                          Text(
+                            '${sales.length} ${locale == 'pt' ? 'resultado(s)' : 'result(s)'}',
+                            style: theme.textTheme.bodySmall,
                           ),
                       ],
                     ),
                     const SizedBox(height: 8),
 
                     // Sales List
-                    if (sales.isEmpty)
+                    if (allSales.isEmpty)
                       ChickenEmptyState(
                         title: locale == 'pt' ? 'Nenhuma venda registada' : 'No sales recorded',
                         message: locale == 'pt'
@@ -170,6 +202,15 @@ class SalesPage extends StatelessWidget {
                         actionLabel: locale == 'pt' ? 'Adicionar Venda' : 'Add Sale',
                         onAction: () => _showSaleDialog(context, null),
                       )
+                    else if (sales.isEmpty && _searchQuery.isNotEmpty)
+                      SearchEmptyState(
+                        query: _searchQuery,
+                        locale: locale,
+                        onClear: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
                     else
                       ...sales.map((sale) => _SaleCard(
                             sale: sale,
@@ -177,6 +218,9 @@ class SalesPage extends StatelessWidget {
                             onTap: () => _showSaleDialog(context, sale),
                             onDelete: () => _deleteSale(context, sale),
                           )),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
