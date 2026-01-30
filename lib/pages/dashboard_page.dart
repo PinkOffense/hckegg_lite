@@ -12,6 +12,7 @@ import '../models/daily_egg_record.dart';
 import '../widgets/charts/production_chart.dart';
 import '../widgets/charts/revenue_chart.dart';
 import '../widgets/charts/revenue_vs_expenses_chart.dart';
+import '../services/dashboard_export_service.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -68,6 +69,43 @@ class _DashboardPageState extends State<DashboardPage>
     return DateConstants.formatMonthDay(date, locale);
   }
 
+  Future<void> _exportDashboard(BuildContext context, String locale) async {
+    final eggProvider = context.read<EggRecordProvider>();
+    final saleProvider = context.read<SaleProvider>();
+    final expenseProvider = context.read<ExpenseProvider>();
+    final reservationProvider = context.read<ReservationProvider>();
+
+    final todayRecord = eggProvider.getRecordByDate(_todayString);
+    final weekStats = eggProvider.getWeekStats(
+      sales: saleProvider.sales,
+      expenses: expenseProvider.expenses,
+    );
+    final recentRecords = eggProvider.getRecentRecords(7);
+    final availableEggs = eggProvider.totalEggsCollected - eggProvider.totalEggsConsumed - saleProvider.totalEggsSold;
+    final reservedEggs = reservationProvider.reservations.fold<int>(0, (sum, r) => sum + r.quantity);
+
+    try {
+      final exportService = DashboardExportService();
+      await exportService.exportToPdf(
+        locale: locale,
+        todayEggs: todayRecord?.eggsCollected ?? 0,
+        weekStats: weekStats,
+        recentRecords: recentRecords,
+        availableEggs: availableEggs,
+        reservedEggs: reservedEggs,
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(locale == 'pt' ? 'Erro ao exportar: $e' : 'Export error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = Provider.of<LocaleProvider>(context).code;
@@ -77,6 +115,13 @@ class _DashboardPageState extends State<DashboardPage>
 
     return AppScaffold(
       title: t('dashboard'),
+      additionalActions: [
+        IconButton(
+          icon: const Icon(Icons.picture_as_pdf),
+          tooltip: locale == 'pt' ? 'Exportar PDF' : 'Export PDF',
+          onPressed: () => _exportDashboard(context, locale),
+        ),
+      ],
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: SlideTransition(
