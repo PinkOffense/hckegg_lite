@@ -40,9 +40,11 @@ class _AuthGateState extends State<AuthGate> {
     _signedIn = client.auth.currentUser != null;
     _ready = true;
 
-    // Load data if already authenticated
+    // Load data if already authenticated (deferred to after frame to ensure providers are ready)
     if (_signedIn) {
-      _loadData();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadData();
+      });
     }
 
     // Listen for auth state changes
@@ -60,9 +62,11 @@ class _AuthGateState extends State<AuthGate> {
       });
     }
 
-    // Handle login: load user data
+    // Handle login: load user data (deferred to ensure providers are ready)
     if (!wasSignedIn && isSignedIn) {
-      _loadData();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadData();
+      });
     }
 
     // Handle logout: reset data loaded flag
