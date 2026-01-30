@@ -20,20 +20,53 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
   late DateTime _currentMonth;
   DateTime? _selectedDate;
   bool _reminderShown = false;
+  VetRecordProvider? _vetProvider;
 
   @override
   void initState() {
     super.initState();
     _currentMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
-    // Show reminder popup after build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Get the provider and add listener if not already done
+    final vetProvider = Provider.of<VetRecordProvider>(context, listen: false);
+    if (_vetProvider != vetProvider) {
+      _vetProvider?.removeListener(_onDataChanged);
+      _vetProvider = vetProvider;
+      _vetProvider!.addListener(_onDataChanged);
+
+      // Try to show reminder immediately if data is already loaded
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showTodayReminder();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _vetProvider?.removeListener(_onDataChanged);
+    super.dispose();
+  }
+
+  void _onDataChanged() {
+    // Try to show reminder when data changes (e.g., after loading)
+    if (mounted && !_reminderShown) {
       _showTodayReminder();
-    });
+    }
   }
 
   void _showTodayReminder() {
-    if (_reminderShown) return;
+    if (_reminderShown || !mounted) return;
+
     final vetProvider = Provider.of<VetRecordProvider>(context, listen: false);
+
+    // Wait for data to be loaded
+    if (vetProvider.isLoading || vetProvider.state == VetState.initial) return;
+
     final todayAppointments = vetProvider.getTodayAppointments();
     if (todayAppointments.isEmpty) return;
 
