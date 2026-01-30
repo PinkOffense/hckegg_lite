@@ -125,6 +125,29 @@ class AuthService {
     return identities.any((identity) => identity.provider == 'email');
   }
 
+  /// Check if current user is a Google OAuth user
+  bool get isGoogleUser {
+    final user = currentUser;
+    if (user == null) return false;
+    return user.appMetadata['provider'] == 'google' ||
+        (user.identities?.any((i) => i.provider == 'google') ?? false);
+  }
+
+  /// Disconnect from Google (revokes access, not just sign out)
+  /// Used for account deletion
+  Future<void> disconnectFromGoogle() async {
+    if (kIsWeb) return;
+
+    try {
+      final googleSignIn = GoogleSignIn();
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.disconnect();
+      }
+    } catch (_) {
+      // Continue anyway
+    }
+  }
+
   /// Mudar a password do utilizador atual
   /// Só funciona para utilizadores que criaram conta com email/password
   Future<void> changePassword(String newPassword) async {

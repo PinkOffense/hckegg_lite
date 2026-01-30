@@ -1,15 +1,15 @@
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import '../widgets/app_scaffold.dart';
+import '../widgets/confirmation_dialog.dart';
 import '../l10n/locale_provider.dart';
-import '../l10n/translations.dart';
 import '../services/auth_service.dart';
 import '../services/logout_manager.dart';
 import '../services/profile_service.dart';
+import '../services/notification_service.dart';
+import '../services/account_deletion_service.dart';
 import '../state/providers/providers.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -28,14 +28,6 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _isLoggingOut = false;
   bool _isChangingPassword = false;
   bool _isDeletingAccount = false;
-
-  /// Check if current user is a Google OAuth user
-  bool get _isGoogleUser {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return false;
-    return user.appMetadata['provider'] == 'google' ||
-        (user.identities?.any((i) => i.provider == 'google') ?? false);
-  }
 
   @override
   void initState() {
@@ -134,24 +126,20 @@ class _SettingsPageState extends State<SettingsPage> {
           _isUploading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(locale == 'pt'
-                ? 'Foto atualizada com sucesso!'
-                : 'Photo updated successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        NotificationService.showSuccess(
+          context,
+          locale == 'pt' ? 'Foto atualizada com sucesso!' : 'Photo updated successfully!',
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isUploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(locale == 'pt'
-                ? 'Erro ao carregar foto: $e'
-                : 'Error uploading photo: $e'),
-            backgroundColor: Colors.red,
+        NotificationService.showError(
+          context,
+          ErrorFormatter.getUserFriendlyMessage(
+            e,
+            locale: locale,
+            fallbackMessage: locale == 'pt' ? 'Erro ao carregar foto' : 'Error uploading photo',
           ),
         );
       }
@@ -179,24 +167,20 @@ class _SettingsPageState extends State<SettingsPage> {
           _isUploading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(locale == 'pt'
-                ? 'Foto removida com sucesso!'
-                : 'Photo removed successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        NotificationService.showSuccess(
+          context,
+          locale == 'pt' ? 'Foto removida com sucesso!' : 'Photo removed successfully!',
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isUploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(locale == 'pt'
-                ? 'Erro ao remover foto: $e'
-                : 'Error removing photo: $e'),
-            backgroundColor: Colors.red,
+        NotificationService.showError(
+          context,
+          ErrorFormatter.getUserFriendlyMessage(
+            e,
+            locale: locale,
+            fallbackMessage: locale == 'pt' ? 'Erro ao remover foto' : 'Error removing photo',
           ),
         );
       }
@@ -204,104 +188,10 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleLogout(String locale) async {
-    // Show confirmation dialog with improved design
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        final theme = Theme.of(dialogContext);
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          icon: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.logout_rounded,
-              size: 40,
-              color: Colors.red.shade600,
-            ),
-          ),
-          title: Text(
-            locale == 'pt' ? 'Terminar Sessão?' : 'Sign Out?',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                locale == 'pt'
-                    ? 'Tem a certeza que deseja sair da sua conta?'
-                    : 'Are you sure you want to sign out of your account?',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                locale == 'pt'
-                    ? 'Os seus dados permanecerão seguros na nuvem.'
-                    : 'Your data will remain safe in the cloud.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          actions: [
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () => Navigator.pop(dialogContext, false),
-                    child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.red.shade600,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () => Navigator.pop(dialogContext, true),
-                    child: Text(
-                      locale == 'pt' ? 'Sair' : 'Sign Out',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
+    // Show confirmation dialog using reusable widget
+    final shouldLogout = await LogoutConfirmationDialog.show(context, locale: locale);
 
-    if (shouldLogout != true || !mounted) return;
+    if (!shouldLogout || !mounted) return;
 
     setState(() => _isLoggingOut = true);
 
@@ -318,268 +208,66 @@ class _SettingsPageState extends State<SettingsPage> {
       // Show error if sign-out failed
       if (mounted) {
         setState(() => _isLoggingOut = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(locale == 'pt'
-                      ? 'Erro ao terminar sessão. Tente novamente.'
-                      : 'Error signing out. Please try again.'),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
+        NotificationService.showError(
+          context,
+          locale == 'pt'
+              ? 'Erro ao terminar sessão. Tente novamente.'
+              : 'Error signing out. Please try again.',
         );
       }
     }
   }
 
   Future<void> _handleDeleteAccount(String locale) async {
-    final deleteController = TextEditingController();
+    // Show confirmation dialog using reusable widget
+    final itemsToDelete = locale == 'pt'
+        ? ['Registos de ovos', 'Vendas e reservas', 'Despesas', 'Registos veterinários', 'Stock de ração', 'Perfil e conta']
+        : ['Egg records', 'Sales and reservations', 'Expenses', 'Vet records', 'Feed stock', 'Profile and account'];
 
-    // Show confirmation dialog with strong warning
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        final theme = Theme.of(dialogContext);
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final isDeleteEnabled = deleteController.text.toUpperCase() == 'DELETE';
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              icon: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.warning_amber_rounded,
-                  size: 40,
-                  color: Colors.red.shade600,
-                ),
-              ),
-              title: Text(
-                locale == 'pt' ? 'Eliminar Conta?' : 'Delete Account?',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red.shade700,
-                ),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    locale == 'pt'
-                        ? 'Esta acção é IRREVERSÍVEL. Todos os seus dados serão eliminados permanentemente:'
-                        : 'This action is IRREVERSIBLE. All your data will be permanently deleted:',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    locale == 'pt'
-                        ? '• Registos de ovos\n• Vendas e reservas\n• Despesas\n• Registos veterinários\n• Stock de ração\n• Perfil e conta'
-                        : '• Egg records\n• Sales and reservations\n• Expenses\n• Vet records\n• Feed stock\n• Profile and account',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    locale == 'pt'
-                        ? 'Escreva DELETE para confirmar:'
-                        : 'Type DELETE to confirm:',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: deleteController,
-                    textCapitalization: TextCapitalization.characters,
-                    decoration: InputDecoration(
-                      hintText: 'DELETE',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    onChanged: (_) => setDialogState(() {}),
-                  ),
-                ],
-              ),
-              actionsAlignment: MainAxisAlignment.center,
-              actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              actions: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(dialogContext, false),
-                        child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: isDeleteEnabled
-                              ? Colors.red.shade600
-                              : Colors.grey.shade400,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: isDeleteEnabled
-                            ? () => Navigator.pop(dialogContext, true)
-                            : null,
-                        child: Text(
-                          locale == 'pt' ? 'Eliminar' : 'Delete',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        );
-      },
+    final shouldDelete = await DeleteConfirmationDialog.show(
+      context,
+      title: locale == 'pt' ? 'Eliminar Conta?' : 'Delete Account?',
+      content: locale == 'pt'
+          ? 'Esta acção é IRREVERSÍVEL. Todos os seus dados serão eliminados permanentemente:'
+          : 'This action is IRREVERSIBLE. All your data will be permanently deleted:',
+      locale: locale,
+      itemsToDelete: itemsToDelete,
     );
 
-    deleteController.dispose();
-
-    if (shouldDelete != true || !mounted) return;
+    if (!shouldDelete || !mounted) return;
 
     setState(() => _isDeletingAccount = true);
 
-    try {
-      final client = Supabase.instance.client;
-      final userId = client.auth.currentUser?.id;
-      final user = client.auth.currentUser;
+    // Clear all provider data before deletion
+    final logoutManager = LogoutManager.instance();
+    logoutManager.clearAllProviders(context);
 
-      if (userId == null || user == null) {
-        throw Exception('User not authenticated');
-      }
+    // Use the AccountDeletionService for clean deletion
+    final deletionService = AccountDeletionService.instance();
+    final result = await deletionService.deleteAccount();
 
-      // Check if user is a Google OAuth user
-      final isGoogleUser = user.appMetadata['provider'] == 'google' ||
-          (user.identities?.any((i) => i.provider == 'google') ?? false);
+    if (!mounted) return;
 
-      debugPrint('Deleting account for user: $userId (Google: $isGoogleUser)');
+    if (!result.success) {
+      setState(() => _isDeletingAccount = false);
 
-      // Delete all user data from Supabase tables
-      // Order matters: delete dependent data first
-      await client.from('feed_movements').delete().eq('user_id', userId);
-      await client.from('feed_stocks').delete().eq('user_id', userId);
-      await client.from('egg_reservations').delete().eq('user_id', userId);
-      await client.from('egg_sales').delete().eq('user_id', userId);
-      await client.from('expenses').delete().eq('user_id', userId);
-      await client.from('vet_records').delete().eq('user_id', userId);
-      await client.from('daily_egg_records').delete().eq('user_id', userId);
-      await client.from('user_profiles').delete().eq('user_id', userId);
-
-      debugPrint('User data deleted successfully');
-
-      // Clear all provider data
-      if (mounted) {
-        final logoutManager = LogoutManager.instance();
-        logoutManager.clearAllProviders(context);
-      }
-
-      // Delete user account from Supabase Auth
-      // Note: This requires the user to be authenticated
-      // The RPC function must be created in Supabase
-      try {
-        await client.rpc('delete_user_account');
-        debugPrint('Auth account deleted via RPC');
-      } catch (rpcError) {
-        debugPrint('RPC delete_user_account failed: $rpcError');
-        // Continue anyway - data is already deleted
-        // The RPC might fail if the function doesn't exist or has permission issues
-      }
-
-      // Sign out from Google if applicable (mobile/desktop only)
-      if (isGoogleUser && !kIsWeb) {
-        try {
-          final googleSignIn = GoogleSignIn();
-          if (await googleSignIn.isSignedIn()) {
-            await googleSignIn.disconnect(); // Revoke access, not just sign out
-            debugPrint('Google account disconnected');
-          }
-        } catch (googleError) {
-          debugPrint('Google disconnect failed: $googleError');
-          // Continue anyway
-        }
-      }
-
-      // Sign out from Supabase (this will trigger navigation to login page)
-      await client.auth.signOut();
-      debugPrint('Signed out successfully');
-
-    } catch (e) {
-      debugPrint('Delete account error: $e');
-      if (mounted) {
-        setState(() => _isDeletingAccount = false);
-
-        String errorMessage;
-        if (e.toString().contains('not authenticated') ||
-            e.toString().contains('JWT')) {
-          errorMessage = locale == 'pt'
-              ? 'Sessão expirada. Por favor, faça login novamente e tente de novo.'
-              : 'Session expired. Please log in again and retry.';
-        } else {
-          errorMessage = locale == 'pt'
-              ? 'Erro ao eliminar conta: ${e.toString().substring(0, e.toString().length.clamp(0, 100))}'
-              : 'Error deleting account: ${e.toString().substring(0, e.toString().length.clamp(0, 100))}';
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text(errorMessage)),
-              ],
-            ),
-            backgroundColor: Colors.red.shade600,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 5),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+      final errorMessage = switch (result.errorType) {
+        AccountDeletionError.sessionExpired => locale == 'pt'
+            ? 'Sessão expirada. Por favor, faça login novamente e tente de novo.'
+            : 'Session expired. Please log in again and retry.',
+        AccountDeletionError.notAuthenticated => locale == 'pt'
+            ? 'Utilizador não autenticado.'
+            : 'User not authenticated.',
+        _ => ErrorFormatter.getUserFriendlyMessage(
+            result.errorMessage,
+            locale: locale,
+            fallbackMessage: locale == 'pt' ? 'Erro ao eliminar conta' : 'Error deleting account',
           ),
-        );
-      }
+      };
+
+      NotificationService.showError(context, errorMessage);
     }
+    // If successful, the user will be signed out and redirected automatically
   }
 
   Future<void> _editDisplayName(String locale) async {
@@ -618,16 +306,16 @@ class _SettingsPageState extends State<SettingsPage> {
         );
         if (mounted && updated != null) {
           setState(() => _profile = updated);
+          NotificationService.showSuccess(
+            context,
+            locale == 'pt' ? 'Nome atualizado!' : 'Name updated!',
+          );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(locale == 'pt'
-                  ? 'Erro ao atualizar nome'
-                  : 'Error updating name'),
-              backgroundColor: Colors.red,
-            ),
+          NotificationService.showError(
+            context,
+            locale == 'pt' ? 'Erro ao atualizar nome' : 'Error updating name',
           );
         }
       }
@@ -768,48 +456,20 @@ class _SettingsPageState extends State<SettingsPage> {
 
       if (mounted) {
         setState(() => _isChangingPassword = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(locale == 'pt'
-                      ? 'Password alterada com sucesso!'
-                      : 'Password changed successfully!'),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
+        NotificationService.showSuccess(
+          context,
+          locale == 'pt' ? 'Password alterada com sucesso!' : 'Password changed successfully!',
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isChangingPassword = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(locale == 'pt'
-                      ? 'Erro ao alterar password: $e'
-                      : 'Error changing password: $e'),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+        NotificationService.showError(
+          context,
+          ErrorFormatter.getUserFriendlyMessage(
+            e,
+            locale: locale,
+            fallbackMessage: locale == 'pt' ? 'Erro ao alterar password' : 'Error changing password',
           ),
         );
       }
