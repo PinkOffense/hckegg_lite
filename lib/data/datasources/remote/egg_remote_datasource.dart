@@ -91,6 +91,8 @@ class EggRemoteDatasource {
   /// Actualizar um registo existente
   Future<DailyEggRecord> update(DailyEggRecord record) async {
     final json = _toSupabaseJson(record);
+    // Remove fields that should not be updated
+    json.remove('user_id');
 
     final response = await _client
         .from(_tableName)
