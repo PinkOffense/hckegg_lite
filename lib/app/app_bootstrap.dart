@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/di/repository_provider.dart';
+import '../core/di/service_locator.dart';
 
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,4 +32,7 @@ Future<void> bootstrap() async {
 
   // Inicializar repositories após Supabase estar pronto
   RepositoryProvider.instance.initialize();
+
+  // Initialize clean architecture service locator
+  ServiceLocator.instance.initialize();
 }

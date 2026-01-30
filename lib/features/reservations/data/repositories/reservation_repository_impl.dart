@@ -15,7 +15,7 @@ class ReservationRepositoryImpl implements ReservationRepository {
       final reservations = await remoteDataSource.getReservations();
       return Result.success(reservations);
     } catch (e) {
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -26,9 +26,9 @@ class ReservationRepositoryImpl implements ReservationRepository {
       return Result.success(reservation);
     } catch (e) {
       if (e.toString().contains('no rows')) {
-        return Result.failure(NotFoundFailure(message: 'Reservation not found'));
+        return Result.fail(NotFoundFailure(message: 'Reservation not found'));
       }
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -38,7 +38,7 @@ class ReservationRepositoryImpl implements ReservationRepository {
       final reservations = await remoteDataSource.getReservationsInRange(start, end);
       return Result.success(reservations);
     } catch (e) {
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -49,7 +49,7 @@ class ReservationRepositoryImpl implements ReservationRepository {
       final created = await remoteDataSource.createReservation(model);
       return Result.success(created);
     } catch (e) {
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -60,7 +60,7 @@ class ReservationRepositoryImpl implements ReservationRepository {
       final updated = await remoteDataSource.updateReservation(model);
       return Result.success(updated);
     } catch (e) {
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -70,7 +70,7 @@ class ReservationRepositoryImpl implements ReservationRepository {
       await remoteDataSource.deleteReservation(id);
       return Result.success(null);
     } catch (e) {
-      return Result.failure(ServerFailure(message: e.toString()));
+      return Result.fail(ServerFailure(message: e.toString()));
     }
   }
 }

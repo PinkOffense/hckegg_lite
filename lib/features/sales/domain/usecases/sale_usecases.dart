@@ -10,6 +10,42 @@ class GetSales implements UseCase<List<EggSale>, NoParams> {
   Future<Result<List<EggSale>>> call(NoParams params) => repository.getSales();
 }
 
+class GetSaleByIdParams {
+  final String id;
+  const GetSaleByIdParams({required this.id});
+}
+
+class GetSaleById implements UseCase<EggSale, GetSaleByIdParams> {
+  final SaleRepository repository;
+  GetSaleById(this.repository);
+
+  @override
+  Future<Result<EggSale>> call(GetSaleByIdParams params) =>
+      repository.getSaleById(params.id);
+}
+
+class GetSalesInRangeParams {
+  final DateTime start;
+  final DateTime end;
+  const GetSalesInRangeParams({required this.start, required this.end});
+}
+
+class GetSalesInRange implements UseCase<List<EggSale>, GetSalesInRangeParams> {
+  final SaleRepository repository;
+  GetSalesInRange(this.repository);
+
+  String _toIsoDateString(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Future<Result<List<EggSale>>> call(GetSalesInRangeParams params) =>
+      repository.getSalesByDateRange(
+        startDate: _toIsoDateString(params.start),
+        endDate: _toIsoDateString(params.end),
+      );
+}
+
 class GetPendingPayments implements UseCase<List<EggSale>, NoParams> {
   final SaleRepository repository;
   GetPendingPayments(this.repository);
