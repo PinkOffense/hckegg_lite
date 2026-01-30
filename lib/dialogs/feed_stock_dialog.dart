@@ -701,9 +701,9 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
                                     const SizedBox(height: 8),
                                     TextButton.icon(
                                       onPressed: () => _showExtractedText(locale),
-                                      icon: const Icon(Icons.visibility, size: 16),
+                                      icon: const Icon(Icons.edit_note, size: 16),
                                       label: Text(
-                                        locale == 'pt' ? 'Ver texto completo' : 'View full text',
+                                        locale == 'pt' ? 'Editar texto' : 'Edit text',
                                       ),
                                       style: TextButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(
@@ -871,28 +871,95 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
   }
 
   void _showExtractedText(String locale) {
+    final textController = TextEditingController(text: _extractedText ?? '');
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.text_snippet),
+            const Icon(Icons.edit_note),
             const SizedBox(width: 12),
-            Text(locale == 'pt' ? 'Texto Extraído' : 'Extracted Text'),
+            Expanded(
+              child: Text(
+                locale == 'pt' ? 'Editar Texto Extraído' : 'Edit Extracted Text',
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
           ],
         ),
-        content: SingleChildScrollView(
-          child: SelectableText(
-            _extractedText ?? '',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontFamily: 'monospace',
-            ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                locale == 'pt'
+                    ? 'Corrija o texto se necessário e clique em "Reprocessar" para atualizar os campos.'
+                    : 'Correct the text if needed and click "Reprocess" to update fields.',
+                style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(dialogContext).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: TextField(
+                  controller: textController,
+                  maxLines: 12,
+                  style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                  ),
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                    hintText: locale == 'pt'
+                        ? 'Cole ou edite o texto aqui...'
+                        : 'Paste or edit text here...',
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(locale == 'pt' ? 'Fechar' : 'Close'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              final newText = textController.text.trim();
+              if (newText.isNotEmpty) {
+                setState(() {
+                  _extractedText = newText;
+                });
+                _parseOcrText(newText, locale);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.white),
+                        const SizedBox(width: 12),
+                        Text(locale == 'pt'
+                            ? 'Texto reprocessado com sucesso!'
+                            : 'Text reprocessed successfully!'),
+                      ],
+                    ),
+                    backgroundColor: Colors.green.shade600,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.refresh, size: 18),
+            label: Text(locale == 'pt' ? 'Reprocessar' : 'Reprocess'),
           ),
         ],
       ),
