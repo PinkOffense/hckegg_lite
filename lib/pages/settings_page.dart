@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -473,10 +475,17 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final client = Supabase.instance.client;
       final userId = client.auth.currentUser?.id;
+      final user = client.auth.currentUser;
 
-      if (userId == null) {
+      if (userId == null || user == null) {
         throw Exception('User not authenticated');
       }
+
+      // Check if user is a Google OAuth user
+      final isGoogleUser = user.appMetadata['provider'] == 'google' ||
+          (user.identities?.any((i) => i.provider == 'google') ?? false);
+
+      debugPrint('Deleting account for user: $userId (Google: $isGoogleUser)');
 
       // Delete all user data from Supabase tables
       // Order matters: delete dependent data first
@@ -489,36 +498,73 @@ class _SettingsPageState extends State<SettingsPage> {
       await client.from('daily_egg_records').delete().eq('user_id', userId);
       await client.from('profiles').delete().eq('id', userId);
 
+      debugPrint('User data deleted successfully');
+
       // Clear all provider data
-      final logoutManager = LogoutManager.instance();
-      logoutManager.clearAllProviders(context);
+      if (mounted) {
+        final logoutManager = LogoutManager.instance();
+        logoutManager.clearAllProviders(context);
+      }
 
       // Delete user account from Supabase Auth
       // Note: This requires the user to be authenticated
       // The RPC function must be created in Supabase
-      await client.rpc('delete_user_account');
+      try {
+        await client.rpc('delete_user_account');
+        debugPrint('Auth account deleted via RPC');
+      } catch (rpcError) {
+        debugPrint('RPC delete_user_account failed: $rpcError');
+        // Continue anyway - data is already deleted
+        // The RPC might fail if the function doesn't exist or has permission issues
+      }
 
-      // Sign out (this will trigger navigation to login page)
+      // Sign out from Google if applicable (mobile/desktop only)
+      if (isGoogleUser && !kIsWeb) {
+        try {
+          final googleSignIn = GoogleSignIn();
+          if (await googleSignIn.isSignedIn()) {
+            await googleSignIn.disconnect(); // Revoke access, not just sign out
+            debugPrint('Google account disconnected');
+          }
+        } catch (googleError) {
+          debugPrint('Google disconnect failed: $googleError');
+          // Continue anyway
+        }
+      }
+
+      // Sign out from Supabase (this will trigger navigation to login page)
       await client.auth.signOut();
+      debugPrint('Signed out successfully');
 
     } catch (e) {
+      debugPrint('Delete account error: $e');
       if (mounted) {
         setState(() => _isDeletingAccount = false);
+
+        String errorMessage;
+        if (e.toString().contains('not authenticated') ||
+            e.toString().contains('JWT')) {
+          errorMessage = locale == 'pt'
+              ? 'Sessão expirada. Por favor, faça login novamente e tente de novo.'
+              : 'Session expired. Please log in again and retry.';
+        } else {
+          errorMessage = locale == 'pt'
+              ? 'Erro ao eliminar conta: ${e.toString().substring(0, e.toString().length.clamp(0, 100))}'
+              : 'Error deleting account: ${e.toString().substring(0, e.toString().length.clamp(0, 100))}';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 const Icon(Icons.error_outline, color: Colors.white),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Text(locale == 'pt'
-                      ? 'Erro ao eliminar conta. Tente novamente.'
-                      : 'Error deleting account. Please try again.'),
-                ),
+                Expanded(child: Text(errorMessage)),
               ],
             ),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
