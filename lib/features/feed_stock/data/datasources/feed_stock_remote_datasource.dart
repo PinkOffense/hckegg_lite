@@ -56,6 +56,9 @@ class FeedStockRemoteDataSourceImpl implements FeedStockRemoteDataSource {
 
     final data = stock.toJson();
     data['user_id'] = userId;
+    // Remove auto-generated fields - let Supabase handle these
+    data.remove('id');
+    data.remove('created_at');
 
     final response = await client
         .from('feed_stocks')
@@ -68,9 +71,15 @@ class FeedStockRemoteDataSourceImpl implements FeedStockRemoteDataSource {
 
   @override
   Future<FeedStockModel> updateFeedStock(FeedStockModel stock) async {
+    final data = stock.toJson();
+    // Remove fields that should not be updated
+    data.remove('id');
+    data.remove('created_at');
+    data.remove('user_id');
+
     final response = await client
         .from('feed_stocks')
-        .update(stock.toJson())
+        .update(data)
         .eq('id', stock.id)
         .select()
         .single();
@@ -105,6 +114,9 @@ class FeedStockRemoteDataSourceImpl implements FeedStockRemoteDataSource {
 
     final data = movement.toJson();
     data['user_id'] = userId;
+    // Remove auto-generated fields - let Supabase handle these
+    data.remove('id');
+    data.remove('created_at');
 
     final response = await client
         .from('feed_movements')
