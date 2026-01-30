@@ -88,6 +88,10 @@ class _ReservationsPageState extends State<ReservationsPage> {
                   onChanged: (value) {
                     setState(() => _searchQuery = value);
                   },
+                  onClear: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
                 ),
 
                 // Search empty state
