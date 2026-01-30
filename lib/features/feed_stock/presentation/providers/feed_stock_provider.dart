@@ -153,6 +153,8 @@ class FeedStockProvider extends ChangeNotifier {
     final success = result.fold(
       onSuccess: (savedStock) {
         final index = _feedStocks.indexWhere((s) => s.id == savedStock.id);
+        // Create new list to ensure UI rebuilds
+        _feedStocks = List.from(_feedStocks);
         if (index >= 0) {
           _feedStocks[index] = savedStock;
         } else {
@@ -182,7 +184,8 @@ class FeedStockProvider extends ChangeNotifier {
 
     final success = result.fold(
       onSuccess: (_) {
-        _feedStocks.removeWhere((s) => s.id == id);
+        // Create new list to ensure UI rebuilds
+        _feedStocks = _feedStocks.where((s) => s.id != id).toList();
         _invalidateCache();
         _state = FeedStockState.loaded;
         return true;
@@ -233,6 +236,8 @@ class FeedStockProvider extends ChangeNotifier {
           onSuccess: (saved) {
             final index = _feedStocks.indexWhere((s) => s.id == saved.id);
             if (index >= 0) {
+              // Create new list to ensure UI rebuilds
+              _feedStocks = List.from(_feedStocks);
               _feedStocks[index] = saved;
             }
             _invalidateCache();
