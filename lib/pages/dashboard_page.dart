@@ -13,6 +13,7 @@ import '../widgets/charts/production_chart.dart';
 import '../widgets/charts/revenue_chart.dart';
 import '../widgets/charts/revenue_vs_expenses_chart.dart';
 import '../services/dashboard_export_service.dart';
+import '../services/production_analytics_service.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -84,6 +85,11 @@ class _DashboardPageState extends State<DashboardPage>
     final availableEggs = eggProvider.totalEggsCollected - eggProvider.totalEggsConsumed - saleProvider.totalEggsSold;
     final reservedEggs = reservationProvider.reservations.fold<int>(0, (sum, r) => sum + r.quantity);
 
+    // Get prediction and alert for PDF
+    final analyticsService = ProductionAnalyticsService();
+    final prediction = analyticsService.predictTomorrow(eggProvider.records);
+    final alert = analyticsService.checkProductionDrop(eggProvider.records);
+
     try {
       final exportService = DashboardExportService();
       await exportService.exportToPdf(
@@ -93,6 +99,8 @@ class _DashboardPageState extends State<DashboardPage>
         recentRecords: recentRecords,
         availableEggs: availableEggs,
         reservedEggs: reservedEggs,
+        prediction: prediction,
+        alert: alert,
       );
     } catch (e) {
       if (context.mounted) {
@@ -137,6 +145,11 @@ class _DashboardPageState extends State<DashboardPage>
               );
               final recentRecords = eggProvider.getRecentRecords(7);
               final recentSales = saleProvider.getRecentSales(7);
+
+              // Analytics
+              final analyticsService = ProductionAnalyticsService();
+              final prediction = analyticsService.predictTomorrow(records);
+              final alert = analyticsService.checkProductionDrop(records);
 
             if (records.isEmpty) {
               return ChickenEmptyState(
@@ -212,7 +225,17 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+
+                  // Production Alert (if any)
+                  if (alert != null)
+                    _ProductionAlertCard(alert: alert, locale: locale),
+
+                  // Tomorrow's Prediction
+                  if (prediction != null)
+                    _PredictionCard(prediction: prediction, locale: locale),
+
+                  const SizedBox(height: 8),
 
                   // This Week's Stats
                   Text(
@@ -617,6 +640,200 @@ class _DayRecordCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PredictionCard extends StatelessWidget {
+  final ProductionPrediction prediction;
+  final String locale;
+
+  const _PredictionCard({
+    required this.prediction,
+    required this.locale,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.blue.withValues(alpha: 0.1),
+              Colors.blue.withValues(alpha: 0.05),
+            ],
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.auto_graph,
+                color: Colors.blue,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    locale == 'pt' ? 'Previsão para Amanhã' : 'Tomorrow\'s Prediction',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        '~${prediction.predictedEggs}',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade800,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        locale == 'pt' ? 'ovos' : 'eggs',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.blue.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    locale == 'pt'
+                        ? 'Intervalo: ${prediction.minRange}-${prediction.maxRange} • Confiança: ${prediction.confidence.displayName(locale)}'
+                        : 'Range: ${prediction.minRange}-${prediction.maxRange} • Confidence: ${prediction.confidence.displayName(locale)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductionAlertCard extends StatelessWidget {
+  final ProductionAlert alert;
+  final String locale;
+
+  const _ProductionAlertCard({
+    required this.alert,
+    required this.locale,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final Color alertColor;
+    final IconData alertIcon;
+
+    switch (alert.severity) {
+      case AlertSeverity.high:
+        alertColor = Colors.red;
+        alertIcon = Icons.warning_rounded;
+        break;
+      case AlertSeverity.medium:
+        alertColor = Colors.orange;
+        alertIcon = Icons.warning_amber_rounded;
+        break;
+      case AlertSeverity.low:
+        alertColor = Colors.amber;
+        alertIcon = Icons.info_outline;
+        break;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              alertColor.withValues(alpha: 0.15),
+              alertColor.withValues(alpha: 0.05),
+            ],
+          ),
+          border: Border.all(
+            color: alertColor.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: alertColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                alertIcon,
+                color: alertColor,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    locale == 'pt' ? 'Alerta de Produção' : 'Production Alert',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: alertColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    locale == 'pt' ? alert.messagePt : alert.message,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    locale == 'pt'
+                        ? 'Hoje: ${alert.todayValue} ovos • Média: ${alert.averageValue} ovos'
+                        : 'Today: ${alert.todayValue} eggs • Average: ${alert.averageValue} eggs',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
