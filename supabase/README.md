@@ -1,166 +1,171 @@
-# 🗄️ Supabase Database Setup
+# Supabase Database Setup
 
-## Como executar o schema SQL
+## Quick Start
 
-### 1. Aceder ao Supabase Dashboard
-1. Vá para [supabase.com](https://supabase.com)
-2. Login no seu projeto
-3. Selecione o projeto **HCKEgg Lite**
+1. Go to [supabase.com](https://supabase.com) and open your project
+2. Navigate to **SQL Editor** in the sidebar
+3. Click **New Query**
+4. Copy the entire contents of `schema.sql`
+5. Paste into the editor and click **Run**
+6. Done! All tables are created.
 
-### 2. Limpar database existente (RECOMENDADO)
+## Tables Overview
 
-**⚠️ Se já executou o schema antes ou tem erros de "already exists":**
+The `schema.sql` file creates all 8 tables needed for HCKEgg Lite:
 
-1. No menu lateral, clique em **SQL Editor**
-2. Clique em **New Query**
-3. Copie **todo** o conteúdo de `cleanup.sql`
-4. Cole no editor SQL
-5. Clique em **Run** (ou `Cmd/Ctrl + Enter`)
-6. Aguarde a mensagem: "Cleanup completo!"
+| Table | Purpose |
+|-------|---------|
+| `user_profiles` | User profile with display name and avatar |
+| `daily_egg_records` | Daily egg production tracking |
+| `egg_sales` | Sales with pricing and customer info |
+| `egg_reservations` | Future egg reservations |
+| `expenses` | Farm operational expenses |
+| `vet_records` | Veterinary and health records |
+| `feed_stocks` | Feed inventory levels |
+| `feed_movements` | Feed stock movement history |
 
-**⚠️ AVISO: Este passo remove TODAS as tabelas e dados! Use apenas se quiser começar do zero!**
-
-### 3. Executar o SQL principal
-1. No **SQL Editor**, clique em **New Query** novamente (ou limpe a query anterior)
-2. Copie **todo** o conteúdo de `schema.sql`
-3. Cole no editor SQL
-4. Clique em **Run** (ou `Cmd/Ctrl + Enter`)
-5. Aguarde ~5-10 segundos
-
-### 4. Verificar as tabelas
-1. No menu lateral, clique em **Table Editor**
-2. Deve ver 3 tabelas criadas:
-   - ✅ `daily_egg_records`
-   - ✅ `expenses`
-   - ✅ `vet_records`
-
-## 📊 Estrutura das Tabelas
+## Table Details
 
 ### `daily_egg_records`
-Registos diários de produção de ovos e despesas associadas.
+Daily egg production records.
 
-**Campos principais:**
-- `id` - UUID (PK)
-- `user_id` - UUID (FK → auth.users)
-- `date` - Data do registo
-- `eggs_collected`, `eggs_sold`, `eggs_consumed` - Contadores
-- `price_per_egg` - Preço unitário (€)
-- `feed_expense`, `vet_expense`, `other_expense` - Despesas (€)
-- `hen_count` - Número de galinhas
-- `notes` - Notas opcionais
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | Foreign key to auth.users |
+| `date` | DATE | Record date (unique per user) |
+| `eggs_collected` | INTEGER | Eggs collected |
+| `eggs_consumed` | INTEGER | Eggs consumed |
+| `hen_count` | INTEGER | Number of hens |
+| `notes` | TEXT | Optional notes |
 
-**Constraints:**
-- Um registo por utilizador por data (`unique_user_date`)
+### `egg_sales`
+Egg sales with pricing.
 
----
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | Foreign key to auth.users |
+| `date` | DATE | Sale date |
+| `quantity_sold` | INTEGER | Number of eggs sold |
+| `price_per_egg` | DECIMAL | Price per egg |
+| `price_per_dozen` | DECIMAL | Price per dozen |
+| `customer_name` | TEXT | Customer name |
+| `is_lost` | BOOLEAN | Mark as unpaid/lost sale |
+
+### `egg_reservations`
+Future egg reservations.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | Foreign key to auth.users |
+| `date` | DATE | Reservation date |
+| `pickup_date` | DATE | Expected pickup date |
+| `quantity` | INTEGER | Number of eggs reserved |
+| `customer_name` | TEXT | Customer name |
 
 ### `expenses`
-Despesas independentes (não associadas a registos diários).
+Operational expenses (excludes vet costs).
 
-**Campos principais:**
-- `id` - UUID (PK)
-- `user_id` - UUID (FK → auth.users)
-- `date` - Data da despesa
-- `category` - Categoria: `feed`, `veterinary`, `maintenance`, `equipment`, `utilities`, `other`
-- `amount` - Montante (€)
-- `description` - Descrição obrigatória
-- `notes` - Notas opcionais
-
-**Validações:**
-- `amount > 0`
-- `category` IN (valores permitidos)
-
----
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | Foreign key to auth.users |
+| `date` | DATE | Expense date |
+| `category` | VARCHAR | feed, maintenance, equipment, utilities, other |
+| `amount` | DECIMAL | Expense amount |
+| `description` | TEXT | Description |
 
 ### `vet_records`
-Registos veterinários e de saúde das galinhas.
+Veterinary and health records.
 
-**Campos principais:**
-- `id` - UUID (PK)
-- `user_id` - UUID (FK → auth.users)
-- `date` - Data do registo
-- `type` - Tipo: `vaccine`, `disease`, `treatment`, `death`, `checkup`
-- `hens_affected` - Número de galinhas afectadas
-- `description` - Descrição obrigatória
-- `medication` - Medicação (opcional)
-- `cost` - Custo (€)
-- `next_action_date` - Data da próxima acção
-- `severity` - Gravidade: `low`, `medium`, `high`, `critical`
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | Foreign key to auth.users |
+| `date` | DATE | Record date |
+| `type` | VARCHAR | vaccine, disease, treatment, death, checkup |
+| `hens_affected` | INTEGER | Number of hens affected |
+| `description` | TEXT | Description |
+| `medication` | TEXT | Medication used |
+| `cost` | DECIMAL | Cost |
+| `next_action_date` | DATE | Follow-up date |
+| `severity` | VARCHAR | low, medium, high, critical |
 
----
+### `feed_stocks`
+Feed inventory levels.
 
-## 🔒 Segurança (Row Level Security)
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | Foreign key to auth.users |
+| `type` | VARCHAR | layer, grower, starter, scratch, supplement, other |
+| `brand` | TEXT | Brand name |
+| `current_quantity_kg` | DECIMAL | Current stock in kg |
+| `minimum_quantity_kg` | DECIMAL | Low stock threshold |
+| `price_per_kg` | DECIMAL | Price per kg |
 
-Todas as tabelas têm **RLS (Row Level Security)** activado:
+### `feed_movements`
+Feed stock movement history.
 
-- ✅ Utilizadores apenas vêem **os seus próprios dados**
-- ✅ Utilizadores apenas podem **criar/editar/eliminar** os seus próprios registos
-- ✅ Não é possível aceder a dados de outros utilizadores
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | Foreign key to auth.users |
+| `feed_stock_id` | UUID | Foreign key to feed_stocks |
+| `movement_type` | VARCHAR | purchase, consumption, adjustment, loss |
+| `quantity_kg` | DECIMAL | Quantity moved |
+| `cost` | DECIMAL | Cost (for purchases) |
+| `date` | DATE | Movement date |
 
-### Políticas implementadas:
+### `user_profiles`
+User profile information.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | Foreign key to auth.users (unique) |
+| `display_name` | TEXT | Display name |
+| `avatar_url` | TEXT | Avatar image URL |
+| `bio` | TEXT | User bio |
+
+## Security (Row Level Security)
+
+All tables have **RLS (Row Level Security)** enabled:
+
+- Users can only see **their own data**
+- Users can only **create/edit/delete** their own records
+- No access to other users' data
+
+Policies implemented for all tables:
 - SELECT: `auth.uid() = user_id`
 - INSERT: `auth.uid() = user_id`
 - UPDATE: `auth.uid() = user_id`
 - DELETE: `auth.uid() = user_id`
 
----
+## Storage
 
-## 📈 Features Avançadas
+The schema creates an `avatars` storage bucket for user profile images:
+- Public read access
+- Users can only upload/update/delete their own avatar
 
-### Triggers
-- **`updated_at`** é actualizado automaticamente em cada UPDATE
+## Functions
 
-### Indexes
-- Indexes em `user_id`, `date`, `created_at` para queries rápidas
-- Indexes específicos para `category`, `type`, `severity`, `next_action_date`
+| Function | Description |
+|----------|-------------|
+| `update_updated_at_column()` | Auto-updates `updated_at` timestamp |
+| `delete_user_account()` | Allows users to delete their own account |
 
-### Views
-- **`daily_egg_records_with_stats`** - View com campos calculados:
-  - `revenue` = `eggs_sold * price_per_egg`
-  - `total_expenses` = soma de todas as despesas
-  - `net_profit` = `revenue - total_expenses`
+## Verify Installation
 
-### Functions
-- **`get_user_stats(user_id, start_date, end_date)`** - Estatísticas agregadas para um período
+After running the schema, check the Table Editor to confirm all 8 tables are created:
 
----
-
-## 🧪 Testar as Tabelas
-
-### No SQL Editor, executar:
-
-```sql
--- Ver as suas tabelas
-SELECT * FROM daily_egg_records LIMIT 10;
-SELECT * FROM expenses LIMIT 10;
-SELECT * FROM vet_records LIMIT 10;
-
--- Ver estatísticas (substitua o user_id)
-SELECT * FROM get_user_stats(
-    'YOUR_USER_ID'::UUID,
-    CURRENT_DATE - INTERVAL '7 days',
-    CURRENT_DATE
-);
-
--- Verificar RLS (deve retornar apenas os seus dados)
-SELECT * FROM daily_egg_records WHERE user_id = auth.uid();
-```
-
----
-
-## 🚀 Próximos Passos
-
-Após executar o schema:
-1. ✅ Verificar tabelas criadas
-2. ✅ Testar inserir/ler dados manualmente no Table Editor
-3. ✅ Confirmar que RLS está a funcionar
-4. 🔄 Implementar Repositories no Flutter (próximo passo!)
-
----
-
-## 📝 Notas Importantes
-
-- **UUIDs**: Todas as tabelas usam UUIDs (mais seguro que IDs sequenciais)
-- **Timestamps**: Usam `TIMESTAMP WITH TIME ZONE` para UTC
-- **Decimal**: Valores monetários usam `DECIMAL(10, 2)` para precisão
-- **Cascading Deletes**: Se um utilizador for eliminado, todos os seus dados são eliminados automaticamente
+1. `user_profiles`
+2. `daily_egg_records`
+3. `egg_sales`
+4. `egg_reservations`
+5. `expenses`
+6. `vet_records`
+7. `feed_stocks`
+8. `feed_movements`

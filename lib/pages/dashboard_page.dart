@@ -9,11 +9,13 @@ import '../dialogs/daily_record_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/daily_egg_record.dart';
+import '../models/feed_stock.dart';
 import '../widgets/charts/production_chart.dart';
 import '../widgets/charts/revenue_chart.dart';
 import '../widgets/charts/revenue_vs_expenses_chart.dart';
 import '../services/dashboard_export_service.dart';
 import '../services/production_analytics_service.dart';
+import '../core/date_utils.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -70,11 +72,72 @@ class _DashboardPageState extends State<DashboardPage>
     return DateConstants.formatMonthDay(date, locale);
   }
 
+  /// Build consolidated today's alerts data from multiple providers
+  TodayAlertsData _buildTodayAlertsData({
+    required FeedStockProvider feedStockProvider,
+    required ReservationProvider reservationProvider,
+    required VetRecordProvider vetRecordProvider,
+  }) {
+    final now = DateTime.now();
+    final todayStr = AppDateUtils.toIsoDateString(now);
+    final tomorrowStr = AppDateUtils.toIsoDateString(now.add(const Duration(days: 1)));
+
+    // Feed stock alerts (low stock or any stock for visibility)
+    final feedAlerts = <FeedStockAlertItem>[];
+    for (final stock in feedStockProvider.feedStocks) {
+      // Estimate days remaining based on average consumption
+      // Assume ~0.12-0.15 kg/hen/day, but we'll use a simple calculation
+      final estimatedDays = stock.currentQuantityKg > 0
+          ? (stock.currentQuantityKg / 0.5).round().clamp(0, 999) // rough estimate
+          : 0;
+
+      if (stock.isLowStock || estimatedDays <= 7) {
+        feedAlerts.add(FeedStockAlertItem(
+          feedType: stock.type,
+          currentKg: stock.currentQuantityKg,
+          estimatedDaysRemaining: estimatedDays,
+          isLowStock: stock.isLowStock,
+        ));
+      }
+    }
+
+    // Reservation alerts (today and tomorrow)
+    final reservationAlerts = <ReservationAlertItem>[];
+    for (final reservation in reservationProvider.reservations) {
+      if (reservation.date == todayStr || reservation.date == tomorrowStr) {
+        reservationAlerts.add(ReservationAlertItem(
+          customerName: reservation.customerName ?? 'Unknown',
+          quantity: reservation.quantity,
+          date: reservation.date,
+          isToday: reservation.date == todayStr,
+        ));
+      }
+    }
+
+    // Vet appointment alerts (today)
+    final vetAlerts = <VetAppointmentAlertItem>[];
+    for (final record in vetRecordProvider.getTodayAppointments()) {
+      vetAlerts.add(VetAppointmentAlertItem(
+        description: record.description,
+        date: record.nextActionDate ?? todayStr,
+        hensAffected: record.hensAffected,
+      ));
+    }
+
+    return TodayAlertsData(
+      feedAlerts: feedAlerts,
+      reservationAlerts: reservationAlerts,
+      vetAlerts: vetAlerts,
+    );
+  }
+
   Future<void> _exportDashboard(BuildContext context, String locale) async {
     final eggProvider = context.read<EggRecordProvider>();
     final saleProvider = context.read<SaleProvider>();
     final expenseProvider = context.read<ExpenseProvider>();
     final reservationProvider = context.read<ReservationProvider>();
+    final feedStockProvider = context.read<FeedStockProvider>();
+    final vetRecordProvider = context.read<VetRecordProvider>();
 
     final todayRecord = eggProvider.getRecordByDate(_todayString);
     final weekStats = eggProvider.getWeekStats(
@@ -90,6 +153,13 @@ class _DashboardPageState extends State<DashboardPage>
     final prediction = analyticsService.predictTomorrow(eggProvider.records);
     final alert = analyticsService.checkProductionDrop(eggProvider.records);
 
+    // Get today's alerts for PDF
+    final todayAlertsData = _buildTodayAlertsData(
+      feedStockProvider: feedStockProvider,
+      reservationProvider: reservationProvider,
+      vetRecordProvider: vetRecordProvider,
+    );
+
     try {
       final exportService = DashboardExportService();
       await exportService.exportToPdf(
@@ -101,6 +171,7 @@ class _DashboardPageState extends State<DashboardPage>
         reservedEggs: reservedEggs,
         prediction: prediction,
         alert: alert,
+        todayAlerts: todayAlertsData,
       );
     } catch (e) {
       if (context.mounted) {
@@ -134,8 +205,8 @@ class _DashboardPageState extends State<DashboardPage>
         opacity: _fadeAnimation,
         child: SlideTransition(
           position: _slideAnimation,
-          child: Consumer4<EggRecordProvider, SaleProvider, ExpenseProvider, ReservationProvider>(
-            builder: (context, eggProvider, saleProvider, expenseProvider, reservationProvider, _) {
+          child: Consumer6<EggRecordProvider, SaleProvider, ExpenseProvider, ReservationProvider, FeedStockProvider, VetRecordProvider>(
+            builder: (context, eggProvider, saleProvider, expenseProvider, reservationProvider, feedStockProvider, vetRecordProvider, _) {
               final records = eggProvider.records;
               final sales = saleProvider.sales;
               final todayRecord = eggProvider.getRecordByDate(_todayString);
@@ -150,6 +221,13 @@ class _DashboardPageState extends State<DashboardPage>
               final analyticsService = ProductionAnalyticsService();
               final prediction = analyticsService.predictTomorrow(records);
               final alert = analyticsService.checkProductionDrop(records);
+
+              // Build today's alerts data
+              final todayAlertsData = _buildTodayAlertsData(
+                feedStockProvider: feedStockProvider,
+                reservationProvider: reservationProvider,
+                vetRecordProvider: vetRecordProvider,
+              );
 
             if (records.isEmpty) {
               return ChickenEmptyState(
@@ -234,6 +312,9 @@ class _DashboardPageState extends State<DashboardPage>
                   // Tomorrow's Prediction
                   if (prediction != null)
                     _PredictionCard(prediction: prediction, locale: locale),
+
+                  // Today's Consolidated Alerts
+                  _TodayAlertsCard(alertsData: todayAlertsData, locale: locale),
 
                   const SizedBox(height: 8),
 
@@ -835,6 +916,278 @@ class _ProductionAlertCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Data class for consolidated today's alerts
+class TodayAlertsData {
+  final List<FeedStockAlertItem> feedAlerts;
+  final List<ReservationAlertItem> reservationAlerts;
+  final List<VetAppointmentAlertItem> vetAlerts;
+
+  TodayAlertsData({
+    required this.feedAlerts,
+    required this.reservationAlerts,
+    required this.vetAlerts,
+  });
+
+  bool get hasAlerts =>
+      feedAlerts.isNotEmpty ||
+      reservationAlerts.isNotEmpty ||
+      vetAlerts.isNotEmpty;
+
+  int get totalAlerts =>
+      feedAlerts.length + reservationAlerts.length + vetAlerts.length;
+}
+
+class FeedStockAlertItem {
+  final FeedType feedType;
+  final double currentKg;
+  final int estimatedDaysRemaining;
+  final bool isLowStock;
+
+  FeedStockAlertItem({
+    required this.feedType,
+    required this.currentKg,
+    required this.estimatedDaysRemaining,
+    required this.isLowStock,
+  });
+}
+
+class ReservationAlertItem {
+  final String customerName;
+  final int quantity;
+  final String date;
+  final bool isToday;
+
+  ReservationAlertItem({
+    required this.customerName,
+    required this.quantity,
+    required this.date,
+    required this.isToday,
+  });
+}
+
+class VetAppointmentAlertItem {
+  final String description;
+  final String date;
+  final int hensAffected;
+
+  VetAppointmentAlertItem({
+    required this.description,
+    required this.date,
+    required this.hensAffected,
+  });
+}
+
+class _TodayAlertsCard extends StatelessWidget {
+  final TodayAlertsData alertsData;
+  final String locale;
+
+  const _TodayAlertsCard({
+    required this.alertsData,
+    required this.locale,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (!alertsData.hasAlerts) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.indigo.withValues(alpha: 0.1),
+              Colors.indigo.withValues(alpha: 0.05),
+            ],
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.notifications_active,
+                    color: Colors.indigo.shade700,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        locale == 'pt' ? 'Alertas do Dia' : "Today's Alerts",
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.indigo.shade800,
+                        ),
+                      ),
+                      Text(
+                        locale == 'pt'
+                            ? '${alertsData.totalAlerts} ${alertsData.totalAlerts == 1 ? 'item' : 'itens'} a verificar'
+                            : '${alertsData.totalAlerts} ${alertsData.totalAlerts == 1 ? 'item' : 'items'} to check',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Feed Stock Alerts
+            if (alertsData.feedAlerts.isNotEmpty) ...[
+              _AlertSection(
+                icon: Icons.inventory_2,
+                iconColor: Colors.orange,
+                title: locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
+                children: alertsData.feedAlerts.map((alert) => _AlertItem(
+                  text: locale == 'pt'
+                      ? '${alert.feedType.displayName('pt')}: ${alert.currentKg.toStringAsFixed(1)}kg (~${alert.estimatedDaysRemaining} dias)'
+                      : '${alert.feedType.displayName('en')}: ${alert.currentKg.toStringAsFixed(1)}kg (~${alert.estimatedDaysRemaining} days)',
+                  isWarning: alert.isLowStock,
+                )).toList(),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Reservation Alerts
+            if (alertsData.reservationAlerts.isNotEmpty) ...[
+              _AlertSection(
+                icon: Icons.bookmark,
+                iconColor: Colors.blue,
+                title: locale == 'pt' ? 'Reservas Pendentes' : 'Pending Reservations',
+                children: alertsData.reservationAlerts.map((alert) => _AlertItem(
+                  text: locale == 'pt'
+                      ? '${alert.customerName}: ${alert.quantity} ovos ${alert.isToday ? "(HOJE)" : "(amanhã)"}'
+                      : '${alert.customerName}: ${alert.quantity} eggs ${alert.isToday ? "(TODAY)" : "(tomorrow)"}',
+                  isWarning: alert.isToday,
+                )).toList(),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Vet Appointment Alerts
+            if (alertsData.vetAlerts.isNotEmpty) ...[
+              _AlertSection(
+                icon: Icons.medical_services,
+                iconColor: Colors.red,
+                title: locale == 'pt' ? 'Consultas Veterinárias' : 'Vet Appointments',
+                children: alertsData.vetAlerts.map((alert) => _AlertItem(
+                  text: locale == 'pt'
+                      ? '${alert.description} (${alert.hensAffected} galinhas)'
+                      : '${alert.description} (${alert.hensAffected} hens)',
+                  isWarning: true,
+                )).toList(),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AlertSection extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final List<Widget> children;
+
+  const _AlertSection({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: iconColor),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...children,
+      ],
+    );
+  }
+}
+
+class _AlertItem extends StatelessWidget {
+  final String text;
+  final bool isWarning;
+
+  const _AlertItem({
+    required this.text,
+    required this.isWarning,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 24, bottom: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: isWarning ? Colors.orange : Colors.grey,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isWarning
+                    ? theme.textTheme.bodyMedium?.color
+                    : theme.textTheme.bodySmall?.color,
+                fontWeight: isWarning ? FontWeight.w500 : null,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

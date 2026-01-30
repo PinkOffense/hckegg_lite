@@ -4,6 +4,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../core/models/week_stats.dart';
 import '../models/daily_egg_record.dart';
+import '../models/feed_stock.dart';
+import '../pages/dashboard_page.dart' show TodayAlertsData, FeedStockAlertItem, ReservationAlertItem, VetAppointmentAlertItem;
 import 'production_analytics_service.dart';
 
 class DashboardExportService {
@@ -16,6 +18,7 @@ class DashboardExportService {
     required int reservedEggs,
     ProductionPrediction? prediction,
     ProductionAlert? alert,
+    TodayAlertsData? todayAlerts,
   }) async {
     final pdf = pw.Document();
     final now = DateTime.now();
@@ -36,6 +39,10 @@ class DashboardExportService {
           ],
           if (prediction != null) ...[
             _buildPredictionSection(locale, prediction),
+            pw.SizedBox(height: 20),
+          ],
+          if (todayAlerts != null && todayAlerts.hasAlerts) ...[
+            _buildTodayAlertsSection(locale, todayAlerts),
             pw.SizedBox(height: 20),
           ],
           _buildWeekStatsSection(locale, weekStats),
@@ -62,6 +69,7 @@ class DashboardExportService {
     required int reservedEggs,
     ProductionPrediction? prediction,
     ProductionAlert? alert,
+    TodayAlertsData? todayAlerts,
   }) async {
     final pdf = pw.Document();
     final now = DateTime.now();
@@ -82,6 +90,10 @@ class DashboardExportService {
           ],
           if (prediction != null) ...[
             _buildPredictionSection(locale, prediction),
+            pw.SizedBox(height: 20),
+          ],
+          if (todayAlerts != null && todayAlerts.hasAlerts) ...[
+            _buildTodayAlertsSection(locale, todayAlerts),
             pw.SizedBox(height: 20),
           ],
           _buildWeekStatsSection(locale, weekStats),
@@ -530,6 +542,144 @@ class DashboardExportService {
           ),
         ],
       ),
+    );
+  }
+
+  pw.Widget _buildTodayAlertsSection(String locale, TodayAlertsData alerts) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.indigo50,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColors.indigo200),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            children: [
+              pw.Container(
+                padding: const pw.EdgeInsets.all(8),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.indigo100,
+                  borderRadius: pw.BorderRadius.circular(8),
+                ),
+                child: pw.Text(
+                  '🔔',
+                  style: const pw.TextStyle(fontSize: 20),
+                ),
+              ),
+              pw.SizedBox(width: 12),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    locale == 'pt' ? 'Alertas do Dia' : "Today's Alerts",
+                    style: pw.TextStyle(
+                      fontSize: 16,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.indigo800,
+                    ),
+                  ),
+                  pw.Text(
+                    locale == 'pt'
+                        ? '${alerts.totalAlerts} ${alerts.totalAlerts == 1 ? 'item' : 'itens'} a verificar'
+                        : '${alerts.totalAlerts} ${alerts.totalAlerts == 1 ? 'item' : 'items'} to check',
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 16),
+
+          // Feed Stock Alerts
+          if (alerts.feedAlerts.isNotEmpty) ...[
+            _buildAlertSubsection(
+              locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
+              PdfColors.orange,
+              alerts.feedAlerts.map((a) => locale == 'pt'
+                  ? '${a.feedType.displayName('pt')}: ${a.currentKg.toStringAsFixed(1)}kg (~${a.estimatedDaysRemaining} dias)${a.isLowStock ? " ⚠️" : ""}'
+                  : '${a.feedType.displayName('en')}: ${a.currentKg.toStringAsFixed(1)}kg (~${a.estimatedDaysRemaining} days)${a.isLowStock ? " ⚠️" : ""}'
+              ).toList(),
+            ),
+            pw.SizedBox(height: 12),
+          ],
+
+          // Reservation Alerts
+          if (alerts.reservationAlerts.isNotEmpty) ...[
+            _buildAlertSubsection(
+              locale == 'pt' ? 'Reservas Pendentes' : 'Pending Reservations',
+              PdfColors.blue,
+              alerts.reservationAlerts.map((a) => locale == 'pt'
+                  ? '${a.customerName}: ${a.quantity} ovos ${a.isToday ? "(HOJE)" : "(amanhã)"}'
+                  : '${a.customerName}: ${a.quantity} eggs ${a.isToday ? "(TODAY)" : "(tomorrow)"}'
+              ).toList(),
+            ),
+            pw.SizedBox(height: 12),
+          ],
+
+          // Vet Appointment Alerts
+          if (alerts.vetAlerts.isNotEmpty) ...[
+            _buildAlertSubsection(
+              locale == 'pt' ? 'Consultas Veterinárias' : 'Vet Appointments',
+              PdfColors.red,
+              alerts.vetAlerts.map((a) => locale == 'pt'
+                  ? '${a.description} (${a.hensAffected} galinhas)'
+                  : '${a.description} (${a.hensAffected} hens)'
+              ).toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildAlertSubsection(String title, PdfColor color, List<String> items) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Row(
+          children: [
+            pw.Container(
+              width: 8,
+              height: 8,
+              decoration: pw.BoxDecoration(
+                color: color,
+                shape: pw.BoxShape.circle,
+              ),
+            ),
+            pw.SizedBox(width: 8),
+            pw.Text(
+              title,
+              style: pw.TextStyle(
+                fontSize: 12,
+                fontWeight: pw.FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        ...items.map((item) => pw.Padding(
+          padding: const pw.EdgeInsets.only(left: 16, top: 2),
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text('• ', style: const pw.TextStyle(fontSize: 10)),
+              pw.Expanded(
+                child: pw.Text(
+                  item,
+                  style: const pw.TextStyle(fontSize: 10),
+                ),
+              ),
+            ],
+          ),
+        )),
+      ],
     );
   }
 }
