@@ -250,7 +250,11 @@ class _AppDrawerState extends State<AppDrawer> {
                             color: warmPink.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text('🐔', style: TextStyle(fontSize: 40)),
+                          child: Icon(
+                            Icons.flutter_dash,
+                            size: 40,
+                            color: Colors.amber.shade700,
+                          ),
                         ),
                         children: [Text(t('offline_description'))],
                       );
@@ -266,9 +270,10 @@ class _AppDrawerState extends State<AppDrawer> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    '🐔',
-                    style: TextStyle(fontSize: 20),
+                  Icon(
+                    Icons.flutter_dash,
+                    size: 20,
+                    color: Colors.amber.shade700,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -279,9 +284,10 @@ class _AppDrawerState extends State<AppDrawer> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    '🥚',
-                    style: TextStyle(fontSize: 20),
+                  Icon(
+                    Icons.egg_alt,
+                    size: 20,
+                    color: Colors.amber.shade600,
                   ),
                 ],
               ),
