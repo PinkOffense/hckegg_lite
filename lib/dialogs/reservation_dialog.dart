@@ -448,9 +448,21 @@ class _ReservationDialogState extends State<ReservationDialog> {
     );
 
     try {
-      await context.read<ReservationProvider>().saveReservation(reservation);
+      final provider = context.read<ReservationProvider>();
+      await provider.saveReservation(reservation);
+
       if (mounted) {
-        Navigator.pop(context);
+        // Check if provider has error
+        if (provider.hasError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao guardar: ${provider.error ?? "Erro desconhecido"}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
       if (mounted) {
