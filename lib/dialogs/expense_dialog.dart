@@ -6,8 +6,6 @@ import '../models/expense.dart';
 import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
-import '../services/ocr_service.dart';
-import '../widgets/ocr_scanner_widget.dart';
 
 class ExpenseDialog extends StatefulWidget {
   final Expense? existingExpense;
@@ -98,14 +96,6 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
                 ],
               ),
             ),
-            // OCR Scanner for new expenses
-            if (widget.existingExpense == null)
-              OcrScannerWidget(
-                locale: locale,
-                scanType: OcrScanType.receipt,
-                onReceiptParsed: _applyReceiptData,
-              ),
-
             // Body
             Expanded(
               child: Form(
@@ -290,95 +280,6 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
       final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       return '${months[date.month - 1]} ${date.day}, ${date.year}';
     }
-  }
-
-  void _applyReceiptData(ReceiptData data) {
-    setState(() {
-      // Apply amount
-      if (data.totalAmount != null) {
-        _amountController.text = data.totalAmount!.toStringAsFixed(2);
-      }
-
-      // Apply vendor as description
-      if (data.vendor != null && _descriptionController.text.isEmpty) {
-        _descriptionController.text = data.vendor!;
-      }
-
-      // Apply date if found
-      if (data.date != null) {
-        final parsedDate = _parseReceiptDate(data.date!);
-        if (parsedDate != null) {
-          _selectedDate = parsedDate;
-        }
-      }
-
-      // Determine category from description
-      if (data.description != null) {
-        switch (data.description) {
-          case 'feed':
-            _selectedCategory = ExpenseCategory.feed;
-            break;
-          case 'veterinary':
-            _selectedCategory = ExpenseCategory.other;
-            if (_descriptionController.text.isEmpty) {
-              _descriptionController.text = 'Veterinário';
-            }
-            break;
-          case 'equipment':
-            _selectedCategory = ExpenseCategory.equipment;
-            break;
-          case 'utilities':
-            _selectedCategory = ExpenseCategory.utilities;
-            break;
-        }
-      }
-
-      // Add items to notes
-      if (data.items.isNotEmpty) {
-        final itemLines = data.items
-            .map((item) => '- ${item.description}')
-            .join('\n');
-        if (_notesController.text.isEmpty) {
-          _notesController.text = itemLines;
-        } else {
-          _notesController.text = '${_notesController.text}\n$itemLines';
-        }
-      }
-    });
-  }
-
-  DateTime? _parseReceiptDate(String dateStr) {
-    // Try common date formats
-    final patterns = [
-      RegExp(r'(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})'), // DD/MM/YYYY
-      RegExp(r'(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})'), // YYYY/MM/DD
-      RegExp(r'(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})'),  // DD/MM/YY
-    ];
-
-    for (final pattern in patterns) {
-      final match = pattern.firstMatch(dateStr);
-      if (match != null) {
-        try {
-          int day, month, year;
-          if (match.group(1)!.length == 4) {
-            // YYYY/MM/DD format
-            year = int.parse(match.group(1)!);
-            month = int.parse(match.group(2)!);
-            day = int.parse(match.group(3)!);
-          } else {
-            // DD/MM/YYYY or DD/MM/YY format
-            day = int.parse(match.group(1)!);
-            month = int.parse(match.group(2)!);
-            year = int.parse(match.group(3)!);
-            if (year < 100) year += 2000;
-          }
-          return DateTime(year, month, day);
-        } catch (_) {
-          continue;
-        }
-      }
-    }
-    return null;
   }
 
   void _saveExpense() {
