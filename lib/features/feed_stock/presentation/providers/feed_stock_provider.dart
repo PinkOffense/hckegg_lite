@@ -125,6 +125,18 @@ class FeedStockProvider extends ChangeNotifier {
     return _feedStocks.where((s) => s.isLowStock).toList();
   }
 
+  /// Pesquisar stocks de ração por tipo, marca ou notas
+  List<FeedStock> search(String query) {
+    if (query.isEmpty) return _feedStocks;
+    final q = query.toLowerCase();
+    return _feedStocks.where((stock) {
+      final typeMatch = stock.type.name.toLowerCase().contains(q);
+      final brandMatch = stock.brand?.toLowerCase().contains(q) ?? false;
+      final notesMatch = stock.notes?.toLowerCase().contains(q) ?? false;
+      return typeMatch || brandMatch || notesMatch;
+    }).toList();
+  }
+
   /// Save a feed stock (create or update)
   Future<bool> saveFeedStock(FeedStock stock) async {
     _state = FeedStockState.loading;

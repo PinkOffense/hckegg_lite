@@ -7,6 +7,7 @@ import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/search_bar.dart';
 import '../widgets/gradient_fab.dart';
 import '../dialogs/feed_stock_dialog.dart';
 import '../services/production_analytics_service.dart';
@@ -19,6 +20,15 @@ class FeedStockPage extends StatefulWidget {
 }
 
 class _FeedStockPageState extends State<FeedStockPage> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -26,7 +36,10 @@ class _FeedStockPageState extends State<FeedStockPage> {
     final t = (String k) => Translations.of(locale, k);
     final feedProvider = Provider.of<FeedStockProvider>(context);
 
-    final stocks = feedProvider.feedStocks;
+    final allStocks = feedProvider.feedStocks;
+    final stocks = _searchQuery.isEmpty
+        ? allStocks
+        : feedProvider.search(_searchQuery);
     final lowStockCount = feedProvider.lowStockCount;
     final totalStock = feedProvider.totalFeedStock;
 
@@ -112,9 +125,24 @@ class _FeedStockPageState extends State<FeedStockPage> {
             ),
           ),
 
+          // Search Bar (only show if there are stocks)
+          if (allStocks.isNotEmpty)
+            AppSearchBar(
+              controller: _searchController,
+              hintText: locale == 'pt' ? 'Pesquisar ração...' : 'Search feed...',
+              hasContent: _searchQuery.isNotEmpty,
+              onChanged: (value) {
+                setState(() => _searchQuery = value);
+              },
+              onClear: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+            ),
+
           // Stock List
           Expanded(
-            child: stocks.isEmpty
+            child: allStocks.isEmpty
                 ? EmptyState(
                     icon: Icons.grass_outlined,
                     title: locale == 'pt' ? 'Nenhum stock registado' : 'No stock registered',
@@ -124,7 +152,16 @@ class _FeedStockPageState extends State<FeedStockPage> {
                     actionLabel: locale == 'pt' ? 'Adicionar Ração' : 'Add Feed',
                     onAction: () => _addStock(context, locale),
                   )
-                : ListView.builder(
+                : stocks.isEmpty
+                    ? SearchEmptyState(
+                        query: _searchQuery,
+                        locale: locale,
+                        onClear: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: stocks.length,
                     itemBuilder: (context, index) {

@@ -2,13 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/search_bar.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/egg_sale.dart';
 import '../dialogs/sale_dialog.dart';
 
-class PaymentsPage extends StatelessWidget {
+class PaymentsPage extends StatefulWidget {
   const PaymentsPage({super.key});
+
+  @override
+  State<PaymentsPage> createState() => _PaymentsPageState();
+}
+
+class _PaymentsPageState extends State<PaymentsPage> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<EggSale> _filterSales(List<EggSale> sales) {
+    if (_searchQuery.isEmpty) return sales;
+    final q = _searchQuery.toLowerCase();
+    return sales.where((sale) {
+      final customerMatch = sale.customerName?.toLowerCase().contains(q) ?? false;
+      final notesMatch = sale.notes?.toLowerCase().contains(q) ?? false;
+      final amountMatch = sale.totalAmount.toStringAsFixed(2).contains(q);
+      return customerMatch || notesMatch || amountMatch;
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,102 +47,140 @@ class PaymentsPage extends StatelessWidget {
       title: locale == 'pt' ? 'Gestão de Pagamentos' : 'Payment Management',
       body: Consumer<SaleProvider>(
         builder: (context, saleProvider, _) {
-          final sales = saleProvider.sales;
+          final allSales = saleProvider.sales;
 
-          // Categorize sales (excluding lost sales from payment views)
-          final paidSales = sales.where((s) => !s.isLost && s.paymentStatus == PaymentStatus.paid).toList();
-          final pendingSales = sales.where((s) => !s.isLost && s.paymentStatus == PaymentStatus.pending).toList();
-          final overdueSales = sales.where((s) => !s.isLost && s.paymentStatus == PaymentStatus.overdue).toList();
-          final advanceSales = sales.where((s) => !s.isLost && s.paymentStatus == PaymentStatus.advance).toList();
-          final lostSales = sales.where((s) => s.isLost).toList();
+          // Categorize all sales (for totals)
+          final allPaidSales = allSales.where((s) => !s.isLost && s.paymentStatus == PaymentStatus.paid).toList();
+          final allPendingSales = allSales.where((s) => !s.isLost && s.paymentStatus == PaymentStatus.pending).toList();
+          final allAdvanceSales = allSales.where((s) => !s.isLost && s.paymentStatus == PaymentStatus.advance).toList();
+          final allLostSales = allSales.where((s) => s.isLost).toList();
 
-          // Calculate totals
-          final totalPaid = paidSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
-          final totalPending = pendingSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
-          final totalLost = lostSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
-          final totalAdvance = advanceSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
+          // Calculate totals (always show full totals)
+          final totalPaid = allPaidSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
+          final totalPending = allPendingSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
+          final totalLost = allLostSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
+          final totalAdvance = allAdvanceSales.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Summary Cards
-                _PaymentSummaryCards(
-                  totalPaid: totalPaid,
-                  totalPending: totalPending,
-                  totalLost: totalLost,
-                  totalAdvance: totalAdvance,
-                  locale: locale,
+          // Filter sales for display
+          final paidSales = _filterSales(allPaidSales);
+          final pendingSales = _filterSales(allPendingSales);
+          final advanceSales = _filterSales(allAdvanceSales);
+          final lostSales = _filterSales(allLostSales);
+
+          final hasAnyResults = paidSales.isNotEmpty || pendingSales.isNotEmpty || advanceSales.isNotEmpty || lostSales.isNotEmpty;
+
+          return Column(
+            children: [
+              // Search Bar (only show if there are sales)
+              if (allSales.isNotEmpty)
+                AppSearchBar(
+                  controller: _searchController,
+                  hintText: locale == 'pt' ? 'Pesquisar por cliente...' : 'Search by customer...',
+                  hasContent: _searchQuery.isNotEmpty,
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value);
+                  },
+                  onClear: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
                 ),
-                const SizedBox(height: 24),
 
-                // Pending Payments
-                if (pendingSales.isNotEmpty) ...[
-                  _SectionHeader(
-                    icon: Icons.hourglass_empty,
-                    title: locale == 'pt' ? 'Pagamentos Pendentes' : 'Pending Payments',
-                    color: Colors.orange,
-                  ),
-                  const SizedBox(height: 12),
-                  ...pendingSales.map((sale) => _PaymentCard(
-                        sale: sale,
+              // Content
+              Expanded(
+                child: _searchQuery.isNotEmpty && !hasAnyResults
+                    ? SearchEmptyState(
+                        query: _searchQuery,
                         locale: locale,
-                        onTap: () => _showSaleDialog(context, sale),
-                        onMarkPaid: () => _markAsPaid(context, sale),
-                        onMarkLost: () => _markAsLost(context, sale),
-                      )),
-                  const SizedBox(height: 24),
-                ],
+                        onClear: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Summary Cards
+                            _PaymentSummaryCards(
+                              totalPaid: totalPaid,
+                              totalPending: totalPending,
+                              totalLost: totalLost,
+                              totalAdvance: totalAdvance,
+                              locale: locale,
+                            ),
+                            const SizedBox(height: 24),
 
-                // Advance Payments
-                if (advanceSales.isNotEmpty) ...[
-                  _SectionHeader(
-                    icon: Icons.account_balance_wallet,
-                    title: locale == 'pt' ? 'Pagamentos Adiantados' : 'Advance Payments',
-                    color: Colors.green,
-                  ),
-                  const SizedBox(height: 12),
-                  ...advanceSales.map((sale) => _PaymentCard(
-                        sale: sale,
-                        locale: locale,
-                        onTap: () => _showSaleDialog(context, sale),
-                      )),
-                  const SizedBox(height: 24),
-                ],
+                            // Pending Payments
+                            if (pendingSales.isNotEmpty) ...[
+                              _SectionHeader(
+                                icon: Icons.hourglass_empty,
+                                title: locale == 'pt' ? 'Pagamentos Pendentes' : 'Pending Payments',
+                                color: Colors.orange,
+                              ),
+                              const SizedBox(height: 12),
+                              ...pendingSales.map((sale) => _PaymentCard(
+                                    sale: sale,
+                                    locale: locale,
+                                    onTap: () => _showSaleDialog(context, sale),
+                                    onMarkPaid: () => _markAsPaid(context, sale),
+                                    onMarkLost: () => _markAsLost(context, sale),
+                                  )),
+                              const SizedBox(height: 24),
+                            ],
 
-                // Lost Sales (customer never paid)
-                if (lostSales.isNotEmpty) ...[
-                  _SectionHeader(
-                    icon: Icons.cancel,
-                    title: locale == 'pt' ? 'Vendas Perdidas' : 'Lost Sales',
-                    color: Colors.grey.shade700,
-                  ),
-                  const SizedBox(height: 12),
-                  ...lostSales.map((sale) => _PaymentCard(
-                        sale: sale,
-                        locale: locale,
-                        onTap: () => _showSaleDialog(context, sale),
-                      )),
-                  const SizedBox(height: 24),
-                ],
+                            // Advance Payments
+                            if (advanceSales.isNotEmpty) ...[
+                              _SectionHeader(
+                                icon: Icons.account_balance_wallet,
+                                title: locale == 'pt' ? 'Pagamentos Adiantados' : 'Advance Payments',
+                                color: Colors.green,
+                              ),
+                              const SizedBox(height: 12),
+                              ...advanceSales.map((sale) => _PaymentCard(
+                                    sale: sale,
+                                    locale: locale,
+                                    onTap: () => _showSaleDialog(context, sale),
+                                  )),
+                              const SizedBox(height: 24),
+                            ],
 
-                // Paid Sales (All - Permanent Record)
-                if (paidSales.isNotEmpty) ...[
-                  _SectionHeader(
-                    icon: Icons.check_circle,
-                    title: locale == 'pt' ? 'Pagamentos Realizados' : 'Completed Payments',
-                    color: Colors.green,
-                  ),
-                  const SizedBox(height: 12),
-                  ...paidSales.map((sale) => _PaymentCard(
-                        sale: sale,
-                        locale: locale,
-                        onTap: () => _showSaleDialog(context, sale),
-                      )),
-                ],
-              ],
-            ),
+                            // Lost Sales (customer never paid)
+                            if (lostSales.isNotEmpty) ...[
+                              _SectionHeader(
+                                icon: Icons.cancel,
+                                title: locale == 'pt' ? 'Vendas Perdidas' : 'Lost Sales',
+                                color: Colors.grey.shade700,
+                              ),
+                              const SizedBox(height: 12),
+                              ...lostSales.map((sale) => _PaymentCard(
+                                    sale: sale,
+                                    locale: locale,
+                                    onTap: () => _showSaleDialog(context, sale),
+                                  )),
+                              const SizedBox(height: 24),
+                            ],
+
+                            // Paid Sales (All - Permanent Record)
+                            if (paidSales.isNotEmpty) ...[
+                              _SectionHeader(
+                                icon: Icons.check_circle,
+                                title: locale == 'pt' ? 'Pagamentos Realizados' : 'Completed Payments',
+                                color: Colors.green,
+                              ),
+                              const SizedBox(height: 12),
+                              ...paidSales.map((sale) => _PaymentCard(
+                                    sale: sale,
+                                    locale: locale,
+                                    onTap: () => _showSaleDialog(context, sale),
+                                  )),
+                            ],
+                          ],
+                        ),
+                      ),
+              ),
+            ],
           );
         },
       ),

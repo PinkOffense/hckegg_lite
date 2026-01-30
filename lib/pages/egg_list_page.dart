@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/search_bar.dart';
 import '../widgets/gradient_fab.dart';
 import '../dialogs/daily_record_dialog.dart';
 import '../l10n/locale_provider.dart';
@@ -63,27 +64,17 @@ class _EggListPageState extends State<EggListPage> {
           return Column(
             children: [
               // Search Bar
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search by date or notes...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _searchQuery = '');
-                            },
-                          )
-                        : null,
-                  ),
-                  onChanged: (value) {
-                    setState(() => _searchQuery = value);
-                  },
-                ),
+              AppSearchBar(
+                controller: _searchController,
+                hintText: locale == 'pt' ? 'Pesquisar por data ou notas...' : 'Search by date or notes...',
+                hasContent: _searchQuery.isNotEmpty,
+                onChanged: (value) {
+                  setState(() => _searchQuery = value);
+                },
+                onClear: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
               ),
 
               // Records List
@@ -91,6 +82,7 @@ class _EggListPageState extends State<EggListPage> {
                 child: records.isEmpty
                     ? SearchEmptyState(
                         query: _searchQuery,
+                        locale: locale,
                         onClear: () {
                           _searchController.clear();
                           setState(() => _searchQuery = '');
