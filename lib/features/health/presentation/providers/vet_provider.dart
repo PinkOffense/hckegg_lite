@@ -75,7 +75,7 @@ class VetProvider extends ChangeNotifier {
     final today = DateTime.now();
     final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
     return _records.where((r) =>
-      r.nextAppointment != null && r.nextAppointment!.compareTo(todayStr) >= 0
+      r.nextActionDate != null && r.nextActionDate!.compareTo(todayStr) >= 0
     ).toList();
   }
 
