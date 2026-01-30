@@ -143,20 +143,27 @@ class ChickenEmptyState extends StatelessWidget {
 class SearchEmptyState extends StatelessWidget {
   final String query;
   final VoidCallback? onClear;
+  final String? locale;
 
   const SearchEmptyState({
     super.key,
     required this.query,
     this.onClear,
+    this.locale,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isPt = locale == 'pt';
     return EmptyState(
       icon: Icons.search_off_rounded,
-      title: 'No results found',
-      message: 'No records match "$query".\nTry a different search term.',
-      actionLabel: onClear != null ? 'Clear Search' : null,
+      title: isPt ? 'Sem resultados' : 'No results found',
+      message: isPt
+          ? 'Nenhum resultado para "$query".\nTente outro termo de pesquisa.'
+          : 'No records match "$query".\nTry a different search term.',
+      actionLabel: onClear != null
+          ? (isPt ? 'Limpar pesquisa' : 'Clear Search')
+          : null,
       onAction: onClear,
     );
   }

@@ -89,6 +89,20 @@ class ReservationProvider extends ChangeNotifier {
     }).toList();
   }
 
+  /// Search reservations by customer name, phone, notes, or quantity
+  List<EggReservation> search(String query) {
+    if (query.isEmpty) return _reservations;
+    final q = query.toLowerCase();
+    return _reservations.where((r) {
+      final nameMatch = r.customerName?.toLowerCase().contains(q) ?? false;
+      final phoneMatch = r.customerPhone?.toLowerCase().contains(q) ?? false;
+      final notesMatch = r.notes?.toLowerCase().contains(q) ?? false;
+      final dateMatch = r.date.toLowerCase().contains(q);
+      final quantityMatch = r.quantity.toString().contains(q);
+      return nameMatch || phoneMatch || notesMatch || dateMatch || quantityMatch;
+    }).toList();
+  }
+
   String _toIsoDateString(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
