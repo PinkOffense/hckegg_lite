@@ -30,6 +30,10 @@ class _DashboardPageState extends State<DashboardPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // Services - created once, reused
+  final _analyticsService = ProductionAnalyticsService();
+  final _exportService = DashboardExportService();
+
   @override
   void initState() {
     super.initState();
@@ -149,9 +153,8 @@ class _DashboardPageState extends State<DashboardPage>
     final reservedEggs = reservationProvider.reservations.fold<int>(0, (sum, r) => sum + r.quantity);
 
     // Get prediction and alert for PDF
-    final analyticsService = ProductionAnalyticsService();
-    final prediction = analyticsService.predictTomorrow(eggProvider.records);
-    final alert = analyticsService.checkProductionDrop(eggProvider.records);
+    final prediction = _analyticsService.predictTomorrow(eggProvider.records);
+    final alert = _analyticsService.checkProductionDrop(eggProvider.records);
 
     // Get today's alerts for PDF
     final todayAlertsData = _buildTodayAlertsData(
@@ -161,8 +164,7 @@ class _DashboardPageState extends State<DashboardPage>
     );
 
     try {
-      final exportService = DashboardExportService();
-      await exportService.exportToPdf(
+      await _exportService.exportToPdf(
         locale: locale,
         todayEggs: todayRecord?.eggsCollected ?? 0,
         weekStats: weekStats,
@@ -218,9 +220,8 @@ class _DashboardPageState extends State<DashboardPage>
               final recentSales = saleProvider.getRecentSales(7);
 
               // Analytics
-              final analyticsService = ProductionAnalyticsService();
-              final prediction = analyticsService.predictTomorrow(records);
-              final alert = analyticsService.checkProductionDrop(records);
+              final prediction = _analyticsService.predictTomorrow(records);
+              final alert = _analyticsService.checkProductionDrop(records);
 
               // Build today's alerts data
               final todayAlertsData = _buildTodayAlertsData(
