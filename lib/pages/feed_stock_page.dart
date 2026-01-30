@@ -9,6 +9,7 @@ import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/gradient_fab.dart';
 import '../dialogs/feed_stock_dialog.dart';
+import '../services/production_analytics_service.dart';
 
 class FeedStockPage extends StatefulWidget {
   const FeedStockPage({super.key});
@@ -28,6 +29,20 @@ class _FeedStockPageState extends State<FeedStockPage> {
     final stocks = feedProvider.feedStocks;
     final lowStockCount = feedProvider.lowStockCount;
     final totalStock = feedProvider.totalFeedStock;
+
+    // Calculate feed efficiency
+    final eggProvider = Provider.of<EggRecordProvider>(context);
+    final analyticsService = ProductionAnalyticsService();
+
+    // Get total feed consumed (from movements) and total eggs produced
+    final totalFeedConsumed = feedProvider.totalFeedConsumed;
+    final totalEggsProduced = eggProvider.totalEggsCollected;
+
+    final feedEfficiency = analyticsService.calculateFeedEfficiency(
+      totalFeedKg: totalFeedConsumed,
+      totalEggsProduced: totalEggsProduced,
+      periodDays: 30, // Last 30 days
+    );
 
     return AppScaffold(
       title: locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
@@ -85,6 +100,14 @@ class _FeedStockPageState extends State<FeedStockPage> {
                     ),
                   ],
                 ),
+                // Feed Efficiency Card
+                if (feedEfficiency != null) ...[
+                  const SizedBox(height: 16),
+                  _FeedEfficiencyCard(
+                    efficiency: feedEfficiency,
+                    locale: locale,
+                  ),
+                ],
               ],
             ),
           ),
@@ -993,6 +1016,195 @@ class _MovementDialogState extends State<_MovementDialog> {
         ),
         backgroundColor: _movementType == StockMovementType.purchase ? Colors.green : Colors.orange,
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
+
+class _FeedEfficiencyCard extends StatelessWidget {
+  final FeedEfficiency efficiency;
+  final String locale;
+
+  const _FeedEfficiencyCard({
+    required this.efficiency,
+    required this.locale,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    Color ratingColor;
+    switch (efficiency.rating) {
+      case EfficiencyRating.excellent:
+        ratingColor = Colors.green;
+        break;
+      case EfficiencyRating.good:
+        ratingColor = Colors.lightGreen;
+        break;
+      case EfficiencyRating.average:
+        ratingColor = Colors.orange;
+        break;
+      case EfficiencyRating.poor:
+        ratingColor = Colors.red;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            ratingColor.withValues(alpha: 0.15),
+            ratingColor.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ratingColor.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ratingColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.analytics,
+                  color: ratingColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      locale == 'pt' ? 'Eficiência de Ração' : 'Feed Efficiency',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: ratingColor,
+                      ),
+                    ),
+                    Text(
+                      '${efficiency.rating.emoji} ${efficiency.rating.displayName(locale)}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _EfficiencyMetric(
+                  label: locale == 'pt' ? 'Kg por Ovo' : 'Kg per Egg',
+                  value: '${efficiency.kgPerEgg.toStringAsFixed(3)} kg',
+                  icon: Icons.egg_alt,
+                  locale: locale,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _EfficiencyMetric(
+                  label: locale == 'pt' ? 'Ovos por Kg' : 'Eggs per Kg',
+                  value: '${efficiency.eggsPerKg.toStringAsFixed(1)}',
+                  icon: Icons.grass,
+                  locale: locale,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  efficiency.comparedToBenchmark >= 0
+                      ? Icons.trending_up
+                      : Icons.trending_down,
+                  size: 18,
+                  color: efficiency.comparedToBenchmark >= 0 ? Colors.green : Colors.red,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    efficiency.comparedToBenchmark >= 0
+                        ? (locale == 'pt'
+                            ? '${efficiency.comparedToBenchmark.abs().toStringAsFixed(0)}% acima do benchmark da indústria'
+                            : '${efficiency.comparedToBenchmark.abs().toStringAsFixed(0)}% above industry benchmark')
+                        : (locale == 'pt'
+                            ? '${efficiency.comparedToBenchmark.abs().toStringAsFixed(0)}% abaixo do benchmark da indústria'
+                            : '${efficiency.comparedToBenchmark.abs().toStringAsFixed(0)}% below industry benchmark'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EfficiencyMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final String locale;
+
+  const _EfficiencyMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.locale,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 24, color: theme.colorScheme.primary),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

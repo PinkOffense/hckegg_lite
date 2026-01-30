@@ -26,6 +26,7 @@ class FeedStockProvider extends ChangeNotifier {
   // Cached statistics
   double? _cachedTotalFeed;
   int? _cachedLowStockCount;
+  double _totalFeedConsumed = 0.0;
 
   // Getters
   List<FeedStock> get feedStocks => List.unmodifiable(_feedStocks);
@@ -43,6 +44,9 @@ class FeedStockProvider extends ChangeNotifier {
     return _cachedLowStockCount!;
   }
 
+  /// Total feed consumed (kg) from all movements
+  double get totalFeedConsumed => _totalFeedConsumed;
+
   void _invalidateCache() {
     _cachedTotalFeed = null;
     _cachedLowStockCount = null;
@@ -57,6 +61,18 @@ class FeedStockProvider extends ChangeNotifier {
     try {
       _feedStocks = await _repository.getAll();
       _invalidateCache();
+
+      // Load total consumed from all movements
+      _totalFeedConsumed = 0.0;
+      for (final stock in _feedStocks) {
+        final movements = await _repository.getMovements(stock.id);
+        for (final movement in movements) {
+          if (movement.movementType == StockMovementType.consumption ||
+              movement.movementType == StockMovementType.loss) {
+            _totalFeedConsumed += movement.quantityKg;
+          }
+        }
+      }
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -159,6 +175,11 @@ class FeedStockProvider extends ChangeNotifier {
       newQuantity += movement.quantityKg;
     } else {
       newQuantity -= movement.quantityKg;
+      // Track total consumed
+      if (movement.movementType == StockMovementType.consumption ||
+          movement.movementType == StockMovementType.loss) {
+        _totalFeedConsumed += movement.quantityKg;
+      }
     }
 
     final updatedStock = stock.copyWith(
