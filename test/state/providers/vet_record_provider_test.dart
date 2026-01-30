@@ -1,21 +1,116 @@
 // test/state/providers/vet_record_provider_test.dart
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hckegg_lite/core/core.dart';
 import 'package:hckegg_lite/models/vet_record.dart';
+import 'package:hckegg_lite/features/health/domain/usecases/vet_usecases.dart';
+import 'package:hckegg_lite/features/health/domain/repositories/vet_repository.dart';
 import 'package:hckegg_lite/state/providers/vet_record_provider.dart';
-import '../../mocks/mock_vet_repository.dart';
+
+// Mock Use Cases
+class MockGetVetRecords implements GetVetRecords {
+  @override
+  VetRepository get repository => throw UnimplementedError();
+
+  List<VetRecord> records = [];
+  bool shouldFail = false;
+  int callCount = 0;
+
+  @override
+  Future<Result<List<VetRecord>>> call(NoParams params) async {
+    callCount++;
+    if (shouldFail) {
+      return Result.fail(ServerFailure(message: 'Simulated load error'));
+    }
+    return Result.success(List.from(records));
+  }
+}
+
+class MockGetUpcomingAppointments implements GetUpcomingAppointments {
+  @override
+  VetRepository get repository => throw UnimplementedError();
+
+  List<VetRecord> records = [];
+
+  @override
+  Future<Result<List<VetRecord>>> call(NoParams params) async {
+    return Result.success(records);
+  }
+}
+
+class MockCreateVetRecord implements CreateVetRecord {
+  @override
+  VetRepository get repository => throw UnimplementedError();
+
+  bool shouldFail = false;
+  int callCount = 0;
+
+  @override
+  Future<Result<VetRecord>> call(CreateVetRecordParams params) async {
+    callCount++;
+    if (shouldFail) {
+      return Result.fail(ServerFailure(message: 'Simulated save error'));
+    }
+    return Result.success(params.record);
+  }
+}
+
+class MockUpdateVetRecord implements UpdateVetRecord {
+  @override
+  VetRepository get repository => throw UnimplementedError();
+
+  bool shouldFail = false;
+  int callCount = 0;
+
+  @override
+  Future<Result<VetRecord>> call(UpdateVetRecordParams params) async {
+    callCount++;
+    if (shouldFail) {
+      return Result.fail(ServerFailure(message: 'Simulated update error'));
+    }
+    return Result.success(params.record);
+  }
+}
+
+class MockDeleteVetRecord implements DeleteVetRecord {
+  @override
+  VetRepository get repository => throw UnimplementedError();
+
+  bool shouldFail = false;
+  int callCount = 0;
+
+  @override
+  Future<Result<void>> call(DeleteVetRecordParams params) async {
+    callCount++;
+    if (shouldFail) {
+      return Result.fail(ServerFailure(message: 'Simulated delete error'));
+    }
+    return Result.success(null);
+  }
+}
 
 void main() {
-  late MockVetRepository mockRepository;
+  late MockGetVetRecords mockGetVetRecords;
+  late MockGetUpcomingAppointments mockGetUpcomingAppointments;
+  late MockCreateVetRecord mockCreateVetRecord;
+  late MockUpdateVetRecord mockUpdateVetRecord;
+  late MockDeleteVetRecord mockDeleteVetRecord;
   late VetRecordProvider provider;
 
   setUp(() {
-    mockRepository = MockVetRepository();
-    provider = VetRecordProvider(repository: mockRepository);
-  });
+    mockGetVetRecords = MockGetVetRecords();
+    mockGetUpcomingAppointments = MockGetUpcomingAppointments();
+    mockCreateVetRecord = MockCreateVetRecord();
+    mockUpdateVetRecord = MockUpdateVetRecord();
+    mockDeleteVetRecord = MockDeleteVetRecord();
 
-  tearDown(() {
-    mockRepository.clear();
+    provider = VetRecordProvider(
+      getVetRecords: mockGetVetRecords,
+      getUpcomingAppointments: mockGetUpcomingAppointments,
+      createVetRecord: mockCreateVetRecord,
+      updateVetRecord: mockUpdateVetRecord,
+      deleteVetRecord: mockDeleteVetRecord,
+    );
   });
 
   group('VetRecordProvider', () {
@@ -41,21 +136,21 @@ void main() {
     });
 
     group('loadVetRecords', () {
-      test('loads records from repository', () async {
+      test('loads records from use case', () async {
         final testRecords = [
           _createVetRecord('1', '2024-01-15', VetRecordType.vaccine),
           _createVetRecord('2', '2024-01-16', VetRecordType.checkup),
         ];
-        mockRepository.seedRecords(testRecords);
+        mockGetVetRecords.records = testRecords;
 
         await provider.loadVetRecords();
 
         expect(provider.vetRecords.length, 2);
-        expect(mockRepository.getAllCallCount, 1);
+        expect(mockGetVetRecords.callCount, 1);
       });
 
       test('sets error on failure', () async {
-        mockRepository.shouldThrowOnLoad = true;
+        mockGetVetRecords.shouldFail = true;
 
         await provider.loadVetRecords();
 
@@ -72,102 +167,111 @@ void main() {
 
         expect(provider.vetRecords.length, 1);
         expect(provider.vetRecords[0].type, VetRecordType.vaccine);
-        expect(mockRepository.saveCallCount, 1);
+        expect(mockCreateVetRecord.callCount, 1);
       });
 
       test('updates existing record with same id', () async {
-        final record1 = _createVetRecord('1', '2024-01-15', VetRecordType.vaccine);
-        await provider.saveVetRecord(record1);
+        // First load records
+        mockGetVetRecords.records = [
+          _createVetRecord('1', '2024-01-15', VetRecordType.vaccine),
+        ];
+        await provider.loadVetRecords();
 
+        // Then update
         final record2 = _createVetRecord('1', '2024-01-15', VetRecordType.treatment);
         await provider.saveVetRecord(record2);
 
         expect(provider.vetRecords.length, 1);
         expect(provider.vetRecords[0].type, VetRecordType.treatment);
+        expect(mockUpdateVetRecord.callCount, 1);
       });
 
-      test('sets error and rethrows on repository failure', () async {
-        mockRepository.shouldThrowOnSave = true;
+      test('sets error on save failure', () async {
+        mockCreateVetRecord.shouldFail = true;
         final record = _createVetRecord('1', '2024-01-15', VetRecordType.vaccine);
 
-        await expectLater(provider.saveVetRecord(record), throwsException);
+        await provider.saveVetRecord(record);
+
         expect(provider.error, isNotNull);
+        expect(provider.hasError, true);
       });
     });
 
     group('deleteVetRecord', () {
       test('removes record from list', () async {
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecord('1', '2024-01-15', VetRecordType.vaccine),
           _createVetRecord('2', '2024-01-16', VetRecordType.checkup),
-        ]);
+        ];
         await provider.loadVetRecords();
 
         await provider.deleteVetRecord('1');
 
         expect(provider.vetRecords.length, 1);
         expect(provider.vetRecords[0].id, '2');
-        expect(mockRepository.deleteCallCount, 1);
+        expect(mockDeleteVetRecord.callCount, 1);
       });
 
-      test('sets error and rethrows on repository failure', () async {
-        mockRepository.shouldThrowOnDelete = true;
+      test('sets error on delete failure', () async {
+        mockDeleteVetRecord.shouldFail = true;
 
-        await expectLater(provider.deleteVetRecord('1'), throwsException);
+        await provider.deleteVetRecord('1');
+
         expect(provider.error, isNotNull);
+        expect(provider.hasError, true);
       });
     });
 
     group('statistics', () {
       test('calculates totalVetRecords correctly', () async {
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecord('1', '2024-01-15', VetRecordType.vaccine),
           _createVetRecord('2', '2024-01-16', VetRecordType.checkup),
           _createVetRecord('3', '2024-01-17', VetRecordType.treatment),
-        ]);
+        ];
         await provider.loadVetRecords();
 
         expect(provider.totalVetRecords, 3);
       });
 
       test('calculates totalDeaths correctly', () async {
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecord('1', '2024-01-15', VetRecordType.vaccine),
           _createVetRecord('2', '2024-01-16', VetRecordType.death),
           _createVetRecord('3', '2024-01-17', VetRecordType.death),
-        ]);
+        ];
         await provider.loadVetRecords();
 
         expect(provider.totalDeaths, 2);
       });
 
       test('calculates totalVetCosts correctly', () async {
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecordWithCost('1', '2024-01-15', 50.0),
           _createVetRecordWithCost('2', '2024-01-16', 75.50),
           _createVetRecordWithCost('3', '2024-01-17', 25.0),
-        ]);
+        ];
         await provider.loadVetRecords();
 
         expect(provider.totalVetCosts, closeTo(150.50, 0.01));
       });
 
       test('calculates totalHensAffected correctly', () async {
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecordWithHens('1', '2024-01-15', 5),
           _createVetRecordWithHens('2', '2024-01-16', 10),
           _createVetRecordWithHens('3', '2024-01-17', 3),
-        ]);
+        ];
         await provider.loadVetRecords();
 
         expect(provider.totalHensAffected, 18);
       });
 
       test('handles records with null cost', () async {
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecord('1', '2024-01-15', VetRecordType.vaccine), // no cost
           _createVetRecordWithCost('2', '2024-01-16', 50.0),
-        ]);
+        ];
         await provider.loadVetRecords();
 
         expect(provider.totalVetCosts, closeTo(50.0, 0.01));
@@ -176,11 +280,11 @@ void main() {
 
     group('getVetRecords', () {
       test('returns records sorted by date descending', () async {
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecord('1', '2024-01-10', VetRecordType.vaccine),
           _createVetRecord('2', '2024-01-20', VetRecordType.checkup),
           _createVetRecord('3', '2024-01-15', VetRecordType.treatment),
-        ]);
+        ];
         await provider.loadVetRecords();
 
         final sorted = provider.getVetRecords();
@@ -193,12 +297,12 @@ void main() {
 
     group('getVetRecordsByType', () {
       test('returns records of specified type', () async {
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecord('1', '2024-01-15', VetRecordType.vaccine),
           _createVetRecord('2', '2024-01-16', VetRecordType.checkup),
           _createVetRecord('3', '2024-01-17', VetRecordType.vaccine),
           _createVetRecord('4', '2024-01-18', VetRecordType.treatment),
-        ]);
+        ];
         await provider.loadVetRecords();
 
         final vaccines = provider.getVetRecordsByType(VetRecordType.vaccine);
@@ -208,9 +312,9 @@ void main() {
       });
 
       test('returns empty list when no records of type', () async {
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecord('1', '2024-01-15', VetRecordType.vaccine),
-        ]);
+        ];
         await provider.loadVetRecords();
 
         final deaths = provider.getVetRecordsByType(VetRecordType.death);
@@ -226,11 +330,11 @@ void main() {
         final pastDate = DateTime.now().subtract(const Duration(days: 10));
         final pastDateStr = _toIsoDate(pastDate);
 
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecordWithNextAction('1', '2024-01-15', futureDateStr),
           _createVetRecordWithNextAction('2', '2024-01-16', pastDateStr),
           _createVetRecord('3', '2024-01-17', VetRecordType.checkup), // no next action
-        ]);
+        ];
         await provider.loadVetRecords();
 
         final upcoming = provider.getUpcomingVetActions();
@@ -244,11 +348,11 @@ void main() {
         final future2 = DateTime.now().add(const Duration(days: 15));
         final future3 = DateTime.now().add(const Duration(days: 10));
 
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecordWithNextAction('1', '2024-01-15', _toIsoDate(future2)),
           _createVetRecordWithNextAction('2', '2024-01-16', _toIsoDate(future1)),
           _createVetRecordWithNextAction('3', '2024-01-17', _toIsoDate(future3)),
-        ]);
+        ];
         await provider.loadVetRecords();
 
         final upcoming = provider.getUpcomingVetActions();
@@ -265,11 +369,11 @@ void main() {
         final todayStr = _toIsoDate(DateTime.now());
         final tomorrowStr = _toIsoDate(DateTime.now().add(const Duration(days: 1)));
 
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecordWithNextAction('1', '2024-01-15', todayStr),
           _createVetRecordWithNextAction('2', '2024-01-16', tomorrowStr),
           _createVetRecordWithNextAction('3', '2024-01-17', todayStr),
-        ]);
+        ];
         await provider.loadVetRecords();
 
         final today = provider.getTodayAppointments();
@@ -281,9 +385,9 @@ void main() {
       test('returns empty list when no appointments today', () async {
         final tomorrowStr = _toIsoDate(DateTime.now().add(const Duration(days: 1)));
 
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecordWithNextAction('1', '2024-01-15', tomorrowStr),
-        ]);
+        ];
         await provider.loadVetRecords();
 
         final today = provider.getTodayAppointments();
@@ -294,10 +398,10 @@ void main() {
 
     group('clearData', () {
       test('clears all records', () async {
-        mockRepository.seedRecords([
+        mockGetVetRecords.records = [
           _createVetRecord('1', '2024-01-15', VetRecordType.vaccine),
           _createVetRecord('2', '2024-01-16', VetRecordType.checkup),
-        ]);
+        ];
         await provider.loadVetRecords();
         expect(provider.vetRecords.length, 2);
 
@@ -310,16 +414,16 @@ void main() {
     });
 
     group('records immutability', () {
-      test('vetRecords getter returns unmodifiable list', () async {
-        mockRepository.seedRecords([
+      test('records getter returns unmodifiable list', () async {
+        mockGetVetRecords.records = [
           _createVetRecord('1', '2024-01-15', VetRecordType.vaccine),
-        ]);
+        ];
         await provider.loadVetRecords();
 
-        final records = provider.vetRecords;
+        final records = provider.records;
 
         expect(
-          () => records.add(_createVetRecord('2', '2024-01-16', VetRecordType.checkup)),
+          () => (records as List).add(_createVetRecord('2', '2024-01-16', VetRecordType.checkup)),
           throwsUnsupportedError,
         );
       });
