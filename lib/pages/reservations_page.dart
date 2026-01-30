@@ -84,6 +84,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
                   hintText: locale == 'pt'
                       ? 'Pesquisar por cliente, telefone...'
                       : 'Search by customer, phone...',
+                  hasContent: _searchQuery.isNotEmpty,
                   onChanged: (value) {
                     setState(() => _searchQuery = value);
                   },

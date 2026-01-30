@@ -125,45 +125,16 @@ class _HenHealthPageState extends State<HenHealthPage> {
 
           // Search Bar (only if there are records)
           if (allRecords.isNotEmpty)
-            Padding(
+            AppSearchBar(
+              controller: _searchController,
+              hintText: locale == 'pt'
+                  ? 'Pesquisar registos...'
+                  : 'Search records...',
+              hasContent: _searchQuery.isNotEmpty,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: locale == 'pt'
-                      ? 'Pesquisar registos...'
-                      : 'Search records...',
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(
-                            Icons.clear,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                onChanged: (value) {
-                  setState(() => _searchQuery = value);
-                },
-              ),
+              onChanged: (value) {
+                setState(() => _searchQuery = value);
+              },
             ),
 
           const SizedBox(height: 8),

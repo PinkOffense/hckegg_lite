@@ -86,6 +86,7 @@ class _SalesPageState extends State<SalesPage> {
                         hintText: locale == 'pt'
                             ? 'Pesquisar por cliente, notas...'
                             : 'Search by customer, notes...',
+                        hasContent: _searchQuery.isNotEmpty,
                         onChanged: (value) {
                           setState(() => _searchQuery = value);
                         },

@@ -315,45 +315,16 @@ class _ExpensesPageState extends State<ExpensesPage> {
 
                     // Search Bar for expenses
                     if (standaloneExpenses.isNotEmpty)
-                      Padding(
+                      AppSearchBar(
+                        controller: _searchController,
+                        hintText: locale == 'pt'
+                            ? 'Pesquisar despesas...'
+                            : 'Search expenses...',
+                        hasContent: _searchQuery.isNotEmpty,
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: locale == 'pt'
-                                ? 'Pesquisar despesas...'
-                                : 'Search expenses...',
-                            prefixIcon: Icon(
-                              Icons.search,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            suffixIcon: _searchQuery.isNotEmpty
-                                ? IconButton(
-                                    icon: Icon(
-                                      Icons.clear,
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      setState(() => _searchQuery = '');
-                                    },
-                                  )
-                                : null,
-                            filled: true,
-                            fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                          ),
-                          onChanged: (value) {
-                            setState(() => _searchQuery = value);
-                          },
-                        ),
+                        onChanged: (value) {
+                          setState(() => _searchQuery = value);
+                        },
                       ),
 
                     // Filtered expenses

@@ -6,7 +6,10 @@ class AppSearchBar extends StatelessWidget {
   final String hintText;
   final ValueChanged<String> onChanged;
   final VoidCallback? onClear;
-  final bool showClearButton;
+  /// Whether the search has content (used to show/hide clear button)
+  /// Pass the searchQuery.isNotEmpty from parent state for reactive updates
+  final bool hasContent;
+  final EdgeInsetsGeometry? padding;
 
   const AppSearchBar({
     super.key,
@@ -14,7 +17,8 @@ class AppSearchBar extends StatelessWidget {
     required this.hintText,
     required this.onChanged,
     this.onClear,
-    this.showClearButton = true,
+    this.hasContent = false,
+    this.padding,
   });
 
   @override
@@ -22,7 +26,7 @@ class AppSearchBar extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: padding ?? const EdgeInsets.all(16),
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
@@ -31,7 +35,7 @@ class AppSearchBar extends StatelessWidget {
             Icons.search,
             color: theme.colorScheme.onSurfaceVariant,
           ),
-          suffixIcon: showClearButton && controller.text.isNotEmpty
+          suffixIcon: hasContent
               ? IconButton(
                   icon: Icon(
                     Icons.clear,
