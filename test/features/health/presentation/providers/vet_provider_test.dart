@@ -12,15 +12,21 @@ class MockVetRepository implements VetRepository {
   Failure? failureToReturn;
 
   @override
-  Future<Result<List<VetRecord>>> getVetRecords() async {
+  Future<Result<List<VetRecord>>> getRecords() async {
     if (failureToReturn != null) return Result.fail(failureToReturn!);
     return Result.success(recordsToReturn);
   }
 
   @override
-  Future<Result<VetRecord>> getVetRecordById(String id) async {
+  Future<Result<VetRecord>> getRecordById(String id) async {
     final record = recordsToReturn.firstWhere((r) => r.id == id);
     return Result.success(record);
+  }
+
+  @override
+  Future<Result<List<VetRecord>>> getRecordsByType(VetRecordType type) async {
+    final filtered = recordsToReturn.where((r) => r.type == type).toList();
+    return Result.success(filtered);
   }
 
   @override
@@ -28,25 +34,33 @@ class MockVetRepository implements VetRepository {
     final now = DateTime.now();
     final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     final filtered = recordsToReturn.where((r) {
-      return r.nextVisit != null && r.nextVisit!.compareTo(todayStr) >= 0;
+      return r.nextActionDate != null && r.nextActionDate!.compareTo(todayStr) >= 0;
     }).toList();
     return Result.success(filtered);
   }
 
   @override
-  Future<Result<VetRecord>> createVetRecord(VetRecord record) async {
+  Future<Result<List<VetRecord>>> getTodayAppointments() async {
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final filtered = recordsToReturn.where((r) => r.nextActionDate == todayStr).toList();
+    return Result.success(filtered);
+  }
+
+  @override
+  Future<Result<VetRecord>> createRecord(VetRecord record) async {
     if (failureToReturn != null) return Result.fail(failureToReturn!);
     return Result.success(record);
   }
 
   @override
-  Future<Result<VetRecord>> updateVetRecord(VetRecord record) async {
+  Future<Result<VetRecord>> updateRecord(VetRecord record) async {
     if (failureToReturn != null) return Result.fail(failureToReturn!);
     return Result.success(record);
   }
 
   @override
-  Future<Result<void>> deleteVetRecord(String id) async {
+  Future<Result<void>> deleteRecord(String id) async {
     if (failureToReturn != null) return Result.fail(failureToReturn!);
     return Result.success(null);
   }
@@ -86,8 +100,8 @@ void main() {
     group('loadVetRecords', () {
       test('loads records successfully', () async {
         mockRepository.recordsToReturn = [
-          _createVetRecord('1', '2024-01-15', VetVisitType.checkup),
-          _createVetRecord('2', '2024-01-14', VetVisitType.vaccination),
+          _createVetRecord('1', '2024-01-15', VetRecordType.checkup),
+          _createVetRecord('2', '2024-01-14', VetRecordType.vaccine),
         ];
 
         await provider.loadVetRecords();
@@ -108,34 +122,34 @@ void main() {
 
     group('saveVetRecord', () {
       test('creates new record successfully', () async {
-        final record = _createVetRecord('1', '2024-01-15', VetVisitType.checkup);
+        final record = _createVetRecord('1', '2024-01-15', VetRecordType.checkup);
 
-        final result = await provider.saveVetRecord(record);
+        await provider.saveVetRecord(record);
 
-        expect(result, true);
         expect(provider.vetRecords.length, 1);
+        expect(provider.state, VetState.loaded);
       });
 
       test('updates existing record', () async {
         mockRepository.recordsToReturn = [
-          _createVetRecord('1', '2024-01-15', VetVisitType.checkup),
+          _createVetRecord('1', '2024-01-15', VetRecordType.checkup),
         ];
         await provider.loadVetRecords();
+        mockRepository.failureToReturn = null;
 
-        final updatedRecord = _createVetRecord('1', '2024-01-15', VetVisitType.treatment);
+        final updatedRecord = _createVetRecord('1', '2024-01-15', VetRecordType.treatment);
         await provider.saveVetRecord(updatedRecord);
 
         expect(provider.vetRecords.length, 1);
-        expect(provider.vetRecords[0].visitType, VetVisitType.treatment);
+        expect(provider.vetRecords[0].type, VetRecordType.treatment);
       });
 
-      test('returns false on failure', () async {
+      test('sets error state on failure', () async {
         mockRepository.failureToReturn = ServerFailure(message: 'Save failed');
-        final record = _createVetRecord('1', '2024-01-15', VetVisitType.checkup);
+        final record = _createVetRecord('1', '2024-01-15', VetRecordType.checkup);
 
-        final result = await provider.saveVetRecord(record);
+        await provider.saveVetRecord(record);
 
-        expect(result, false);
         expect(provider.state, VetState.error);
       });
     });
@@ -143,25 +157,23 @@ void main() {
     group('deleteVetRecord', () {
       test('removes record from list', () async {
         mockRepository.recordsToReturn = [
-          _createVetRecord('1', '2024-01-15', VetVisitType.checkup),
-          _createVetRecord('2', '2024-01-14', VetVisitType.vaccination),
+          _createVetRecord('1', '2024-01-15', VetRecordType.checkup),
+          _createVetRecord('2', '2024-01-14', VetRecordType.vaccine),
         ];
         await provider.loadVetRecords();
         mockRepository.failureToReturn = null;
 
-        final result = await provider.deleteVetRecord('1');
+        await provider.deleteVetRecord('1');
 
-        expect(result, true);
         expect(provider.vetRecords.length, 1);
         expect(provider.vetRecords[0].id, '2');
       });
 
-      test('returns false on failure', () async {
+      test('sets error state on failure', () async {
         mockRepository.failureToReturn = ServerFailure(message: 'Delete failed');
 
-        final result = await provider.deleteVetRecord('1');
+        await provider.deleteVetRecord('1');
 
-        expect(result, false);
         expect(provider.state, VetState.error);
       });
     });
@@ -169,8 +181,8 @@ void main() {
     group('search', () {
       test('returns all records when query is empty', () async {
         mockRepository.recordsToReturn = [
-          _createVetRecord('1', '2024-01-15', VetVisitType.checkup),
-          _createVetRecord('2', '2024-01-14', VetVisitType.vaccination),
+          _createVetRecord('1', '2024-01-15', VetRecordType.checkup),
+          _createVetRecord('2', '2024-01-14', VetRecordType.vaccine),
         ];
         await provider.loadVetRecords();
 
@@ -179,23 +191,23 @@ void main() {
         expect(results.length, 2);
       });
 
-      test('filters by vet name', () async {
+      test('filters by type name', () async {
         mockRepository.recordsToReturn = [
-          _createVetRecord('1', '2024-01-15', VetVisitType.checkup, vetName: 'Dr. Smith'),
-          _createVetRecord('2', '2024-01-14', VetVisitType.vaccination, vetName: 'Dr. Jones'),
+          _createVetRecord('1', '2024-01-15', VetRecordType.checkup),
+          _createVetRecord('2', '2024-01-14', VetRecordType.vaccine),
         ];
         await provider.loadVetRecords();
 
-        final results = provider.search('smith');
+        final results = provider.search('vaccine');
 
         expect(results.length, 1);
-        expect(results[0].vetName, 'Dr. Smith');
+        expect(results[0].type, VetRecordType.vaccine);
       });
 
       test('filters by notes', () async {
         mockRepository.recordsToReturn = [
-          _createVetRecord('1', '2024-01-15', VetVisitType.checkup, notes: 'Annual checkup'),
-          _createVetRecord('2', '2024-01-14', VetVisitType.vaccination, notes: 'Flu vaccine'),
+          _createVetRecord('1', '2024-01-15', VetRecordType.checkup, notes: 'Annual checkup'),
+          _createVetRecord('2', '2024-01-14', VetRecordType.vaccine, notes: 'Flu vaccine'),
         ];
         await provider.loadVetRecords();
 
@@ -206,10 +218,43 @@ void main() {
       });
     });
 
+    group('statistics', () {
+      test('calculates totalDeaths correctly', () async {
+        mockRepository.recordsToReturn = [
+          _createVetRecord('1', '2024-01-15', VetRecordType.death),
+          _createVetRecord('2', '2024-01-14', VetRecordType.death),
+          _createVetRecord('3', '2024-01-13', VetRecordType.checkup),
+        ];
+        await provider.loadVetRecords();
+
+        expect(provider.totalDeaths, 2);
+      });
+
+      test('calculates totalVetCosts correctly', () async {
+        mockRepository.recordsToReturn = [
+          _createVetRecord('1', '2024-01-15', VetRecordType.checkup, cost: 50.0),
+          _createVetRecord('2', '2024-01-14', VetRecordType.treatment, cost: 30.0),
+        ];
+        await provider.loadVetRecords();
+
+        expect(provider.totalVetCosts, closeTo(80.0, 0.01));
+      });
+
+      test('calculates totalHensAffected correctly', () async {
+        mockRepository.recordsToReturn = [
+          _createVetRecord('1', '2024-01-15', VetRecordType.disease, hensAffected: 5),
+          _createVetRecord('2', '2024-01-14', VetRecordType.treatment, hensAffected: 3),
+        ];
+        await provider.loadVetRecords();
+
+        expect(provider.totalHensAffected, 8);
+      });
+    });
+
     group('clearData', () {
       test('clears all records and resets state', () async {
         mockRepository.recordsToReturn = [
-          _createVetRecord('1', '2024-01-15', VetVisitType.checkup),
+          _createVetRecord('1', '2024-01-15', VetRecordType.checkup),
         ];
         await provider.loadVetRecords();
         expect(provider.vetRecords.length, 1);
@@ -227,15 +272,18 @@ void main() {
 VetRecord _createVetRecord(
   String id,
   String date,
-  VetVisitType visitType, {
-  String? vetName,
+  VetRecordType type, {
   String? notes,
+  double? cost,
+  int hensAffected = 1,
 }) {
   return VetRecord(
     id: id,
     date: date,
-    visitType: visitType,
-    vetName: vetName,
+    type: type,
+    hensAffected: hensAffected,
+    description: 'Test record',
     notes: notes,
+    cost: cost,
   );
 }

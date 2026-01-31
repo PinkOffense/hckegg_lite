@@ -24,13 +24,25 @@ class MockSaleRepository implements SaleRepository {
   }
 
   @override
-  Future<Result<List<EggSale>>> getSalesInRange({
+  Future<Result<List<EggSale>>> getSalesByDateRange({
     required String startDate,
     required String endDate,
   }) async {
     final filtered = salesToReturn.where((s) {
       return s.date.compareTo(startDate) >= 0 && s.date.compareTo(endDate) <= 0;
     }).toList();
+    return Result.success(filtered);
+  }
+
+  @override
+  Future<Result<List<EggSale>>> getPendingPayments() async {
+    final filtered = salesToReturn.where((s) => s.paymentStatus == PaymentStatus.pending).toList();
+    return Result.success(filtered);
+  }
+
+  @override
+  Future<Result<List<EggSale>>> getLostSales() async {
+    final filtered = salesToReturn.where((s) => s.isLost).toList();
     return Result.success(filtered);
   }
 
@@ -48,6 +60,18 @@ class MockSaleRepository implements SaleRepository {
 
   @override
   Future<Result<void>> deleteSale(String id) async {
+    if (failureToReturn != null) return Result.fail(failureToReturn!);
+    return Result.success(null);
+  }
+
+  @override
+  Future<Result<void>> markAsPaid(String id, String paymentDate) async {
+    if (failureToReturn != null) return Result.fail(failureToReturn!);
+    return Result.success(null);
+  }
+
+  @override
+  Future<Result<void>> markAsLost(String id) async {
     if (failureToReturn != null) return Result.fail(failureToReturn!);
     return Result.success(null);
   }
@@ -93,8 +117,8 @@ void main() {
     group('loadSales', () {
       test('loads sales successfully', () async {
         mockRepository.salesToReturn = [
-          _createSale('1', '2024-01-15', 30, 15.0),
-          _createSale('2', '2024-01-14', 24, 12.0),
+          _createSale('1', '2024-01-15', 30, 0.50),
+          _createSale('2', '2024-01-14', 24, 0.50),
         ];
 
         await provider.loadSales();
@@ -115,7 +139,7 @@ void main() {
 
     group('saveSale', () {
       test('creates new sale successfully', () async {
-        final sale = _createSale('1', '2024-01-15', 30, 15.0);
+        final sale = _createSale('1', '2024-01-15', 30, 0.50);
 
         final result = await provider.saveSale(sale);
 
@@ -125,11 +149,12 @@ void main() {
 
       test('updates existing sale', () async {
         mockRepository.salesToReturn = [
-          _createSale('1', '2024-01-15', 30, 15.0),
+          _createSale('1', '2024-01-15', 30, 0.50),
         ];
         await provider.loadSales();
+        mockRepository.failureToReturn = null;
 
-        final updatedSale = _createSale('1', '2024-01-15', 36, 18.0);
+        final updatedSale = _createSale('1', '2024-01-15', 36, 0.50);
         await provider.saveSale(updatedSale);
 
         expect(provider.sales.length, 1);
@@ -138,7 +163,7 @@ void main() {
 
       test('returns false on failure', () async {
         mockRepository.failureToReturn = ServerFailure(message: 'Save failed');
-        final sale = _createSale('1', '2024-01-15', 30, 15.0);
+        final sale = _createSale('1', '2024-01-15', 30, 0.50);
 
         final result = await provider.saveSale(sale);
 
@@ -150,8 +175,8 @@ void main() {
     group('deleteSale', () {
       test('removes sale from list', () async {
         mockRepository.salesToReturn = [
-          _createSale('1', '2024-01-15', 30, 15.0),
-          _createSale('2', '2024-01-14', 24, 12.0),
+          _createSale('1', '2024-01-15', 30, 0.50),
+          _createSale('2', '2024-01-14', 24, 0.50),
         ];
         await provider.loadSales();
         mockRepository.failureToReturn = null;
@@ -176,8 +201,8 @@ void main() {
     group('statistics', () {
       test('calculates totalRevenue correctly', () async {
         mockRepository.salesToReturn = [
-          _createSale('1', '2024-01-15', 30, 15.0),
-          _createSale('2', '2024-01-14', 24, 12.0),
+          _createSale('1', '2024-01-15', 30, 0.50), // 30 * 0.50 = 15.0
+          _createSale('2', '2024-01-14', 24, 0.50), // 24 * 0.50 = 12.0
         ];
         await provider.loadSales();
 
@@ -186,8 +211,8 @@ void main() {
 
       test('calculates totalEggsSold correctly', () async {
         mockRepository.salesToReturn = [
-          _createSale('1', '2024-01-15', 30, 15.0),
-          _createSale('2', '2024-01-14', 24, 12.0),
+          _createSale('1', '2024-01-15', 30, 0.50),
+          _createSale('2', '2024-01-14', 24, 0.50),
         ];
         await provider.loadSales();
 
@@ -198,8 +223,8 @@ void main() {
     group('search', () {
       test('returns all sales when query is empty', () async {
         mockRepository.salesToReturn = [
-          _createSale('1', '2024-01-15', 30, 15.0),
-          _createSale('2', '2024-01-14', 24, 12.0),
+          _createSale('1', '2024-01-15', 30, 0.50),
+          _createSale('2', '2024-01-14', 24, 0.50),
         ];
         await provider.loadSales();
 
@@ -210,8 +235,8 @@ void main() {
 
       test('filters by customer name', () async {
         mockRepository.salesToReturn = [
-          _createSale('1', '2024-01-15', 30, 15.0, customer: 'John'),
-          _createSale('2', '2024-01-14', 24, 12.0, customer: 'Maria'),
+          _createSale('1', '2024-01-15', 30, 0.50, customer: 'John'),
+          _createSale('2', '2024-01-14', 24, 0.50, customer: 'Maria'),
         ];
         await provider.loadSales();
 
@@ -225,7 +250,7 @@ void main() {
     group('clearData', () {
       test('clears all sales and resets state', () async {
         mockRepository.salesToReturn = [
-          _createSale('1', '2024-01-15', 30, 15.0),
+          _createSale('1', '2024-01-15', 30, 0.50),
         ];
         await provider.loadSales();
         expect(provider.sales.length, 1);
@@ -244,15 +269,15 @@ EggSale _createSale(
   String id,
   String date,
   int quantity,
-  double totalAmount, {
+  double pricePerEgg, {
   String? customer,
 }) {
   return EggSale(
     id: id,
     date: date,
     quantitySold: quantity,
-    pricePerEgg: totalAmount / quantity,
-    totalAmount: totalAmount,
+    pricePerEgg: pricePerEgg,
+    pricePerDozen: pricePerEgg * 12,
     customerName: customer,
   );
 }

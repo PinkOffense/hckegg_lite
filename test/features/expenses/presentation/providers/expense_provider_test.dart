@@ -24,6 +24,17 @@ class MockExpenseRepository implements ExpenseRepository {
   }
 
   @override
+  Future<Result<List<Expense>>> getExpensesByDateRange({
+    required String startDate,
+    required String endDate,
+  }) async {
+    final filtered = expensesToReturn.where((e) {
+      return e.date.compareTo(startDate) >= 0 && e.date.compareTo(endDate) <= 0;
+    }).toList();
+    return Result.success(filtered);
+  }
+
+  @override
   Future<Result<List<Expense>>> getExpensesByCategory(ExpenseCategory category) async {
     final filtered = expensesToReturn.where((e) => e.category == category).toList();
     return Result.success(filtered);
@@ -45,6 +56,17 @@ class MockExpenseRepository implements ExpenseRepository {
   Future<Result<void>> deleteExpense(String id) async {
     if (failureToReturn != null) return Result.fail(failureToReturn!);
     return Result.success(null);
+  }
+
+  @override
+  Future<Result<double>> getTotalExpenses({
+    required String startDate,
+    required String endDate,
+  }) async {
+    final total = expensesToReturn
+        .where((e) => e.date.compareTo(startDate) >= 0 && e.date.compareTo(endDate) <= 0)
+        .fold<double>(0.0, (sum, e) => sum + e.amount);
+    return Result.success(total);
   }
 }
 
@@ -87,7 +109,7 @@ void main() {
       test('loads expenses successfully', () async {
         mockRepository.expensesToReturn = [
           _createExpense('1', '2024-01-15', 50.0, ExpenseCategory.feed),
-          _createExpense('2', '2024-01-14', 30.0, ExpenseCategory.medication),
+          _createExpense('2', '2024-01-14', 30.0, ExpenseCategory.maintenance),
         ];
 
         await provider.loadExpenses();
@@ -121,6 +143,7 @@ void main() {
           _createExpense('1', '2024-01-15', 50.0, ExpenseCategory.feed),
         ];
         await provider.loadExpenses();
+        mockRepository.failureToReturn = null;
 
         final updatedExpense = _createExpense('1', '2024-01-15', 75.0, ExpenseCategory.feed);
         await provider.saveExpense(updatedExpense);
@@ -144,7 +167,7 @@ void main() {
       test('removes expense from list', () async {
         mockRepository.expensesToReturn = [
           _createExpense('1', '2024-01-15', 50.0, ExpenseCategory.feed),
-          _createExpense('2', '2024-01-14', 30.0, ExpenseCategory.medication),
+          _createExpense('2', '2024-01-14', 30.0, ExpenseCategory.maintenance),
         ];
         await provider.loadExpenses();
         mockRepository.failureToReturn = null;
@@ -170,7 +193,7 @@ void main() {
       test('calculates totalExpenses correctly', () async {
         mockRepository.expensesToReturn = [
           _createExpense('1', '2024-01-15', 50.0, ExpenseCategory.feed),
-          _createExpense('2', '2024-01-14', 30.0, ExpenseCategory.medication),
+          _createExpense('2', '2024-01-14', 30.0, ExpenseCategory.maintenance),
           _createExpense('3', '2024-01-13', 20.0, ExpenseCategory.utilities),
         ];
         await provider.loadExpenses();
@@ -178,19 +201,19 @@ void main() {
         expect(provider.totalExpenses, closeTo(100.0, 0.01));
       });
 
-      test('calculates totalByCategory correctly', () async {
+      test('getExpensesByCategoryLocal filters correctly', () async {
         mockRepository.expensesToReturn = [
           _createExpense('1', '2024-01-15', 50.0, ExpenseCategory.feed),
           _createExpense('2', '2024-01-14', 30.0, ExpenseCategory.feed),
-          _createExpense('3', '2024-01-13', 20.0, ExpenseCategory.medication),
+          _createExpense('3', '2024-01-13', 20.0, ExpenseCategory.maintenance),
         ];
         await provider.loadExpenses();
 
-        final totalFeed = provider.getTotalByCategory(ExpenseCategory.feed);
-        final totalMedication = provider.getTotalByCategory(ExpenseCategory.medication);
+        final feedExpenses = provider.getExpensesByCategoryLocal(ExpenseCategory.feed);
+        final maintenanceExpenses = provider.getExpensesByCategoryLocal(ExpenseCategory.maintenance);
 
-        expect(totalFeed, closeTo(80.0, 0.01));
-        expect(totalMedication, closeTo(20.0, 0.01));
+        expect(feedExpenses.length, 2);
+        expect(maintenanceExpenses.length, 1);
       });
     });
 
@@ -198,7 +221,7 @@ void main() {
       test('returns all expenses when query is empty', () async {
         mockRepository.expensesToReturn = [
           _createExpense('1', '2024-01-15', 50.0, ExpenseCategory.feed),
-          _createExpense('2', '2024-01-14', 30.0, ExpenseCategory.medication),
+          _createExpense('2', '2024-01-14', 30.0, ExpenseCategory.maintenance),
         ];
         await provider.loadExpenses();
 
@@ -210,7 +233,7 @@ void main() {
       test('filters by description', () async {
         mockRepository.expensesToReturn = [
           _createExpense('1', '2024-01-15', 50.0, ExpenseCategory.feed, description: 'Chicken feed'),
-          _createExpense('2', '2024-01-14', 30.0, ExpenseCategory.medication, description: 'Vitamins'),
+          _createExpense('2', '2024-01-14', 30.0, ExpenseCategory.maintenance, description: 'Repairs'),
         ];
         await provider.loadExpenses();
 
@@ -252,5 +275,6 @@ Expense _createExpense(
     amount: amount,
     category: category,
     description: description ?? 'Test expense',
+    createdAt: DateTime.now(),
   );
 }
