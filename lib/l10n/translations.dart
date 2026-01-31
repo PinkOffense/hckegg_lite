@@ -168,6 +168,9 @@ class Translations {
       'medium': 'Medium',
       'high': 'High',
       'critical': 'Critical',
+      // Feed Stock
+      'feed_stock': 'Feed Stock',
+      'add_feed_stock': 'Add Feed',
     },
     'pt': {
       'app_title': 'HCKEgg 360',
@@ -335,6 +338,9 @@ class Translations {
       'medium': 'Média',
       'high': 'Alta',
       'critical': 'Crítica',
+      // Stock de Ração
+      'feed_stock': 'Stock de Ração',
+      'add_feed_stock': 'Adicionar Ração',
     }
   };
 
