@@ -233,7 +233,7 @@ class _SalesPageState extends State<SalesPage> {
                 child: GradientFAB(
                   extended: true,
                   icon: Icons.add,
-                  label: locale == 'pt' ? 'Adicionar Venda' : 'Add Sale',
+                  label: t('add_sale'),
                   onPressed: () => _showSaleDialog(context, null),
                 ),
               ),

@@ -171,6 +171,14 @@ class Translations {
       // Feed Stock
       'feed_stock': 'Feed Stock',
       'add_feed_stock': 'Add Feed',
+      // Sales
+      'add_sale': 'Add Sale',
+      // Reservations
+      'add_reservation': 'Add Reservation',
+      // Egg Records
+      'add_record': 'Add Record',
+      // Vet Calendar
+      'schedule_visit': 'Schedule Visit',
     },
     'pt': {
       'app_title': 'HCKEgg 360',
@@ -341,6 +349,14 @@ class Translations {
       // Stock de Ração
       'feed_stock': 'Stock de Ração',
       'add_feed_stock': 'Adicionar Ração',
+      // Vendas
+      'add_sale': 'Adicionar Venda',
+      // Reservas
+      'add_reservation': 'Adicionar Reserva',
+      // Registos de Ovos
+      'add_record': 'Adicionar Registo',
+      // Calendário Veterinário
+      'schedule_visit': 'Agendar Visita',
     }
   };
 
