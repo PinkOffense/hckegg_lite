@@ -129,7 +129,7 @@ void main() {
       final result = await useCase(NoParams());
 
       expect(result.isSuccess, isTrue);
-      expect(result.data!.length, 2);
+      expect(result.value!.length, 2);
     });
 
     test('returns empty list when no records exist', () async {
@@ -138,7 +138,7 @@ void main() {
       final result = await useCase(NoParams());
 
       expect(result.isSuccess, isTrue);
-      expect(result.data, isEmpty);
+      expect(result.value, isEmpty);
     });
 
     test('returns failure when repository fails', () async {
@@ -168,8 +168,8 @@ void main() {
       );
 
       expect(result.isSuccess, isTrue);
-      expect(result.data, isNotNull);
-      expect(result.data!.eggsCollected, 10);
+      expect(result.value, isNotNull);
+      expect(result.value!.eggsCollected, 10);
     });
 
     test('returns null when not found', () async {
@@ -182,7 +182,7 @@ void main() {
       );
 
       expect(result.isSuccess, isTrue);
-      expect(result.data, isNull);
+      expect(result.value, isNull);
     });
 
     test('returns failure when repository fails', () async {
@@ -216,9 +216,9 @@ void main() {
       );
 
       expect(result.isSuccess, isTrue);
-      expect(result.data!.length, 2);
-      expect(result.data!.any((r) => r.date == '2024-01-15'), isTrue);
-      expect(result.data!.any((r) => r.date == '2024-01-20'), isTrue);
+      expect(result.value!.length, 2);
+      expect(result.value!.any((r) => r.date == '2024-01-15'), isTrue);
+      expect(result.value!.any((r) => r.date == '2024-01-20'), isTrue);
     });
 
     test('returns empty list when no records in range', () async {
@@ -231,7 +231,7 @@ void main() {
       );
 
       expect(result.isSuccess, isTrue);
-      expect(result.data, isEmpty);
+      expect(result.value, isEmpty);
     });
 
     test('includes records on boundary dates', () async {
@@ -245,7 +245,7 @@ void main() {
       );
 
       expect(result.isSuccess, isTrue);
-      expect(result.data!.length, 2);
+      expect(result.value!.length, 2);
     });
   });
 
@@ -271,8 +271,8 @@ void main() {
 
       final result = await useCase(CreateEggRecordParams(record: record));
 
-      expect(result.data!.id, '1');
-      expect(result.data!.eggsCollected, 10);
+      expect(result.value!.id, '1');
+      expect(result.value!.eggsCollected, 10);
     });
 
     test('returns failure when repository fails', () async {
@@ -318,8 +318,8 @@ void main() {
         UpdateEggRecordParams(record: updatedRecord),
       );
 
-      expect(result.data!.eggsCollected, 20);
-      expect(result.data!.eggsConsumed, 5);
+      expect(result.value!.eggsCollected, 20);
+      expect(result.value!.eggsConsumed, 5);
     });
 
     test('returns failure when repository fails', () async {
