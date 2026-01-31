@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../models/feed_stock.dart';
 import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/search_bar.dart';
@@ -35,13 +36,14 @@ class _FeedStockPageState extends State<FeedStockPage> {
   @override
   Widget build(BuildContext context) {
     final locale = Provider.of<LocaleProvider>(context).code;
+    final t = (String k) => Translations.of(locale, k);
 
     return AppScaffold(
-      title: locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
+      title: t('feed_stock'),
       fab: GradientFAB(
         extended: true,
         icon: Icons.add,
-        label: locale == 'pt' ? 'Adicionar' : 'Add',
+        label: t('add_feed_stock'),
         onPressed: () => _showAddDialog(context),
       ),
       body: Consumer<FeedStockProvider>(
