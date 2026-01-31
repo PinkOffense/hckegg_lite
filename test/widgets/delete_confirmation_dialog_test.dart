@@ -214,7 +214,7 @@ void main() {
                   onPressed: () async {
                     result = await DeleteConfirmationDialog.show(
                       context: context,
-                      title: 'Delete',
+                      title: 'Confirm Action',
                       message: 'Confirm?',
                       locale: 'en',
                     );
@@ -229,7 +229,7 @@ void main() {
         await tester.tap(find.text('Show'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Delete'));
+        await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
         await tester.pumpAndSettle();
 
         expect(result, isTrue);
@@ -246,7 +246,7 @@ void main() {
                   onPressed: () async {
                     result = await DeleteConfirmationDialog.show(
                       context: context,
-                      title: 'Delete',
+                      title: 'Confirm Action',
                       message: 'Confirm?',
                       locale: 'en',
                     );
@@ -261,7 +261,7 @@ void main() {
         await tester.tap(find.text('Show'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Cancel'));
+        await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
         await tester.pumpAndSettle();
 
         expect(result, isFalse);
@@ -276,8 +276,8 @@ void main() {
                   onPressed: () async {
                     await DeleteConfirmationDialog.show(
                       context: context,
-                      title: 'Eliminar',
-                      message: 'Confirmar?',
+                      title: 'Confirmar',
+                      message: 'Confirmar ação?',
                       locale: 'pt',
                     );
                   },
@@ -291,8 +291,8 @@ void main() {
         await tester.tap(find.text('Show'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Apagar'), findsOneWidget);
-        expect(find.text('Cancelar'), findsOneWidget);
+        expect(find.widgetWithText(FilledButton, 'Apagar'), findsOneWidget);
+        expect(find.widgetWithText(TextButton, 'Cancelar'), findsOneWidget);
       });
     });
   });

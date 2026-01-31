@@ -158,7 +158,7 @@ void main() {
       );
 
       final semantics = tester.widget<Semantics>(find.byType(Semantics).first);
-      expect(semantics.properties.label, 'Loading content');
+      expect(semantics.label, 'Loading content');
     });
   });
 
@@ -286,7 +286,7 @@ void main() {
       );
 
       final semantics = tester.widget<Semantics>(find.byType(Semantics).first);
-      expect(semantics.properties.label, 'Loading page content');
+      expect(semantics.label, 'Loading page content');
     });
   });
 
