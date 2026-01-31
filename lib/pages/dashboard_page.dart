@@ -6,8 +6,6 @@ import '../state/providers/providers.dart';
 import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/gradient_fab.dart';
-import '../dialogs/daily_record_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/daily_egg_record.dart';
@@ -205,15 +203,6 @@ class _DashboardPageState extends State<DashboardPage>
           onPressed: () => _exportDashboard(context, locale),
         ),
       ],
-      fab: GradientFAB(
-        extended: true,
-        icon: Icons.add,
-        label: t('add_daily_record'),
-        onPressed: () => showDialog(
-          context: context,
-          builder: (_) => const DailyRecordDialog(),
-        ),
-      ),
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: SlideTransition(

@@ -74,155 +74,154 @@ class _SalesPageState extends State<SalesPage> {
               : allSales.fold<double>(0.0, (sum, s) => sum + s.pricePerEgg) / allSales.length;
 
           return SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Search Bar (only show if there are sales)
-                    if (allSales.isNotEmpty)
-                      AppSearchBar(
-                        controller: _searchController,
-                        hintText: locale == 'pt'
-                            ? 'Pesquisar por cliente, notas...'
-                            : 'Search by customer, notes...',
-                        hasContent: _searchQuery.isNotEmpty,
-                        onChanged: (value) {
-                          setState(() => _searchQuery = value);
-                        },
-                      ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Search Bar (only show if there are sales)
+                if (allSales.isNotEmpty)
+                  AppSearchBar(
+                    controller: _searchController,
+                    hintText: locale == 'pt'
+                        ? 'Pesquisar por cliente, notas...'
+                        : 'Search by customer, notes...',
+                    hasContent: _searchQuery.isNotEmpty,
+                    onChanged: (value) {
+                      setState(() => _searchQuery = value);
+                    },
+                  ),
 
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                    // Statistics Card
-                    Card(
-                      elevation: 4,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                              theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Statistics Card
+                      Card(
+                        elevation: 4,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                                theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+                              ],
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.sell,
+                                    size: 32,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    locale == 'pt' ? 'Estatísticas de Vendas' : 'Sales Statistics',
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _SalesStat(
+                                    label: locale == 'pt' ? 'Total Vendas' : 'Total Sales',
+                                    value: totalSales.toString(),
+                                    color: Colors.blue,
+                                    icon: Icons.receipt_long,
+                                  ),
+                                  _SalesStat(
+                                    label: locale == 'pt' ? 'Ovos Vendidos' : 'Eggs Sold',
+                                    value: totalQuantity.toString(),
+                                    color: Colors.orange,
+                                    icon: Icons.egg,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _SalesStat(
+                                    label: locale == 'pt' ? 'Receita Total' : 'Total Revenue',
+                                    value: '€${totalRevenue.toStringAsFixed(2)}',
+                                    color: Colors.green,
+                                    icon: Icons.euro,
+                                  ),
+                                  _SalesStat(
+                                    label: locale == 'pt' ? 'Preço Médio' : 'Average Price',
+                                    value: '€${avgPrice.toStringAsFixed(2)}',
+                                    color: Colors.purple,
+                                    icon: Icons.trending_up,
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.sell,
-                                  size: 32,
-                                  color: theme.colorScheme.primary,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  locale == 'pt' ? 'Estatísticas de Vendas' : 'Sales Statistics',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _SalesStat(
-                                  label: locale == 'pt' ? 'Total Vendas' : 'Total Sales',
-                                  value: totalSales.toString(),
-                                  color: Colors.blue,
-                                  icon: Icons.receipt_long,
-                                ),
-                                _SalesStat(
-                                  label: locale == 'pt' ? 'Ovos Vendidos' : 'Eggs Sold',
-                                  value: totalQuantity.toString(),
-                                  color: Colors.orange,
-                                  icon: Icons.egg,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _SalesStat(
-                                  label: locale == 'pt' ? 'Receita Total' : 'Total Revenue',
-                                  value: '€${totalRevenue.toStringAsFixed(2)}',
-                                  color: Colors.green,
-                                  icon: Icons.euro,
-                                ),
-                                _SalesStat(
-                                  label: locale == 'pt' ? 'Preço Médio' : 'Average Price',
-                                  value: '€${avgPrice.toStringAsFixed(2)}',
-                                  color: Colors.purple,
-                                  icon: Icons.trending_up,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    // Sales List Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          locale == 'pt' ? 'Histórico de Vendas' : 'Sales History',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (_searchQuery.isNotEmpty)
+                      // Sales List Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
                           Text(
-                            '${sales.length} ${locale == 'pt' ? 'resultado(s)' : 'result(s)'}',
-                            style: theme.textTheme.bodySmall,
+                            locale == 'pt' ? 'Histórico de Vendas' : 'Sales History',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Sales List
-                    if (allSales.isEmpty)
-                      ChickenEmptyState(
-                        title: locale == 'pt' ? 'Nenhuma venda registada' : 'No sales recorded',
-                        message: locale == 'pt'
-                            ? 'Registe as vendas de ovos e acompanhe as suas receitas'
-                            : 'Record egg sales and track your revenue',
-                        actionLabel: locale == 'pt' ? 'Adicionar Venda' : 'Add Sale',
-                        onAction: () => _showSaleDialog(context, null),
-                      )
-                    else if (sales.isEmpty && _searchQuery.isNotEmpty)
-                      SearchEmptyState(
-                        query: _searchQuery,
-                        locale: locale,
-                        onClear: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    else
-                      ...sales.map((sale) => _SaleCard(
-                            sale: sale,
-                            locale: locale,
-                            onTap: () => _showSaleDialog(context, sale),
-                            onDelete: () => _deleteSale(context, sale),
-                          )),
+                          if (_searchQuery.isNotEmpty)
+                            Text(
+                              '${sales.length} ${locale == 'pt' ? 'resultado(s)' : 'result(s)'}',
+                              style: theme.textTheme.bodySmall,
+                            ),
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+
+                      // Sales List
+                      if (allSales.isEmpty)
+                        ChickenEmptyState(
+                          title: locale == 'pt' ? 'Nenhuma venda registada' : 'No sales recorded',
+                          message: locale == 'pt'
+                              ? 'Registe as vendas de ovos e acompanhe as suas receitas'
+                              : 'Record egg sales and track your revenue',
+                          actionLabel: locale == 'pt' ? 'Adicionar Venda' : 'Add Sale',
+                          onAction: () => _showSaleDialog(context, null),
+                        )
+                      else if (sales.isEmpty && _searchQuery.isNotEmpty)
+                        SearchEmptyState(
+                          query: _searchQuery,
+                          locale: locale,
+                          onClear: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      else
+                        ...sales.map((sale) => _SaleCard(
+                              sale: sale,
+                              locale: locale,
+                              onTap: () => _showSaleDialog(context, sale),
+                              onDelete: () => _deleteSale(context, sale),
+                            )),
+                    ],
+                  ),
                 ),
-              ),
+              ],
+            ),
           );
         },
       ),
