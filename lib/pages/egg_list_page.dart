@@ -5,6 +5,7 @@ import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/gradient_fab.dart';
+import '../widgets/delete_confirmation_dialog.dart';
 import '../dialogs/daily_record_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
@@ -77,7 +78,7 @@ class _EggListPageState extends State<EggListPage> {
                 },
               ),
 
-              // Records List
+              // Records List with Pull-to-Refresh
               Expanded(
                 child: records.isEmpty
                     ? SearchEmptyState(
@@ -88,20 +89,24 @@ class _EggListPageState extends State<EggListPage> {
                           setState(() => _searchQuery = '');
                         },
                       )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: records.length,
-                        itemBuilder: (context, index) {
-                          final record = records[index];
-                          return _RecordCard(
-                            record: record,
-                            onTap: () => showDialog(
-                              context: context,
-                              builder: (_) => DailyRecordDialog(existingRecord: record),
-                            ),
-                            onDelete: () => _confirmDelete(context, eggProvider, record),
-                          );
-                        },
+                    : RefreshIndicator(
+                        onRefresh: () => eggProvider.loadRecords(),
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: records.length,
+                          itemBuilder: (context, index) {
+                            final record = records[index];
+                            return _RecordCard(
+                              record: record,
+                              onTap: () => showDialog(
+                                context: context,
+                                builder: (_) => DailyRecordDialog(existingRecord: record),
+                              ),
+                              onDelete: () => _confirmDelete(context, locale, eggProvider, record),
+                            );
+                          },
+                        ),
                       ),
               ),
 
@@ -156,34 +161,27 @@ class _EggListPageState extends State<EggListPage> {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, EggProvider eggProvider, DailyEggRecord record) async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _confirmDelete(BuildContext context, String locale, EggProvider eggProvider, DailyEggRecord record) async {
+    final confirmed = await DeleteConfirmationDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Record'),
-        content: Text('Delete record for ${_formatDate(record.date)}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: locale == 'pt' ? 'Apagar Registo' : 'Delete Record',
+      message: locale == 'pt'
+          ? 'Tens a certeza que queres apagar este registo?'
+          : 'Are you sure you want to delete this record?',
+      itemName: _formatDate(record.date),
+      locale: locale,
     );
 
-    if (confirmed == true && context.mounted) {
-      eggProvider.deleteRecord(record.date);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Record deleted')),
-      );
+    if (confirmed && context.mounted) {
+      await eggProvider.deleteRecord(record.date);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(locale == 'pt' ? 'Registo apagado' : 'Record deleted'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 }
