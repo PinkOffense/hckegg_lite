@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../core/date_utils.dart';
 import '../models/daily_egg_record.dart';
-import '../state/providers/providers.dart';
+import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 
@@ -83,7 +83,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     );
 
     try {
-      await context.read<EggRecordProvider>().saveRecord(record);
+      await context.read<EggProvider>().saveRecord(record);
       if (mounted) {
         Navigator.of(context).pop();
       }

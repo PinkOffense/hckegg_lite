@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../state/providers/providers.dart';
+import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/search_bar.dart';
@@ -41,7 +41,7 @@ class _EggListPageState extends State<EggListPage> {
 
     return AppScaffold(
       title: locale == 'pt' ? 'Registos Diários' : 'Daily Records',
-      body: Consumer<EggRecordProvider>(
+      body: Consumer<EggProvider>(
         builder: (context, eggProvider, _) {
           final records = _searchQuery.isEmpty
               ? eggProvider.records
@@ -156,7 +156,7 @@ class _EggListPageState extends State<EggListPage> {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, EggRecordProvider eggProvider, DailyEggRecord record) async {
+  Future<void> _confirmDelete(BuildContext context, EggProvider eggProvider, DailyEggRecord record) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

@@ -13,3 +13,6 @@ export 'constants/date_constants.dart';
 
 // Utils
 export 'date_utils.dart';
+
+// Models
+export 'models/week_stats.dart';
