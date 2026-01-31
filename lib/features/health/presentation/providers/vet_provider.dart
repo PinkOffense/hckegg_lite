@@ -47,7 +47,9 @@ class VetProvider extends ChangeNotifier {
   // Statistics
   int get totalVetRecords => _records.length;
 
-  int get totalDeaths => _records.where((r) => r.type == VetRecordType.death).length;
+  int get totalDeaths => _records
+      .where((r) => r.type == VetRecordType.death)
+      .fold<int>(0, (sum, r) => sum + r.hensAffected);
 
   double get totalVetCosts => _records.fold<double>(0.0, (sum, r) => sum + (r.cost ?? 0.0));
 

@@ -147,7 +147,7 @@ class _EggListPageState extends State<EggListPage> {
       fab: GradientFAB(
         extended: true,
         icon: Icons.add,
-        label: locale == 'pt' ? 'Adicionar Registo' : 'Add Record',
+        label: t('add_record'),
         onPressed: () => showDialog(
           context: context,
           builder: (_) => const DailyRecordDialog(),

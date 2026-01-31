@@ -137,7 +137,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
       fab: GradientFAB(
         extended: true,
         icon: Icons.add,
-        label: locale == 'pt' ? 'Agendar Visita' : 'Schedule Visit',
+        label: t('schedule_visit'),
         onPressed: () => _scheduleVisit(context, _selectedDate),
       ),
       body: Column(

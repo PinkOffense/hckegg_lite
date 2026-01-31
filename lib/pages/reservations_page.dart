@@ -5,6 +5,7 @@ import '../models/egg_sale.dart';
 import '../state/providers/providers.dart';
 import '../dialogs/reservation_dialog.dart';
 import '../l10n/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/gradient_fab.dart';
@@ -31,6 +32,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final locale = Provider.of<LocaleProvider>(context).code;
+    final t = (String k) => Translations.of(locale, k);
     final reservationProvider = Provider.of<ReservationProvider>(context);
 
     final allReservations = reservationProvider.reservations;
@@ -51,7 +53,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
       fab: GradientFAB(
         extended: true,
         icon: Icons.add,
-        label: locale == 'pt' ? 'Adicionar Reserva' : 'Add Reservation',
+        label: t('add_reservation'),
         onPressed: () {
           showDialog(
             context: context,
@@ -67,7 +69,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
               message: locale == 'pt'
                   ? 'Gira reservas de ovos para os seus clientes'
                   : 'Manage egg reservations for your customers',
-              actionLabel: locale == 'pt' ? 'Adicionar Reserva' : 'Add Reservation',
+              actionLabel: t('add_reservation'),
               onAction: () {
                 showDialog(
                   context: context,
