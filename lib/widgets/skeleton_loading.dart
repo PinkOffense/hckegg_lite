@@ -298,8 +298,8 @@ class SkeletonPage extends StatelessWidget {
             ],
             ...List.generate(
               listItemCount,
-              (i) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+              (i) => const Padding(
+                padding: EdgeInsets.only(bottom: 12),
                 child: SkeletonCard(),
               ),
             ),
