@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/date_utils.dart';
 import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
@@ -87,10 +88,8 @@ class _ExpensesPageState extends State<ExpensesPage> {
           final sortedStandaloneExpenses = List<Expense>.from(standaloneExpenses)
             ..sort((a, b) => b.date.compareTo(a.date));
 
-          return Stack(
-            children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0).copyWith(bottom: 80),
+          return SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -377,25 +376,17 @@ class _ExpensesPageState extends State<ExpensesPage> {
                     ),
                   ],
                 ),
-              ),
-
-              // FAB
-              Positioned(
-                bottom: 16,
-                right: 16,
-                child: GradientFAB(
-                  extended: true,
-                  icon: Icons.add,
-                  label: t('add_expense'),
-                  onPressed: () => showDialog(
-                    context: context,
-                    builder: (_) => const ExpenseDialog(),
-                  ),
-                ),
-              ),
-            ],
           );
         },
+      ),
+      fab: GradientFAB(
+        extended: true,
+        icon: Icons.add,
+        label: t('add_expense'),
+        onPressed: () => showDialog(
+          context: context,
+          builder: (_) => const ExpenseDialog(),
+        ),
       ),
     );
   }
@@ -534,17 +525,6 @@ class _StandaloneExpenseCard extends StatelessWidget {
     required this.onDelete,
   });
 
-  String _formatDate(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    if (locale == 'pt') {
-      final months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      return '${date.day} ${months[date.month - 1]} ${date.year}';
-    } else {
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return '${months[date.month - 1]} ${date.day}, ${date.year}';
-    }
-  }
-
   IconData _getCategoryIcon() {
     switch (expense.category) {
       case ExpenseCategory.feed:
@@ -615,7 +595,7 @@ class _StandaloneExpenseCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          _formatDate(expense.date),
+                          AppDateUtils.formatFullFromString(expense.date, locale: locale),
                           style: theme.textTheme.bodySmall,
                         ),
                       ],
@@ -638,6 +618,7 @@ class _StandaloneExpenseCard extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                     onPressed: onDelete,
+                    tooltip: locale == 'pt' ? 'Eliminar despesa' : 'Delete expense',
                   ),
                 ],
               ),

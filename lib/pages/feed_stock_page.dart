@@ -224,23 +224,26 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
             const SizedBox(height: 16),
             Text(
               locale == 'pt' ? 'Erro ao carregar' : 'Error loading',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               errorMessage ?? '',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -248,7 +251,9 @@ class _ErrorView extends StatelessWidget {
                   ? 'Verifique se as tabelas feed_stocks e feed_movements existem no Supabase'
                   : 'Check if feed_stocks and feed_movements tables exist in Supabase',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.orange[700], fontSize: 12),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.tertiary,
+              ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -367,7 +372,7 @@ class _StatItem extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey[600],
+            color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -432,7 +437,7 @@ class _StockCard extends StatelessWidget {
                           Text(
                             stock.brand!,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
+                              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                             ),
                           ),
                       ],
@@ -453,13 +458,13 @@ class _StockCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
+                            color: theme.colorScheme.error.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             locale == 'pt' ? 'BAIXO' : 'LOW',
-                            style: const TextStyle(
-                              color: Colors.red,
+                            style: TextStyle(
+                              color: theme.colorScheme.error,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
@@ -477,7 +482,7 @@ class _StockCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: (stock.currentQuantityKg / (stock.minimumQuantityKg * 3)).clamp(0.0, 1.0),
-                  backgroundColor: Colors.grey[300],
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   color: _levelColor,
                   minHeight: 8,
                 ),
@@ -490,7 +495,10 @@ class _StockCard extends StatelessWidget {
                 children: [
                   Text(
                     '${locale == 'pt' ? 'Mín' : 'Min'}: ${stock.minimumQuantityKg.toStringAsFixed(0)} kg',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 11,
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                    ),
                   ),
                 ],
               ),
@@ -629,33 +637,40 @@ class _ConsumeDialogState extends State<_ConsumeDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Stock info
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Text(widget.stock.type.icon, style: const TextStyle(fontSize: 24)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.stock.type.displayName(widget.locale),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          '${widget.locale == 'pt' ? 'Actual' : 'Current'}: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
+            Builder(
+              builder: (context) {
+                final theme = Theme.of(context);
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Text(widget.stock.type.icon, style: const TextStyle(fontSize: 24)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.stock.type.displayName(widget.locale),
+                              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              '${widget.locale == 'pt' ? 'Actual' : 'Current'}: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 16),

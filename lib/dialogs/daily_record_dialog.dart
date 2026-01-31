@@ -65,6 +65,10 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     }
   }
 
+  String _formatDate(DateTime date, String locale) {
+    return AppDateUtils.formatFull(date, locale: locale);
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -96,16 +100,6 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
           ),
         );
       }
-    }
-  }
-
-  String _formatDate(DateTime date, String locale) {
-    if (locale == 'pt') {
-      final months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      return '${date.day} ${months[date.month - 1]} ${date.year}';
-    } else {
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return '${months[date.month - 1]} ${date.day}, ${date.year}';
     }
   }
 

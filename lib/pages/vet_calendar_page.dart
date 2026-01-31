@@ -151,6 +151,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.chevron_left),
+                  tooltip: locale == 'pt' ? 'Mês anterior' : 'Previous month',
                   onPressed: () {
                     setState(() {
                       _currentMonth = DateTime(
@@ -172,6 +173,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
+                  tooltip: locale == 'pt' ? 'Próximo mês' : 'Next month',
                   onPressed: () {
                     setState(() {
                       _currentMonth = DateTime(

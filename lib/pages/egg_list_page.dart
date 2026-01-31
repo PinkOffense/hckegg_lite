@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/date_utils.dart';
 import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
@@ -26,12 +27,6 @@ class _EggListPageState extends State<EggListPage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  String _formatDate(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   @override
@@ -99,6 +94,7 @@ class _EggListPageState extends State<EggListPage> {
                             final record = records[index];
                             return _RecordCard(
                               record: record,
+                              locale: locale,
                               onTap: () => showDialog(
                                 context: context,
                                 builder: (_) => DailyRecordDialog(existingRecord: record),
@@ -168,7 +164,7 @@ class _EggListPageState extends State<EggListPage> {
       message: locale == 'pt'
           ? 'Tens a certeza que queres apagar este registo?'
           : 'Are you sure you want to delete this record?',
-      itemName: _formatDate(record.date),
+      itemName: AppDateUtils.formatFullFromString(record.date, locale: locale),
       locale: locale,
     );
 
@@ -188,29 +184,16 @@ class _EggListPageState extends State<EggListPage> {
 
 class _RecordCard extends StatelessWidget {
   final DailyEggRecord record;
+  final String locale;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
   const _RecordCard({
     required this.record,
+    required this.locale,
     required this.onTap,
     required this.onDelete,
   });
-
-  String _formatDate(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final recordDate = DateTime(date.year, date.month, date.day);
-    final difference = today.difference(recordDate).inDays;
-
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final dateFormatted = '${months[date.month - 1]} ${date.day}, ${date.year}';
-
-    if (difference == 0) return 'Today • $dateFormatted';
-    if (difference == 1) return 'Yesterday • $dateFormatted';
-    return dateFormatted;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -257,7 +240,7 @@ class _RecordCard extends StatelessWidget {
                   // Date
                   Expanded(
                     child: Text(
-                      _formatDate(record.date),
+                      AppDateUtils.formatRelativeWithDate(record.date, locale: locale),
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -268,6 +251,7 @@ class _RecordCard extends StatelessWidget {
                     icon: const Icon(Icons.delete_outline, size: 20),
                     onPressed: onDelete,
                     color: Colors.red,
+                    tooltip: locale == 'pt' ? 'Apagar registo' : 'Delete record',
                   ),
                 ],
               ),

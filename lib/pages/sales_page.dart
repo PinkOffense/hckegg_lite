@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/date_utils.dart';
 import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
@@ -72,10 +73,7 @@ class _SalesPageState extends State<SalesPage> {
               ? 0.0
               : allSales.fold<double>(0.0, (sum, s) => sum + s.pricePerEgg) / allSales.length;
 
-          return Stack(
-            children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 80),
+          return SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -225,21 +223,14 @@ class _SalesPageState extends State<SalesPage> {
                   ],
                 ),
               ),
-
-              // Floating Action Button
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: GradientFAB(
-                  extended: true,
-                  icon: Icons.add,
-                  label: t('add_sale'),
-                  onPressed: () => _showSaleDialog(context, null),
-                ),
-              ),
-            ],
           );
         },
+      ),
+      fab: GradientFAB(
+        extended: true,
+        icon: Icons.add,
+        label: t('add_sale'),
+        onPressed: () => _showSaleDialog(context, null),
       ),
     );
   }
@@ -361,8 +352,7 @@ class _SaleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final date = DateTime.parse(sale.date);
-    final formattedDate = _formatDate(date, locale);
+    final formattedDate = AppDateUtils.formatFullFromString(sale.date, locale: locale);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -412,6 +402,7 @@ class _SaleCard extends StatelessWidget {
                     icon: const Icon(Icons.delete_outline),
                     color: Colors.red,
                     onPressed: onDelete,
+                    tooltip: locale == 'pt' ? 'Eliminar venda' : 'Delete sale',
                   ),
                 ],
               ),
@@ -472,42 +463,6 @@ class _SaleCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime date, String locale) {
-    if (locale == 'pt') {
-      final months = [
-        'Jan',
-        'Fev',
-        'Mar',
-        'Abr',
-        'Mai',
-        'Jun',
-        'Jul',
-        'Ago',
-        'Set',
-        'Out',
-        'Nov',
-        'Dez'
-      ];
-      return '${date.day} ${months[date.month - 1]} ${date.year}';
-    } else {
-      final months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec'
-      ];
-      return '${months[date.month - 1]} ${date.day}, ${date.year}';
-    }
   }
 }
 
