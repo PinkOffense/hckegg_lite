@@ -176,9 +176,9 @@ void main() {
                   result = await showDialog<bool>(
                     context: context,
                     builder: (_) => DeleteConfirmationDialog(
-                      title: 'Delete',
+                      title: 'Confirm Deletion',
                       message: 'Message',
-                      confirmText: 'Delete',
+                      confirmText: 'Yes, Delete',
                       onConfirm: () {
                         confirmCalled = true;
                       },
@@ -195,7 +195,7 @@ void main() {
       await tester.tap(find.text('Show Dialog'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Yes, Delete'));
       await tester.pumpAndSettle();
 
       expect(confirmCalled, isTrue);

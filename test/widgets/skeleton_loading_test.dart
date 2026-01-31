@@ -157,8 +157,8 @@ void main() {
         ),
       );
 
-      final semantics = tester.widget<Semantics>(find.byType(Semantics).first);
-      expect(semantics.label, 'Loading content');
+      // Verify semantic label exists using find.bySemanticsLabel
+      expect(find.bySemanticsLabel('Loading content'), findsOneWidget);
     });
   });
 
@@ -285,8 +285,8 @@ void main() {
         ),
       );
 
-      final semantics = tester.widget<Semantics>(find.byType(Semantics).first);
-      expect(semantics.label, 'Loading page content');
+      // Verify semantic label exists using find.bySemanticsLabel
+      expect(find.bySemanticsLabel('Loading page content'), findsOneWidget);
     });
   });
 
