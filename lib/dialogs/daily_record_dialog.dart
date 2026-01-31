@@ -62,6 +62,37 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
 
     if (picked != null) {
       setState(() => _selectedDate = picked);
+
+      // Auto-load existing record if one exists for this date
+      if (widget.existingRecord == null) {
+        final eggProvider = context.read<EggProvider>();
+        final dateStr = AppDateUtils.toIsoDateString(picked);
+        final existingRecord = eggProvider.getRecordByDate(dateStr);
+
+        if (existingRecord != null) {
+          // Populate form with existing record data
+          setState(() {
+            _collectedController.text = existingRecord.eggsCollected.toString();
+            _consumedController.text = existingRecord.eggsConsumed.toString();
+            _henCountController.text = existingRecord.henCount?.toString() ?? '';
+            _notesController.text = existingRecord.notes ?? '';
+          });
+
+          // Show info snackbar
+          if (mounted) {
+            final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+            final t = (String k) => Translations.of(locale, k);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(t('record_loaded_for_date')),
+                backgroundColor: Colors.blue,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      }
     }
   }
 
@@ -73,38 +104,11 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
-    final t = (String k) => Translations.of(locale, k);
     final eggProvider = context.read<EggProvider>();
     final dateStr = AppDateUtils.toIsoDateString(_selectedDate);
 
-    // Check for duplicate date (only for new records)
-    if (widget.existingRecord == null) {
-      final existingRecord = eggProvider.getRecordByDate(dateStr);
-      if (existingRecord != null) {
-        // Show error - record already exists for this date
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(t('record_exists_for_date')),
-              backgroundColor: Colors.orange,
-              behavior: SnackBarBehavior.floating,
-              action: SnackBarAction(
-                label: t('edit'),
-                textColor: Colors.white,
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  showDialog(
-                    context: context,
-                    builder: (_) => DailyRecordDialog(existingRecord: existingRecord),
-                  );
-                },
-              ),
-            ),
-          );
-        }
-        return;
-      }
-    }
+    // Check if there's an existing record for this date (to use its ID for update)
+    final existingRecordForDate = widget.existingRecord ?? eggProvider.getRecordByDate(dateStr);
 
     final collected = int.parse(_collectedController.text);
     final consumed = int.tryParse(_consumedController.text) ?? 0;
@@ -112,7 +116,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     final notes = _notesController.text.trim();
 
     final record = DailyEggRecord(
-      id: widget.existingRecord?.id ?? const Uuid().v4(),
+      id: existingRecordForDate?.id ?? const Uuid().v4(),
       date: dateStr,
       eggsCollected: collected,
       eggsConsumed: consumed,
