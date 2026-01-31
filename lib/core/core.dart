@@ -13,6 +13,8 @@ export 'constants/date_constants.dart';
 
 // Utils
 export 'date_utils.dart';
+export 'utils/error_handler.dart';
+export 'utils/connectivity_service.dart';
 
 // Models
 export 'models/week_stats.dart';

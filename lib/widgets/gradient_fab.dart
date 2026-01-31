@@ -32,38 +32,44 @@ class GradientFAB extends StatelessWidget {
       return _buildExtended(context);
     }
 
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_accentPink, _warmPink],
-        ),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: _accentPink.withValues(alpha: 0.4),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+    final iconWidget = Center(
+      child: Icon(
+        icon,
+        color: Colors.white,
+        size: mini ? 20 : 24,
+        semanticLabel: tooltip,
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          customBorder: const CircleBorder(),
-          child: Tooltip(
-            message: tooltip ?? '',
-            child: Center(
-              child: Icon(
-                icon,
-                color: Colors.white,
-                size: mini ? 20 : 24,
-              ),
+    );
+
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_accentPink, _warmPink],
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: _accentPink.withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            customBorder: const CircleBorder(),
+            child: tooltip != null && tooltip!.isNotEmpty
+                ? Tooltip(message: tooltip!, child: iconWidget)
+                : iconWidget,
           ),
         ),
       ),
@@ -71,44 +77,48 @@ class GradientFAB extends StatelessWidget {
   }
 
   Widget _buildExtended(BuildContext context) {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_accentPink, _warmPink],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: _accentPink.withValues(alpha: 0.4),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+    return Semantics(
+      button: true,
+      label: label,
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_accentPink, _warmPink],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
           borderRadius: BorderRadius.circular(28),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: Colors.white, size: 24),
-                const SizedBox(width: 12),
-                Text(
-                  label!,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+          boxShadow: [
+            BoxShadow(
+              color: _accentPink.withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(28),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: Colors.white, size: 24),
+                  const SizedBox(width: 12),
+                  Text(
+                    label!,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
