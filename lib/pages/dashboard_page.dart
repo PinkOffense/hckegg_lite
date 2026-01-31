@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/constants/date_constants.dart';
 import '../core/models/week_stats.dart';
 import '../state/providers/providers.dart';
+import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../dialogs/daily_record_dialog.dart';
@@ -136,7 +137,7 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Future<void> _exportDashboard(BuildContext context, String locale) async {
-    final eggProvider = context.read<EggRecordProvider>();
+    final eggProvider = context.read<EggProvider>();
     final saleProvider = context.read<SaleProvider>();
     final expenseProvider = context.read<ExpenseProvider>();
     final reservationProvider = context.read<ReservationProvider>();
@@ -207,7 +208,7 @@ class _DashboardPageState extends State<DashboardPage>
         opacity: _fadeAnimation,
         child: SlideTransition(
           position: _slideAnimation,
-          child: Consumer6<EggRecordProvider, SaleProvider, ExpenseProvider, ReservationProvider, FeedStockProvider, VetRecordProvider>(
+          child: Consumer6<EggProvider, SaleProvider, ExpenseProvider, ReservationProvider, FeedStockProvider, VetRecordProvider>(
             builder: (context, eggProvider, saleProvider, expenseProvider, reservationProvider, feedStockProvider, vetRecordProvider, _) {
               final records = eggProvider.records;
               final sales = saleProvider.sales;

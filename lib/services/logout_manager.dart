@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../state/providers/providers.dart';
+import '../features/eggs/presentation/providers/egg_provider.dart';
 
 /// Centralized logout manager that handles the complete sign-out process.
 ///
@@ -32,9 +33,6 @@ class LogoutManager {
     } catch (_) {
       // Provider might not exist in context
     }
-    try {
-      context.read<EggRecordProvider>().clearData();
-    } catch (_) {}
     try {
       context.read<ExpenseProvider>().clearData();
     } catch (_) {}

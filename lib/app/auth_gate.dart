@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../pages/login_page.dart';
 import '../pages/dashboard_page.dart';
 import '../state/providers/providers.dart';
+import '../features/eggs/presentation/providers/egg_provider.dart';
 
 /// Authentication gate that handles routing between login and dashboard.
 ///
@@ -82,7 +83,7 @@ class _AuthGateState extends State<AuthGate> {
     try {
       // Load data from all domain-specific providers in parallel
       await Future.wait([
-        context.read<EggRecordProvider>().loadRecords(),
+        context.read<EggProvider>().loadRecords(),
         context.read<ExpenseProvider>().loadExpenses(),
         context.read<VetRecordProvider>().loadVetRecords(),
         context.read<SaleProvider>().loadSales(),

@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../state/theme_provider.dart';
 import '../state/providers/providers.dart';
+import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../core/di/service_locator.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
@@ -23,14 +24,12 @@ class HckEggApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         // Clean Architecture providers (using use cases via ServiceLocator)
+        ChangeNotifierProvider<EggProvider>(create: (_) => sl.createEggProvider()),
         ChangeNotifierProvider<SaleProvider>(create: (_) => sl.createSaleProvider()),
         ChangeNotifierProvider<ExpenseProvider>(create: (_) => sl.createExpenseProvider()),
         ChangeNotifierProvider<VetRecordProvider>(create: (_) => sl.createVetProvider()),
         ChangeNotifierProvider<FeedStockProvider>(create: (_) => sl.createFeedStockProvider()),
         ChangeNotifierProvider<ReservationProvider>(create: (_) => sl.createReservationProvider()),
-        // Legacy providers (still needed for egg functionality)
-        ChangeNotifierProvider(create: (_) => EggProvider()),
-        ChangeNotifierProvider(create: (_) => EggRecordProvider()),
         // UI providers
         ChangeNotifierProvider(create: (_) => LocaleProvider('en')),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
