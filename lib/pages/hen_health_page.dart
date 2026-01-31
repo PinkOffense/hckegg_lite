@@ -38,7 +38,9 @@ class _HenHealthPageState extends State<HenHealthPage> {
 
     // Calculate statistics
     final totalRecords = allRecords.length;
-    final totalDeaths = allRecords.where((r) => r.type == VetRecordType.death).length;
+    final totalDeaths = allRecords
+        .where((r) => r.type == VetRecordType.death)
+        .fold(0, (sum, r) => sum + r.hensAffected);
     final totalHensAffected = allRecords.fold(0, (sum, r) => sum + r.hensAffected);
     final totalVetCosts = allRecords.fold(0.0, (sum, r) => sum + (r.cost ?? 0.0));
     final upcomingActions = allRecords

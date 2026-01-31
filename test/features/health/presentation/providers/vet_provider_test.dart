@@ -219,15 +219,16 @@ void main() {
     });
 
     group('statistics', () {
-      test('calculates totalDeaths correctly', () async {
+      test('calculates totalDeaths as sum of hensAffected', () async {
         mockRepository.recordsToReturn = [
-          _createVetRecord('1', '2024-01-15', VetRecordType.death),
-          _createVetRecord('2', '2024-01-14', VetRecordType.death),
-          _createVetRecord('3', '2024-01-13', VetRecordType.checkup),
+          _createVetRecord('1', '2024-01-15', VetRecordType.death, hensAffected: 3),
+          _createVetRecord('2', '2024-01-14', VetRecordType.death, hensAffected: 5),
+          _createVetRecord('3', '2024-01-13', VetRecordType.checkup, hensAffected: 10),
         ];
         await provider.loadVetRecords();
 
-        expect(provider.totalDeaths, 2);
+        // Should be 3 + 5 = 8 (only death records count)
+        expect(provider.totalDeaths, 8);
       });
 
       test('calculates totalVetCosts correctly', () async {
