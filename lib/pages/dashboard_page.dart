@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/constants/date_constants.dart';
 import '../core/models/week_stats.dart';
-import '../core/utils/accessibility_utils.dart';
 import '../state/providers/providers.dart';
 import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../widgets/app_scaffold.dart';
