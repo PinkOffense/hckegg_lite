@@ -72,6 +72,40 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    final t = (String k) => Translations.of(locale, k);
+    final eggProvider = context.read<EggProvider>();
+    final dateStr = AppDateUtils.toIsoDateString(_selectedDate);
+
+    // Check for duplicate date (only for new records)
+    if (widget.existingRecord == null) {
+      final existingRecord = eggProvider.getRecordByDate(dateStr);
+      if (existingRecord != null) {
+        // Show error - record already exists for this date
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(t('record_exists_for_date')),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: t('edit'),
+                textColor: Colors.white,
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  showDialog(
+                    context: context,
+                    builder: (_) => DailyRecordDialog(existingRecord: existingRecord),
+                  );
+                },
+              ),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     final collected = int.parse(_collectedController.text);
     final consumed = int.tryParse(_consumedController.text) ?? 0;
     final henCount = int.tryParse(_henCountController.text);
@@ -79,7 +113,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
 
     final record = DailyEggRecord(
       id: widget.existingRecord?.id ?? const Uuid().v4(),
-      date: AppDateUtils.toIsoDateString(_selectedDate),
+      date: dateStr,
       eggsCollected: collected,
       eggsConsumed: consumed,
       henCount: henCount,
@@ -87,7 +121,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
     );
 
     try {
-      await context.read<EggProvider>().saveRecord(record);
+      await eggProvider.saveRecord(record);
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -95,7 +129,11 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao guardar: ${e.toString()}'),
+            content: Text(
+              locale == 'pt'
+                  ? 'Erro ao guardar: ${e.toString()}'
+                  : 'Error saving: ${e.toString()}',
+            ),
             backgroundColor: Colors.red,
           ),
         );

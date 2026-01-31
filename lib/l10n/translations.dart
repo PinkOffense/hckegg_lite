@@ -209,6 +209,8 @@ class Translations {
       'search_sales': 'Search by customer, notes...',
       // Reservations
       'reservations': 'Reservations',
+      // Duplicate record
+      'record_exists_for_date': 'A record already exists for this date. Edit the existing record.',
     },
     'pt': {
       'app_title': 'HCKEgg 360',
@@ -417,6 +419,8 @@ class Translations {
       'search_sales': 'Pesquisar por cliente, notas...',
       // Reservas
       'reservations': 'Reservas',
+      // Registo duplicado
+      'record_exists_for_date': 'Já existe um registo para esta data. Edite o registo existente.',
     }
   };
 
