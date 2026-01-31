@@ -9,6 +9,7 @@ import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../core/di/service_locator.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
+import '../widgets/offline_indicator.dart';
 
 import 'auth_gate.dart';
 import 'app_theme.dart';
@@ -62,7 +63,10 @@ class HckEggApp extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
 
-            home: const AuthGate(),
+            home: OfflineIndicator(
+              locale: localeProvider.code,
+              child: const AuthGate(),
+            ),
           );
         },
       ),

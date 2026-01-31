@@ -1,11 +1,14 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/date_utils.dart';
+import '../core/utils/error_handler.dart';
 import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/gradient_fab.dart';
 import '../widgets/search_bar.dart';
+import '../widgets/delete_confirmation_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/expense.dart';
@@ -87,10 +90,8 @@ class _ExpensesPageState extends State<ExpensesPage> {
           final sortedStandaloneExpenses = List<Expense>.from(standaloneExpenses)
             ..sort((a, b) => b.date.compareTo(a.date));
 
-          return Stack(
-            children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0).copyWith(bottom: 80),
+          return SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -276,7 +277,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
                               const SizedBox(height: 8),
                               _ExpenseLegendItem(
                                 color: Colors.red,
-                                label: locale == 'pt' ? 'Veterinário' : 'Veterinary',
+                                label: t('veterinary'),
                                 value: '€${totalVet.toStringAsFixed(2)}',
                               ),
                               const SizedBox(height: 8),
@@ -297,7 +298,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          locale == 'pt' ? 'Despesas Independentes' : 'Standalone Expenses',
+                          t('standalone_expenses'),
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -377,65 +378,56 @@ class _ExpensesPageState extends State<ExpensesPage> {
                     ),
                   ],
                 ),
-              ),
-
-              // FAB
-              Positioned(
-                bottom: 16,
-                right: 16,
-                child: GradientFAB(
-                  extended: true,
-                  icon: Icons.add,
-                  label: t('add_expense'),
-                  onPressed: () => showDialog(
-                    context: context,
-                    builder: (_) => const ExpenseDialog(),
-                  ),
-                ),
-              ),
-            ],
           );
         },
+      ),
+      fab: GradientFAB(
+        extended: true,
+        icon: Icons.add,
+        label: t('add_expense'),
+        onPressed: () => showDialog(
+          context: context,
+          builder: (_) => const ExpenseDialog(),
+        ),
       ),
     );
   }
 
-  void _deleteExpense(BuildContext context, Expense expense, String Function(String) t) {
-    showDialog(
+  Future<void> _deleteExpense(BuildContext context, Expense expense, String Function(String) t) async {
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+
+    final confirmed = await DeleteConfirmationDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t('delete_record')),
-        content: Text(t('delete_record_confirm')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t('cancel')),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await context.read<ExpenseProvider>().deleteExpense(expense.id);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Erro: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(t('delete')),
-          ),
-        ],
-      ),
+      title: t('delete_record'),
+      message: t('delete_record_confirm'),
+      itemName: '${expense.category.displayName(locale)} - €${expense.amount.toStringAsFixed(2)}',
+      locale: locale,
     );
+
+    if (confirmed && context.mounted) {
+      try {
+        await context.read<ExpenseProvider>().deleteExpense(expense.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(t('record_deleted')),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        ErrorHandler.logError('ExpensesPage._deleteExpense', e);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(ErrorHandler.getUserFriendlyMessage(e, locale)),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
   }
 }
 
@@ -534,17 +526,6 @@ class _StandaloneExpenseCard extends StatelessWidget {
     required this.onDelete,
   });
 
-  String _formatDate(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    if (locale == 'pt') {
-      final months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      return '${date.day} ${months[date.month - 1]} ${date.year}';
-    } else {
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return '${months[date.month - 1]} ${date.day}, ${date.year}';
-    }
-  }
-
   IconData _getCategoryIcon() {
     switch (expense.category) {
       case ExpenseCategory.feed:
@@ -615,7 +596,7 @@ class _StandaloneExpenseCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          _formatDate(expense.date),
+                          AppDateUtils.formatFullFromString(expense.date, locale: locale),
                           style: theme.textTheme.bodySmall,
                         ),
                       ],
@@ -638,6 +619,7 @@ class _StandaloneExpenseCard extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                     onPressed: onDelete,
+                    tooltip: locale == 'pt' ? 'Eliminar despesa' : 'Delete expense',
                   ),
                 ],
               ),

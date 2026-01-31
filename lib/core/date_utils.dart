@@ -20,12 +20,12 @@ class AppDateUtils {
     return DateTime.parse('${dateStr}T00:00:00');
   }
 
+  static const _monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  static const _monthsPt = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
   /// Format date for display (e.g., "Jan 15")
   static String formatShort(DateTime date, {String locale = 'en'}) {
-    final monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final monthsPt = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-
-    final months = locale == 'pt' ? monthsPt : monthsEn;
+    final months = locale == 'pt' ? _monthsPt : _monthsEn;
 
     if (locale == 'pt') {
       return '${date.day} ${months[date.month - 1]}';
@@ -33,12 +33,43 @@ class AppDateUtils {
     return '${months[date.month - 1]} ${date.day}';
   }
 
+  /// Format date with year (e.g., "Jan 15, 2024" or "15 Jan 2024")
+  static String formatFull(DateTime date, {String locale = 'en'}) {
+    final months = locale == 'pt' ? _monthsPt : _monthsEn;
+
+    if (locale == 'pt') {
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
+    }
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  /// Format date string with year
+  static String formatFullFromString(String dateStr, {String locale = 'en'}) {
+    return formatFull(DateTime.parse(dateStr), locale: locale);
+  }
+
+  /// Format date with relative prefix (e.g., "Today • Jan 15, 2024")
+  static String formatRelativeWithDate(String dateStr, {String locale = 'en'}) {
+    final date = DateTime.parse(dateStr);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final recordDate = DateTime(date.year, date.month, date.day);
+    final difference = today.difference(recordDate).inDays;
+
+    final fullDate = formatFull(date, locale: locale);
+
+    if (difference == 0) {
+      return '${locale == 'pt' ? 'Hoje' : 'Today'} • $fullDate';
+    }
+    if (difference == 1) {
+      return '${locale == 'pt' ? 'Ontem' : 'Yesterday'} • $fullDate';
+    }
+    return fullDate;
+  }
+
   /// Format date for display with year (e.g., "Jan 2024")
   static String formatMonthYear(DateTime date, {String locale = 'en'}) {
-    final monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final monthsPt = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-
-    final months = locale == 'pt' ? monthsPt : monthsEn;
+    final months = locale == 'pt' ? _monthsPt : _monthsEn;
     return '${months[date.month - 1]} ${date.year}';
   }
 
