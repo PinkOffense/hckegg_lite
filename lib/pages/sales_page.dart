@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/date_utils.dart';
+import '../core/utils/error_handler.dart';
 import '../state/providers/providers.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/gradient_fab.dart';
 import '../widgets/search_bar.dart';
+import '../widgets/delete_confirmation_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/egg_sale.dart';
@@ -241,54 +243,37 @@ class _SalesPageState extends State<SalesPage> {
     );
   }
 
-  void _deleteSale(BuildContext context, EggSale sale) async {
+  Future<void> _deleteSale(BuildContext context, EggSale sale) async {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
-    final confirmed = await showDialog<bool>(
+    final t = (String k) => Translations.of(locale, k);
+
+    final confirmed = await DeleteConfirmationDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(locale == 'pt' ? 'Eliminar Venda' : 'Delete Sale'),
-        content: Text(
-          locale == 'pt'
-              ? 'Tem a certeza que deseja eliminar esta venda?'
-              : 'Are you sure you want to delete this sale?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: Text(locale == 'pt' ? 'Eliminar' : 'Delete'),
-          ),
-        ],
-      ),
+      title: t('delete_record'),
+      message: t('delete_record_confirm'),
+      itemName: '${sale.quantitySold} ${t('eggs')} - €${sale.totalAmount.toStringAsFixed(2)}',
+      locale: locale,
     );
 
-    if (confirmed == true && context.mounted) {
+    if (confirmed && context.mounted) {
       try {
         await context.read<SaleProvider>().deleteSale(sale.id);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                locale == 'pt'
-                    ? 'Venda eliminada com sucesso'
-                    : 'Sale deleted successfully',
-              ),
-              backgroundColor: Colors.green,
+              content: Text(t('record_deleted')),
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
       } catch (e) {
+        ErrorHandler.logError('SalesPage._deleteSale', e);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(locale == 'pt' ? 'Erro ao eliminar' : 'Error deleting'),
+              content: Text(ErrorHandler.getUserFriendlyMessage(e, locale)),
               backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }

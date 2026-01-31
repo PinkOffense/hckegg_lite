@@ -179,6 +179,36 @@ class Translations {
       'add_record': 'Add Record',
       // Vet Calendar
       'schedule_visit': 'Schedule Visit',
+      // Connectivity
+      'no_internet': 'No internet connection',
+      'offline_mode': 'Offline Mode',
+      'connection_restored': 'Connection restored',
+      // Errors
+      'error_loading': 'Error loading',
+      'retry': 'Retry',
+      'something_went_wrong': 'Something went wrong',
+      // Standalone Expenses
+      'standalone_expenses': 'Standalone Expenses',
+      // Actions
+      'edit': 'Edit',
+      'consume': 'Consume',
+      'record_deleted': 'Record deleted',
+      'record_saved': 'Record saved',
+      // Vet Calendar
+      'previous_month': 'Previous month',
+      'next_month': 'Next month',
+      // Sales
+      'sales': 'Sales',
+      'sales_statistics': 'Sales Statistics',
+      'total_sales': 'Total Sales',
+      'eggs_sold_label': 'Eggs Sold',
+      'average_price': 'Average Price',
+      'sales_history': 'Sales History',
+      'no_sales': 'No sales recorded',
+      'results': 'result(s)',
+      'search_sales': 'Search by customer, notes...',
+      // Reservations
+      'reservations': 'Reservations',
     },
     'pt': {
       'app_title': 'HCKEgg 360',
@@ -357,6 +387,36 @@ class Translations {
       'add_record': 'Adicionar Registo',
       // Calendário Veterinário
       'schedule_visit': 'Agendar Visita',
+      // Conectividade
+      'no_internet': 'Sem ligação à internet',
+      'offline_mode': 'Modo Offline',
+      'connection_restored': 'Ligação restabelecida',
+      // Erros
+      'error_loading': 'Erro ao carregar',
+      'retry': 'Tentar novamente',
+      'something_went_wrong': 'Algo correu mal',
+      // Despesas Independentes
+      'standalone_expenses': 'Despesas Independentes',
+      // Ações
+      'edit': 'Editar',
+      'consume': 'Consumir',
+      'record_deleted': 'Registo eliminado',
+      'record_saved': 'Registo guardado',
+      // Calendário Veterinário
+      'previous_month': 'Mês anterior',
+      'next_month': 'Próximo mês',
+      // Vendas
+      'sales': 'Vendas',
+      'sales_statistics': 'Estatísticas de Vendas',
+      'total_sales': 'Total Vendas',
+      'eggs_sold_label': 'Ovos Vendidos',
+      'average_price': 'Preço Médio',
+      'sales_history': 'Histórico de Vendas',
+      'no_sales': 'Nenhuma venda registada',
+      'results': 'resultado(s)',
+      'search_sales': 'Pesquisar por cliente, notas...',
+      // Reservas
+      'reservations': 'Reservas',
     }
   };
 
