@@ -6,6 +6,7 @@ import '../state/providers/providers.dart';
 import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
+import '../dialogs/daily_record_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/daily_egg_record.dart';
