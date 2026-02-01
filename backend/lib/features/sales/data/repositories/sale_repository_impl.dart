@@ -147,7 +147,7 @@ class SaleRepositoryImpl implements SaleRepository {
   Future<Result<void>> deleteSale(String id) async {
     try {
       await _client.from(_table).delete().eq('id', id);
-      return const Result.success(null);
+      return Result.success(null);
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }
@@ -160,7 +160,7 @@ class SaleRepositoryImpl implements SaleRepository {
         'payment_status': 'paid',
         'payment_date': paymentDate,
       }).eq('id', id);
-      return const Result.success(null);
+      return Result.success(null);
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }
@@ -170,7 +170,7 @@ class SaleRepositoryImpl implements SaleRepository {
   Future<Result<void>> markAsLost(String id) async {
     try {
       await _client.from(_table).update({'is_lost': true}).eq('id', id);
-      return const Result.success(null);
+      return Result.success(null);
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }
@@ -189,7 +189,7 @@ class SaleRepositoryImpl implements SaleRepository {
       final sales = (response as List).map((j) => Sale.fromJson(j as Map<String, dynamic>)).toList();
 
       if (sales.isEmpty) {
-        return const Result.success(SaleStatistics(
+        return Result.success(SaleStatistics(
           totalSales: 0, totalQuantity: 0, totalRevenue: 0,
           totalPending: 0, totalLost: 0, averagePrice: 0,
         ));

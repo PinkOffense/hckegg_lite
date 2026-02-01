@@ -1,25 +1,29 @@
 # HCKEgg API - Production Dockerfile
-# Single stage build for Dart Frog
-
 FROM dart:stable
 
 WORKDIR /app
 
-# Install dart_frog_cli
-RUN dart pub global activate dart_frog_cli
+# Copy all source files
+COPY . .
 
-# Copy pubspec files first for better caching
-COPY pubspec.* ./
+# Get dependencies
 RUN dart pub get
 
-# Copy source code
-COPY . .
+# Install dart_frog_cli (specific version for compatibility)
+RUN dart pub global activate dart_frog_cli 1.2.6
+
+# Remove any existing build
+RUN rm -rf build
 
 # Build the production server
 RUN dart pub global run dart_frog_cli:dart_frog build
 
 # Expose port
 EXPOSE 8080
+
+# Set environment
+ENV PORT=8080
+ENV HOST=0.0.0.0
 
 # Run the server
 CMD ["dart", "build/bin/server.dart"]

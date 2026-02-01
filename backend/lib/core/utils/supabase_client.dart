@@ -17,7 +17,6 @@ class SupabaseClientManager {
       serviceRoleKey ?? anonKey,
       authOptions: const AuthClientOptions(
         autoRefreshToken: false,
-        persistSession: false,
       ),
     );
   }

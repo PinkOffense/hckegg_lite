@@ -105,7 +105,7 @@ void main() {
 
     test('should return null when no record for date', () async {
       when(() => mockRepository.getEggRecordByDate('user-123', '2024-01-20'))
-          .thenAnswer((_) async => const Result.success(null));
+          .thenAnswer((_) async => Result.success(null));
 
       final result = await useCase(const GetEggRecordByDateParams(
         userId: 'user-123',
@@ -186,7 +186,7 @@ void main() {
 
     test('should delete egg record successfully', () async {
       when(() => mockRepository.deleteEggRecord('test-id'))
-          .thenAnswer((_) async => const Result.success(null));
+          .thenAnswer((_) async => Result.success(null));
 
       final result = await useCase(const DeleteEggRecordParams(id: 'test-id'));
 
