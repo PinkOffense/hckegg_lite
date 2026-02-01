@@ -99,7 +99,6 @@ class ServiceLocator {
   EggProvider createEggProvider() {
     return EggProvider(
       getEggRecords: GetEggRecords(_eggRepository),
-      getEggRecordByDate: GetEggRecordByDate(_eggRepository),
       createEggRecord: CreateEggRecord(_eggRepository),
       updateEggRecord: UpdateEggRecord(_eggRepository),
       deleteEggRecord: DeleteEggRecord(_eggRepository),
