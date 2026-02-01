@@ -136,18 +136,63 @@ dart test
 
 ## Docker
 
-```dockerfile
-FROM dart:stable AS build
-WORKDIR /app
-COPY . .
-RUN dart pub get
-RUN dart_frog build
+```bash
+# Build
+docker build -t hckegg-api .
 
-FROM dart:stable
-COPY --from=build /app/build /app
-WORKDIR /app
-CMD ["dart", "bin/server.dart"]
+# Run
+docker run -p 8080:8080 \
+  -e SUPABASE_URL=your-url \
+  -e SUPABASE_SERVICE_ROLE_KEY=your-key \
+  hckegg-api
 ```
+
+## Deployment
+
+### Railway (Recommended)
+
+The backend is configured for automatic deployment to Railway:
+
+1. **Create Railway Account**: https://railway.app
+2. **Create New Project**: Connect your GitHub repository
+3. **Configure Service**:
+   - Root Directory: `backend`
+   - Build: Dockerfile
+4. **Add Environment Variables**:
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `PORT` (Railway sets this automatically)
+5. **Get Railway Token**:
+   - Go to Account Settings → Tokens
+   - Create new token
+   - Add as `RAILWAY_TOKEN` secret in GitHub repository
+
+### GitHub Actions
+
+Deployment is automated via GitHub Actions:
+- Push to `master` branch triggers deployment
+- Only deploys when files in `backend/` are changed
+- Workflow: `.github/workflows/deploy-backend.yml`
+
+### Required Secrets (GitHub Repository)
+
+| Secret | Description |
+|--------|-------------|
+| `RAILWAY_TOKEN` | Railway API token for deployment |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
+
+### Required Variables (GitHub Repository)
+
+| Variable | Description |
+|----------|-------------|
+| `BACKEND_URL` | Deployed backend URL (e.g., https://hckegg-api.up.railway.app) |
+
+## API Documentation
+
+- **Local**: http://localhost:8080/docs
+- **Production**: https://your-railway-url/docs
+- **GitHub Pages**: https://pinkoffense.github.io/hckegg_lite/api-docs/
 
 ## License
 

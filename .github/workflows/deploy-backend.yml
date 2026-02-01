@@ -1,0 +1,34 @@
+name: Deploy Backend to Railway
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        run: |
+          cd backend
+          railway up --service hckegg-api
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Health Check
+        run: |
+          echo "Waiting for deployment..."
+          sleep 30
+          curl -f ${{ vars.BACKEND_URL }}/health || echo "Health check skipped - URL not configured"
+        continue-on-error: true

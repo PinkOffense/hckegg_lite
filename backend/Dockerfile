@@ -27,6 +27,7 @@ WORKDIR /app
 # Copy built artifacts
 COPY --from=build /app/build /app/build
 COPY --from=build /app/pubspec.* /app/
+COPY --from=build /app/docs /app/docs
 
 # Install production dependencies only
 RUN dart pub get --no-dev-dependencies
