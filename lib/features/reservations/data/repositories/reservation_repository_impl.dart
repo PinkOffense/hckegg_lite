@@ -13,9 +13,9 @@ class ReservationRepositoryImpl implements ReservationRepository {
   Future<Result<List<EggReservation>>> getReservations() async {
     try {
       final reservations = await remoteDataSource.getReservations();
-      return Result.success(reservations);
+      return Success(reservations);
     } catch (e) {
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -23,12 +23,12 @@ class ReservationRepositoryImpl implements ReservationRepository {
   Future<Result<EggReservation>> getReservationById(String id) async {
     try {
       final reservation = await remoteDataSource.getReservationById(id);
-      return Result.success(reservation);
+      return Success(reservation);
     } catch (e) {
       if (e.toString().contains('no rows')) {
-        return Result.fail(NotFoundFailure(message: 'Reservation not found'));
+        return Fail(NotFoundFailure(message: 'Reservation not found'));
       }
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -36,9 +36,9 @@ class ReservationRepositoryImpl implements ReservationRepository {
   Future<Result<List<EggReservation>>> getReservationsInRange(DateTime start, DateTime end) async {
     try {
       final reservations = await remoteDataSource.getReservationsInRange(start, end);
-      return Result.success(reservations);
+      return Success(reservations);
     } catch (e) {
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -47,9 +47,9 @@ class ReservationRepositoryImpl implements ReservationRepository {
     try {
       final model = EggReservationModel.fromEntity(reservation);
       final created = await remoteDataSource.createReservation(model);
-      return Result.success(created);
+      return Success(created);
     } catch (e) {
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -58,9 +58,9 @@ class ReservationRepositoryImpl implements ReservationRepository {
     try {
       final model = EggReservationModel.fromEntity(reservation);
       final updated = await remoteDataSource.updateReservation(model);
-      return Result.success(updated);
+      return Success(updated);
     } catch (e) {
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -68,9 +68,9 @@ class ReservationRepositoryImpl implements ReservationRepository {
   Future<Result<void>> deleteReservation(String id) async {
     try {
       await remoteDataSource.deleteReservation(id);
-      return Result.success(null);
+      return const Success(null);
     } catch (e) {
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 }
