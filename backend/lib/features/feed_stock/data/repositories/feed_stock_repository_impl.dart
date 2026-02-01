@@ -93,7 +93,7 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
   Future<Result<void>> deleteFeedStock(String id) async {
     try {
       await _client.from(_table).delete().eq('id', id);
-      return const Result.success(null);
+      return Result.success(null);
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }

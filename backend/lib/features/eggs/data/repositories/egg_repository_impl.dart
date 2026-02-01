@@ -63,7 +63,7 @@ class EggRepositoryImpl implements EggRepository {
           .maybeSingle();
 
       if (response == null) {
-        return const Result.success(null);
+        return Result.success(null);
       }
 
       return Result.success(EggRecord.fromJson(response));
@@ -165,7 +165,7 @@ class EggRepositoryImpl implements EggRepository {
   Future<Result<void>> deleteEggRecord(String id) async {
     try {
       await _client.from(_table).delete().eq('id', id);
-      return const Result.success(null);
+      return Result.success(null);
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }
@@ -207,7 +207,7 @@ class EggRepositoryImpl implements EggRepository {
       final records = response as List;
 
       if (records.isEmpty) {
-        return const Result.success(
+        return Result.success(
           EggStatistics(
             totalCollected: 0,
             totalBroken: 0,

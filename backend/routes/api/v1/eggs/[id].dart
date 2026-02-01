@@ -8,10 +8,15 @@ import '../../../../lib/features/eggs/domain/entities/egg_record.dart';
 import '../../../../lib/features/eggs/domain/usecases/egg_usecases.dart';
 
 /// Handler for /api/v1/eggs/:id
-/// GET - Get egg record by ID
+/// GET - Get egg record by ID (or statistics if id == 'statistics')
 /// PUT - Update egg record
 /// DELETE - Delete egg record
 Future<Response> onRequest(RequestContext context, String id) async {
+  // Handle statistics route (workaround for route conflict)
+  if (id == 'statistics') {
+    return _handleStatistics(context);
+  }
+
   // Validate ID format
   if (!Validators.isValidUuid(id)) {
     return Response.json(
@@ -28,6 +33,57 @@ Future<Response> onRequest(RequestContext context, String id) async {
         Response(statusCode: HttpStatus.methodNotAllowed),
       ),
   };
+}
+
+/// GET /api/v1/eggs/statistics
+Future<Response> _handleStatistics(RequestContext context) async {
+  if (context.request.method != HttpMethod.get) {
+    return Response(statusCode: HttpStatus.methodNotAllowed);
+  }
+
+  try {
+    final userId = context.request.headers['x-user-id'];
+    if (userId == null) {
+      return Response.json(
+        statusCode: HttpStatus.unauthorized,
+        body: {'error': 'Unauthorized'},
+      );
+    }
+
+    final queryParams = context.request.uri.queryParameters;
+    final startDate = queryParams['start_date'];
+    final endDate = queryParams['end_date'];
+
+    if (startDate == null || endDate == null) {
+      return Response.json(
+        statusCode: HttpStatus.badRequest,
+        body: {'error': 'Missing required query parameters: start_date, end_date'},
+      );
+    }
+
+    final repository = EggRepositoryImpl(SupabaseClientManager.client);
+    final useCase = GetEggStatistics(repository);
+    final result = await useCase(
+      GetEggStatisticsParams(
+        userId: userId,
+        startDate: startDate,
+        endDate: endDate,
+      ),
+    );
+
+    return result.fold(
+      onSuccess: (stats) => Response.json(body: {'data': stats.toJson()}),
+      onFailure: (failure) => Response.json(
+        statusCode: HttpStatus.internalServerError,
+        body: {'error': failure.message},
+      ),
+    );
+  } catch (e) {
+    return Response.json(
+      statusCode: HttpStatus.internalServerError,
+      body: {'error': e.toString()},
+    );
+  }
 }
 
 /// GET /api/v1/eggs/:id

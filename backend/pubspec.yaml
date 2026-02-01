@@ -7,8 +7,8 @@ environment:
   sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
-  dart_frog: ^1.2.0
-  supabase: ^2.0.0
+  dart_frog: ^1.2.6
+  supabase: ^2.10.0
   dotenv: ^4.2.0
   uuid: ^4.2.1
   equatable: ^2.0.5
