@@ -1,5 +1,5 @@
 // lib/services/auth_service.dart
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -92,8 +92,9 @@ class AuthService {
         if (await googleSignIn.isSignedIn()) {
           await googleSignIn.signOut();
         }
-      } catch (_) {
+      } catch (e) {
         // Google sign-out failed, continue with Supabase sign-out
+        debugPrint('Google sign-out failed: $e');
       }
     }
 
@@ -143,8 +144,9 @@ class AuthService {
       if (await googleSignIn.isSignedIn()) {
         await googleSignIn.disconnect();
       }
-    } catch (_) {
-      // Continue anyway
+    } catch (e) {
+      // Continue anyway - disconnect is best-effort
+      debugPrint('Google disconnect failed: $e');
     }
   }
 

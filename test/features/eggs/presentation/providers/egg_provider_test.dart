@@ -83,7 +83,6 @@ void main() {
 
     provider = EggProvider(
       getEggRecords: GetEggRecords(mockRepository),
-      getEggRecordByDate: GetEggRecordByDate(mockRepository),
       createEggRecord: CreateEggRecord(mockRepository),
       updateEggRecord: UpdateEggRecord(mockRepository),
       deleteEggRecord: DeleteEggRecord(mockRepository),

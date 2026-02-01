@@ -4,6 +4,9 @@ import '../lib/core/core.dart';
 
 /// Global middleware for all routes
 Handler middleware(Handler handler) {
+  // Configure logger from environment
+  Logger.configureFromEnvironment();
+
   return handler
       .use(requestLogger())
       .use(corsMiddleware())
@@ -17,15 +20,15 @@ Middleware requestLogger() {
       final request = context.request;
       final stopwatch = Stopwatch()..start();
 
-      print('[${DateTime.now().toIso8601String()}] '
-          '${request.method.value} ${request.uri.path}');
-
       final response = await handler(context);
 
       stopwatch.stop();
-      print('[${DateTime.now().toIso8601String()}] '
-          '${request.method.value} ${request.uri.path} '
-          '-> ${response.statusCode} (${stopwatch.elapsedMilliseconds}ms)');
+      Logger.request(
+        request.method.value,
+        request.uri.path,
+        statusCode: response.statusCode,
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
 
       return response;
     };
@@ -80,6 +83,9 @@ Middleware supabaseProvider() {
             url: supabaseUrl,
             anonKey: supabaseKey,
           );
+          Logger.info('Supabase client initialized');
+        } else {
+          Logger.warning('Supabase credentials not configured');
         }
       }
 

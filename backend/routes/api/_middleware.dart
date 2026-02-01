@@ -17,9 +17,13 @@ Middleware authMiddleware() {
       final authHeader = context.request.headers['authorization'];
 
       if (authHeader == null || !authHeader.startsWith('Bearer ')) {
+        Logger.auth('Token validation', success: false);
         return Response.json(
           statusCode: HttpStatus.unauthorized,
-          body: {'error': 'Missing or invalid Authorization header'},
+          body: {
+            'error': 'Missing or invalid Authorization header',
+            'hint': 'Use format: Authorization: Bearer <token>',
+          },
         );
       }
 
@@ -31,28 +35,38 @@ Middleware authMiddleware() {
         final response = await client.auth.getUser(token);
 
         if (response.user == null) {
+          Logger.auth('Token validation', success: false);
           return Response.json(
             statusCode: HttpStatus.unauthorized,
-            body: {'error': 'Invalid token'},
+            body: {'error': 'Invalid or expired token'},
           );
         }
+
+        final userId = response.user!.id;
+        Logger.auth('Token validation', userId: userId, success: true);
 
         // Add user ID to request headers for downstream handlers
         final updatedRequest = context.request.copyWith(
           headers: {
             ...context.request.headers,
-            'x-user-id': response.user!.id,
+            'x-user-id': userId,
           },
         );
 
         // Create new context with updated request
         final updatedContext = context.provide<String>(
-          () => response.user!.id,
+          () => userId,
         );
 
         return handler(updatedContext);
-      } catch (e) {
-        print('Auth error: $e');
+      } on AuthException catch (e) {
+        Logger.warning('Auth exception: ${e.message}');
+        return Response.json(
+          statusCode: HttpStatus.unauthorized,
+          body: {'error': 'Authentication failed: ${e.message}'},
+        );
+      } catch (e, stackTrace) {
+        Logger.error('Auth error', e, stackTrace);
         return Response.json(
           statusCode: HttpStatus.unauthorized,
           body: {'error': 'Authentication failed'},
@@ -60,4 +74,10 @@ Middleware authMiddleware() {
       }
     };
   };
+}
+
+/// Custom auth exception for typed error handling
+class AuthException implements Exception {
+  final String message;
+  AuthException(this.message);
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/core.dart';
+import '../../../../core/date_utils.dart';
 import '../../../../models/egg_sale.dart';
 import '../../../../models/expense.dart';
 import '../../domain/domain.dart';
@@ -13,19 +14,16 @@ enum EggState { initial, loading, loaded, error }
 /// Uses use cases from the domain layer instead of directly accessing repositories
 class EggProvider extends ChangeNotifier {
   final GetEggRecords _getEggRecords;
-  final GetEggRecordByDate _getEggRecordByDate;
   final CreateEggRecord _createEggRecord;
   final UpdateEggRecord _updateEggRecord;
   final DeleteEggRecord _deleteEggRecord;
 
   EggProvider({
     required GetEggRecords getEggRecords,
-    required GetEggRecordByDate getEggRecordByDate,
     required CreateEggRecord createEggRecord,
     required UpdateEggRecord updateEggRecord,
     required DeleteEggRecord deleteEggRecord,
   })  : _getEggRecords = getEggRecords,
-        _getEggRecordByDate = getEggRecordByDate,
         _createEggRecord = createEggRecord,
         _updateEggRecord = updateEggRecord,
         _deleteEggRecord = deleteEggRecord;
@@ -193,8 +191,8 @@ class EggProvider extends ChangeNotifier {
   List<DailyEggRecord> getRecordsInRange(DateTime start, DateTime end) {
     if (start.isAfter(end)) return [];
 
-    final startStr = _toIsoDateString(start);
-    final endStr = _toIsoDateString(end);
+    final startStr = AppDateUtils.toIsoDateString(start);
+    final endStr = AppDateUtils.toIsoDateString(end);
 
     return _records.where((r) {
       return r.date.compareTo(startStr) >= 0 && r.date.compareTo(endStr) <= 0;
@@ -222,8 +220,7 @@ class EggProvider extends ChangeNotifier {
 
   /// Get today's record
   DailyEggRecord? get todayRecord {
-    final today = DateTime.now();
-    final todayStr = _toIsoDateString(today);
+    final todayStr = AppDateUtils.todayString();
     return getRecordByDate(todayStr);
   }
 
@@ -239,8 +236,8 @@ class EggProvider extends ChangeNotifier {
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
     final endOfWeek = startOfWeek.add(const Duration(days: 6));
 
-    final startStr = _toIsoDateString(startOfWeek);
-    final endStr = _toIsoDateString(endOfWeek);
+    final startStr = AppDateUtils.toIsoDateString(startOfWeek);
+    final endStr = AppDateUtils.toIsoDateString(endOfWeek);
 
     // Filter week records
     final weekRecords = _records.where((r) {
@@ -309,9 +306,5 @@ class EggProvider extends ChangeNotifier {
     if (record.date.isEmpty) {
       throw ArgumentError('Data não pode estar vazia');
     }
-  }
-
-  String _toIsoDateString(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }
