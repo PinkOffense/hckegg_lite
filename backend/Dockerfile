@@ -9,8 +9,8 @@ COPY . .
 # Get dependencies
 RUN dart pub get
 
-# Install dart_frog_cli (specific version for compatibility)
-RUN dart pub global activate dart_frog_cli 1.2.6
+# Install dart_frog_cli (match runtime version exactly)
+RUN dart pub global activate dart_frog_cli 1.2.2
 
 # Remove any existing build
 RUN rm -rf build
