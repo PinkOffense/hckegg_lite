@@ -16,5 +16,9 @@ export 'date_utils.dart';
 export 'utils/error_handler.dart';
 export 'utils/connectivity_service.dart';
 
+// Services
+export 'services/analytics_service.dart';
+export 'services/crash_reporting_service.dart';
+
 // Models
 export 'models/week_stats.dart';
