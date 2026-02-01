@@ -1,6 +1,9 @@
 /// Core module exports
 library core;
 
+// Supabase
+export 'package:supabase/supabase.dart' show AuthException;
+
 // Errors
 export 'errors/failures.dart';
 export 'errors/result.dart';

@@ -1,5 +1,9 @@
 import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../core/api/api_client.dart';
+import '../core/api/api_config.dart';
 
 class UserProfile {
   final String id;
@@ -60,33 +64,37 @@ class UserProfile {
 }
 
 class ProfileService {
+  final ApiClient _apiClient;
   final SupabaseClient _supabase;
 
-  ProfileService(this._supabase);
+  ProfileService({
+    ApiClient? apiClient,
+    SupabaseClient? supabaseClient,
+  })  : _apiClient = apiClient ?? ApiClient(baseUrl: ApiConfig.apiUrl),
+        _supabase = supabaseClient ?? Supabase.instance.client;
 
   String? get currentUserId => _supabase.auth.currentUser?.id;
 
-  /// Get the current user's profile
+  /// Get the current user's profile via API
   Future<UserProfile?> getProfile() async {
     final userId = currentUserId;
     if (userId == null) return null;
 
     try {
-      final response = await _supabase
-          .from('user_profiles')
-          .select()
-          .eq('user_id', userId)
-          .maybeSingle();
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '/api/v1/auth/profile',
+      );
 
-      if (response == null) return null;
-      return UserProfile.fromJson(response);
+      final data = response['data'];
+      if (data == null) return null;
+      return UserProfile.fromJson(data as Map<String, dynamic>);
     } catch (e) {
-      // Table might not exist yet
+      // Profile might not exist yet
       return null;
     }
   }
 
-  /// Create or update the user's profile
+  /// Create or update the user's profile via API
   Future<UserProfile?> upsertProfile({
     String? displayName,
     String? avatarUrl,
@@ -96,26 +104,26 @@ class ProfileService {
     if (userId == null) return null;
 
     try {
-      final data = {
-        'user_id': userId,
-        if (displayName != null) 'display_name': displayName,
-        if (avatarUrl != null) 'avatar_url': avatarUrl,
-        if (bio != null) 'bio': bio,
-      };
+      final data = <String, dynamic>{};
+      if (displayName != null) data['display_name'] = displayName;
+      if (avatarUrl != null) data['avatar_url'] = avatarUrl;
+      if (bio != null) data['bio'] = bio;
 
-      final response = await _supabase
-          .from('user_profiles')
-          .upsert(data, onConflict: 'user_id')
-          .select()
-          .single();
+      final response = await _apiClient.put<Map<String, dynamic>>(
+        '/api/v1/auth/profile',
+        data: data,
+      );
 
-      return UserProfile.fromJson(response);
+      final responseData = response['data'];
+      if (responseData == null) return null;
+      return UserProfile.fromJson(responseData as Map<String, dynamic>);
     } catch (e) {
       rethrow;
     }
   }
 
   /// Upload avatar image and return the public URL
+  /// Note: Avatar storage still uses Supabase Storage directly
   Future<String?> uploadAvatar(Uint8List imageBytes, String fileExtension) async {
     final userId = currentUserId;
     if (userId == null) return null;
@@ -157,7 +165,7 @@ class ProfileService {
           .from('avatars')
           .getPublicUrl(fileName);
 
-      // Update profile with new avatar URL
+      // Update profile with new avatar URL via API
       await upsertProfile(avatarUrl: publicUrl);
 
       return publicUrl;
@@ -183,11 +191,11 @@ class ProfileService {
             .remove(['$userId/${file.name}']);
       }
 
-      // Update profile to remove avatar URL
-      await _supabase
-          .from('user_profiles')
-          .update({'avatar_url': null})
-          .eq('user_id', userId);
+      // Update profile to remove avatar URL via API
+      await _apiClient.put<Map<String, dynamic>>(
+        '/api/v1/auth/profile',
+        data: {'avatar_url': null},
+      );
     } catch (e) {
       rethrow;
     }

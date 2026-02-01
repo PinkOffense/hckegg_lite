@@ -14,7 +14,7 @@ class AppDrawer extends StatefulWidget {
 }
 
 class _AppDrawerState extends State<AppDrawer> {
-  final _profileService = ProfileService(Supabase.instance.client);
+  final _profileService = ProfileService();
   UserProfile? _profile;
 
   @override

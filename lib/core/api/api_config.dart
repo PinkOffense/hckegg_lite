@@ -1,26 +1,16 @@
 /// API Configuration
-/// Controls whether to use the custom API backend or direct Supabase
+/// The frontend always uses the backend API for all data operations
 class ApiConfig {
-  /// Whether to use the custom API backend
-  /// Set via --dart-define=USE_API=true
-  static const bool useApi = bool.fromEnvironment('USE_API', defaultValue: false);
+  /// Always use the backend API (no direct Supabase access for data)
+  static const bool useApi = true;
 
   /// API Base URL
-  /// Set via --dart-define=API_URL=http://localhost:8080
+  /// Can be overridden via --dart-define=API_URL=https://custom-url.com
   static const String apiUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://localhost:8080',
+    defaultValue: 'https://hckegg-api.onrender.com',
   );
 
   /// Whether the API is configured and should be used
   static bool get isApiEnabled => useApi && apiUrl.isNotEmpty;
-}
-
-/// Data source mode
-enum DataSourceMode {
-  /// Use Supabase directly (default)
-  supabase,
-
-  /// Use custom API backend
-  api,
 }
