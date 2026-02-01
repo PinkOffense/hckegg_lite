@@ -1,0 +1,666 @@
+openapi: 3.0.3
+info:
+  title: HCKEgg API
+  description: |
+    Backend API for HCKEgg egg production management application.
+    Built with Dart Frog and Clean Architecture.
+  version: 1.0.0
+  contact:
+    name: HCKEgg Team
+    url: https://github.com/PinkOffense/hckegg_lite
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+  - url: https://api.hckegg.com
+    description: Production
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Eggs
+    description: Egg record management
+  - name: Sales
+    description: Sales management
+  - name: Expenses
+    description: Expense tracking
+  - name: Reservations
+    description: Reservation management
+  - name: Feed Stock
+    description: Feed stock tracking
+  - name: Vet Records
+    description: Veterinary record management
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/v1/eggs:
+    get:
+      tags: [Eggs]
+      summary: Get all egg records
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by start date (YYYY-MM-DD)
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by end date (YYYY-MM-DD)
+      responses:
+        '200':
+          description: List of egg records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EggRecordListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Eggs]
+      summary: Create egg record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEggRecordRequest'
+      responses:
+        '201':
+          description: Egg record created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EggRecordResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/eggs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Eggs]
+      summary: Get egg record by ID
+      responses:
+        '200':
+          description: Egg record details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EggRecordResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Eggs]
+      summary: Update egg record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEggRecordRequest'
+      responses:
+        '200':
+          description: Egg record updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EggRecordResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Eggs]
+      summary: Delete egg record
+      responses:
+        '204':
+          description: Egg record deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/eggs/statistics:
+    get:
+      tags: [Eggs]
+      summary: Get egg statistics
+      parameters:
+        - name: start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Egg statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EggStatisticsResponse'
+
+  /api/v1/sales:
+    get:
+      tags: [Sales]
+      summary: Get all sales
+      responses:
+        '200':
+          description: List of sales
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleListResponse'
+    post:
+      tags: [Sales]
+      summary: Create sale
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSaleRequest'
+      responses:
+        '201':
+          description: Sale created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+
+  /api/v1/sales/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Sales]
+      summary: Get sale by ID
+      responses:
+        '200':
+          description: Sale details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+    put:
+      tags: [Sales]
+      summary: Update sale
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSaleRequest'
+      responses:
+        '200':
+          description: Sale updated
+    delete:
+      tags: [Sales]
+      summary: Delete sale
+      responses:
+        '204':
+          description: Sale deleted
+
+  /api/v1/expenses:
+    get:
+      tags: [Expenses]
+      summary: Get all expenses
+      responses:
+        '200':
+          description: List of expenses
+    post:
+      tags: [Expenses]
+      summary: Create expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExpenseRequest'
+      responses:
+        '201':
+          description: Expense created
+
+  /api/v1/expenses/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Expenses]
+      summary: Get expense by ID
+      responses:
+        '200':
+          description: Expense details
+    put:
+      tags: [Expenses]
+      summary: Update expense
+      responses:
+        '200':
+          description: Expense updated
+    delete:
+      tags: [Expenses]
+      summary: Delete expense
+      responses:
+        '204':
+          description: Expense deleted
+
+  /api/v1/reservations:
+    get:
+      tags: [Reservations]
+      summary: Get all reservations
+      responses:
+        '200':
+          description: List of reservations
+    post:
+      tags: [Reservations]
+      summary: Create reservation
+      responses:
+        '201':
+          description: Reservation created
+
+  /api/v1/reservations/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Reservations]
+      summary: Get reservation by ID
+      responses:
+        '200':
+          description: Reservation details
+    put:
+      tags: [Reservations]
+      summary: Update reservation
+      responses:
+        '200':
+          description: Reservation updated
+    delete:
+      tags: [Reservations]
+      summary: Delete reservation
+      responses:
+        '204':
+          description: Reservation deleted
+
+  /api/v1/feed_stock:
+    get:
+      tags: [Feed Stock]
+      summary: Get all feed stock records
+      responses:
+        '200':
+          description: List of feed stock records
+    post:
+      tags: [Feed Stock]
+      summary: Add feed stock
+      responses:
+        '201':
+          description: Feed stock added
+
+  /api/v1/feed_stock/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Feed Stock]
+      summary: Get feed stock by ID
+      responses:
+        '200':
+          description: Feed stock details
+    put:
+      tags: [Feed Stock]
+      summary: Update feed stock
+      responses:
+        '200':
+          description: Feed stock updated
+    delete:
+      tags: [Feed Stock]
+      summary: Delete feed stock
+      responses:
+        '204':
+          description: Feed stock deleted
+
+  /api/v1/health:
+    get:
+      tags: [Vet Records]
+      summary: Get all vet records
+      responses:
+        '200':
+          description: List of vet records
+    post:
+      tags: [Vet Records]
+      summary: Create vet record
+      responses:
+        '201':
+          description: Vet record created
+
+  /api/v1/health/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Vet Records]
+      summary: Get vet record by ID
+      responses:
+        '200':
+          description: Vet record details
+    put:
+      tags: [Vet Records]
+      summary: Update vet record
+      responses:
+        '200':
+          description: Vet record updated
+    delete:
+      tags: [Vet Records]
+      summary: Delete vet record
+      responses:
+        '204':
+          description: Vet record deleted
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase JWT token
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          type: object
+          properties:
+            supabase:
+              type: string
+              enum: [connected, not_initialized]
+
+    EggRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        eggs_collected:
+          type: integer
+          minimum: 0
+        eggs_broken:
+          type: integer
+          minimum: 0
+        eggs_consumed:
+          type: integer
+          minimum: 0
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateEggRecordRequest:
+      type: object
+      required:
+        - date
+        - eggs_collected
+      properties:
+        date:
+          type: string
+          format: date
+        eggs_collected:
+          type: integer
+          minimum: 0
+        eggs_broken:
+          type: integer
+          minimum: 0
+          default: 0
+        eggs_consumed:
+          type: integer
+          minimum: 0
+          default: 0
+        notes:
+          type: string
+
+    UpdateEggRecordRequest:
+      type: object
+      properties:
+        eggs_collected:
+          type: integer
+          minimum: 0
+        eggs_broken:
+          type: integer
+          minimum: 0
+        eggs_consumed:
+          type: integer
+          minimum: 0
+        notes:
+          type: string
+
+    EggRecordResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/EggRecord'
+
+    EggRecordListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/EggRecord'
+        count:
+          type: integer
+
+    EggStatisticsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            total_collected:
+              type: integer
+            total_broken:
+              type: integer
+            total_consumed:
+              type: integer
+            total_available:
+              type: integer
+            average_daily:
+              type: number
+            record_count:
+              type: integer
+
+    Sale:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        quantity_sold:
+          type: integer
+        price_per_egg:
+          type: number
+        price_per_dozen:
+          type: number
+        customer_name:
+          type: string
+          nullable: true
+        payment_status:
+          type: string
+          enum: [paid, pending, overdue, advance]
+        total_amount:
+          type: number
+
+    CreateSaleRequest:
+      type: object
+      required:
+        - date
+        - quantity_sold
+        - price_per_egg
+        - price_per_dozen
+      properties:
+        date:
+          type: string
+          format: date
+        quantity_sold:
+          type: integer
+          minimum: 1
+        price_per_egg:
+          type: number
+        price_per_dozen:
+          type: number
+        customer_name:
+          type: string
+        customer_email:
+          type: string
+          format: email
+        customer_phone:
+          type: string
+        notes:
+          type: string
+        payment_status:
+          type: string
+          enum: [paid, pending, advance]
+          default: pending
+
+    UpdateSaleRequest:
+      type: object
+      properties:
+        quantity_sold:
+          type: integer
+        price_per_egg:
+          type: number
+        payment_status:
+          type: string
+          enum: [paid, pending, overdue, advance]
+
+    SaleResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Sale'
+
+    SaleListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sale'
+        count:
+          type: integer
+
+    CreateExpenseRequest:
+      type: object
+      required:
+        - date
+        - category
+        - amount
+        - description
+      properties:
+        date:
+          type: string
+          format: date
+        category:
+          type: string
+          enum: [feed, maintenance, equipment, utilities, other]
+        amount:
+          type: number
+          minimum: 0
+        description:
+          type: string
+        notes:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
