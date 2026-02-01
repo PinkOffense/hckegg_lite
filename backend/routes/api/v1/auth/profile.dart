@@ -17,10 +17,29 @@ Future<Response> onRequest(RequestContext context) async {
   };
 }
 
+/// Extract user ID from JWT token
+Future<String?> _getUserIdFromToken(RequestContext context) async {
+  final authHeader = context.request.headers['authorization'];
+  if (authHeader == null || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  final token = authHeader.substring(7);
+
+  try {
+    final client = SupabaseClientManager.client;
+    final user = await client.auth.getUser(token);
+    return user.user?.id;
+  } catch (e) {
+    Logger.warning('Failed to get user from token: $e');
+    return null;
+  }
+}
+
 /// GET /api/v1/auth/profile
 Future<Response> _getProfile(RequestContext context) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = await _getUserIdFromToken(context);
     if (userId == null) {
       return Response.json(
         statusCode: HttpStatus.unauthorized,
@@ -64,7 +83,7 @@ Future<Response> _getProfile(RequestContext context) async {
 /// PUT /api/v1/auth/profile
 Future<Response> _updateProfile(RequestContext context) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = await _getUserIdFromToken(context);
     if (userId == null) {
       return Response.json(
         statusCode: HttpStatus.unauthorized,
