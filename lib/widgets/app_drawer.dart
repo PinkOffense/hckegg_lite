@@ -244,7 +244,8 @@ class _AppDrawerState extends State<AppDrawer> {
                       showAboutDialog(
                         context: context,
                         applicationName: 'HCKEgg 360',
-                        applicationVersion: '1.0.0',
+                        applicationVersion: '2.0.0',
+                        applicationLegalese: '© 2024-2026 HCKEgg Team\nAll rights reserved',
                         applicationIcon: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -253,7 +254,10 @@ class _AppDrawerState extends State<AppDrawer> {
                           ),
                           child: const MiniChickenIcon(size: 48),
                         ),
-                        children: [Text(t('offline_description'))],
+                        children: [
+                          const SizedBox(height: 16),
+                          Text(t('offline_description')),
+                        ],
                       );
                     },
                   ),
@@ -279,7 +283,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'v1.0',
+                    'v2.0',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: accentPink.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
