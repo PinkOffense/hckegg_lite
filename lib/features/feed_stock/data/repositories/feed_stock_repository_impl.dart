@@ -13,9 +13,9 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
   Future<Result<List<FeedStock>>> getFeedStocks() async {
     try {
       final stocks = await remoteDataSource.getFeedStocks();
-      return Result.success(stocks);
+      return Success(stocks);
     } catch (e) {
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -23,12 +23,12 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
   Future<Result<FeedStock>> getFeedStockById(String id) async {
     try {
       final stock = await remoteDataSource.getFeedStockById(id);
-      return Result.success(stock);
+      return Success(stock);
     } catch (e) {
       if (e.toString().contains('no rows')) {
-        return Result.fail(NotFoundFailure(message: 'Feed stock not found'));
+        return Fail(NotFoundFailure(message: 'Feed stock not found'));
       }
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -36,9 +36,9 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
   Future<Result<List<FeedStock>>> getLowStockItems() async {
     try {
       final stocks = await remoteDataSource.getLowStockItems();
-      return Result.success(stocks);
+      return Success(stocks);
     } catch (e) {
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -47,9 +47,9 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
     try {
       final model = FeedStockModel.fromEntity(stock);
       final created = await remoteDataSource.createFeedStock(model);
-      return Result.success(created);
+      return Success(created);
     } catch (e) {
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -58,9 +58,9 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
     try {
       final model = FeedStockModel.fromEntity(stock);
       final updated = await remoteDataSource.updateFeedStock(model);
-      return Result.success(updated);
+      return Success(updated);
     } catch (e) {
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -68,9 +68,9 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
   Future<Result<void>> deleteFeedStock(String id) async {
     try {
       await remoteDataSource.deleteFeedStock(id);
-      return Result.success(null);
+      return const Success(null);
     } catch (e) {
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -78,9 +78,9 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
   Future<Result<List<FeedMovement>>> getMovements(String feedStockId) async {
     try {
       final movements = await remoteDataSource.getMovements(feedStockId);
-      return Result.success(movements);
+      return Success(movements);
     } catch (e) {
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 
@@ -89,9 +89,9 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
     try {
       final model = FeedMovementModel.fromEntity(movement);
       final created = await remoteDataSource.addMovement(model);
-      return Result.success(created);
+      return Success(created);
     } catch (e) {
-      return Result.fail(ServerFailure(message: e.toString()));
+      return Fail(ServerFailure(message: e.toString()));
     }
   }
 }

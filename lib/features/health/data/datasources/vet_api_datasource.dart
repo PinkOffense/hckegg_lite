@@ -1,5 +1,7 @@
 import '../../domain/entities/vet_record.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/date_utils.dart';
+import '../../../../core/errors/failures.dart';
 import '../models/vet_record_model.dart';
 import 'vet_remote_datasource.dart';
 
@@ -10,22 +12,33 @@ class VetApiDataSourceImpl implements VetRemoteDataSource {
 
   VetApiDataSourceImpl(this._apiClient);
 
-  String _todayStr() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  List<dynamic> _extractList(Map<String, dynamic> response) {
+    final data = response['data'];
+    if (data == null) {
+      throw const ServerFailure(message: 'Invalid response: missing data', code: 'INVALID_RESPONSE');
+    }
+    return data as List;
+  }
+
+  Map<String, dynamic> _extractMap(Map<String, dynamic> response) {
+    final data = response['data'];
+    if (data == null) {
+      throw const ServerFailure(message: 'Invalid response: missing data', code: 'INVALID_RESPONSE');
+    }
+    return data as Map<String, dynamic>;
   }
 
   @override
   Future<List<VetRecordModel>> getRecords() async {
     final response = await _apiClient.get<Map<String, dynamic>>(_basePath);
-    final data = response['data'] as List;
+    final data = _extractList(response);
     return data.map((json) => VetRecordModel.fromJson(json)).toList();
   }
 
   @override
   Future<VetRecordModel> getRecordById(String id) async {
     final response = await _apiClient.get<Map<String, dynamic>>('$_basePath/$id');
-    return VetRecordModel.fromJson(response['data']);
+    return VetRecordModel.fromJson(_extractMap(response));
   }
 
   @override
@@ -34,7 +47,7 @@ class VetApiDataSourceImpl implements VetRemoteDataSource {
       _basePath,
       queryParameters: {'type': type.name},
     );
-    final data = response['data'] as List;
+    final data = _extractList(response);
     return data.map((json) => VetRecordModel.fromJson(json)).toList();
   }
 
@@ -42,9 +55,9 @@ class VetApiDataSourceImpl implements VetRemoteDataSource {
   Future<List<VetRecordModel>> getUpcomingAppointments() async {
     final response = await _apiClient.get<Map<String, dynamic>>(
       _basePath,
-      queryParameters: {'upcoming': 'true', 'from_date': _todayStr()},
+      queryParameters: {'upcoming': 'true', 'from_date': AppDateUtils.todayString()},
     );
-    final data = response['data'] as List;
+    final data = _extractList(response);
     return data.map((json) => VetRecordModel.fromJson(json)).toList();
   }
 
@@ -52,9 +65,9 @@ class VetApiDataSourceImpl implements VetRemoteDataSource {
   Future<List<VetRecordModel>> getTodayAppointments() async {
     final response = await _apiClient.get<Map<String, dynamic>>(
       _basePath,
-      queryParameters: {'next_action_date': _todayStr()},
+      queryParameters: {'next_action_date': AppDateUtils.todayString()},
     );
-    final data = response['data'] as List;
+    final data = _extractList(response);
     return data.map((json) => VetRecordModel.fromJson(json)).toList();
   }
 
@@ -64,7 +77,7 @@ class VetApiDataSourceImpl implements VetRemoteDataSource {
       _basePath,
       data: record.toInsertJson(''),
     );
-    return VetRecordModel.fromJson(response['data']);
+    return VetRecordModel.fromJson(_extractMap(response));
   }
 
   @override
@@ -73,7 +86,7 @@ class VetApiDataSourceImpl implements VetRemoteDataSource {
       '$_basePath/${record.id}',
       data: record.toInsertJson(''),
     );
-    return VetRecordModel.fromJson(response['data']);
+    return VetRecordModel.fromJson(_extractMap(response));
   }
 
   @override

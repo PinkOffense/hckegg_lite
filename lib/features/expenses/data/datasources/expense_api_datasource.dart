@@ -1,5 +1,6 @@
 import '../../domain/entities/expense.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/errors/failures.dart';
 import '../models/expense_model.dart';
 import 'expense_remote_datasource.dart';
 
@@ -10,17 +11,33 @@ class ExpenseApiDataSourceImpl implements ExpenseRemoteDataSource {
 
   ExpenseApiDataSourceImpl(this._apiClient);
 
+  List<dynamic> _extractList(Map<String, dynamic> response) {
+    final data = response['data'];
+    if (data == null) {
+      throw const ServerFailure(message: 'Invalid response: missing data', code: 'INVALID_RESPONSE');
+    }
+    return data as List;
+  }
+
+  Map<String, dynamic> _extractMap(Map<String, dynamic> response) {
+    final data = response['data'];
+    if (data == null) {
+      throw const ServerFailure(message: 'Invalid response: missing data', code: 'INVALID_RESPONSE');
+    }
+    return data as Map<String, dynamic>;
+  }
+
   @override
   Future<List<ExpenseModel>> getExpenses() async {
     final response = await _apiClient.get<Map<String, dynamic>>(_basePath);
-    final data = response['data'] as List;
+    final data = _extractList(response);
     return data.map((json) => ExpenseModel.fromJson(json)).toList();
   }
 
   @override
   Future<ExpenseModel> getExpenseById(String id) async {
     final response = await _apiClient.get<Map<String, dynamic>>('$_basePath/$id');
-    return ExpenseModel.fromJson(response['data']);
+    return ExpenseModel.fromJson(_extractMap(response));
   }
 
   @override
@@ -32,7 +49,7 @@ class ExpenseApiDataSourceImpl implements ExpenseRemoteDataSource {
       _basePath,
       queryParameters: {'start_date': startDate, 'end_date': endDate},
     );
-    final data = response['data'] as List;
+    final data = _extractList(response);
     return data.map((json) => ExpenseModel.fromJson(json)).toList();
   }
 
@@ -42,7 +59,7 @@ class ExpenseApiDataSourceImpl implements ExpenseRemoteDataSource {
       _basePath,
       queryParameters: {'category': category.name},
     );
-    final data = response['data'] as List;
+    final data = _extractList(response);
     return data.map((json) => ExpenseModel.fromJson(json)).toList();
   }
 
@@ -52,7 +69,7 @@ class ExpenseApiDataSourceImpl implements ExpenseRemoteDataSource {
       _basePath,
       data: expense.toInsertJson(''),
     );
-    return ExpenseModel.fromJson(response['data']);
+    return ExpenseModel.fromJson(_extractMap(response));
   }
 
   @override
@@ -61,7 +78,7 @@ class ExpenseApiDataSourceImpl implements ExpenseRemoteDataSource {
       '$_basePath/${expense.id}',
       data: expense.toInsertJson(''),
     );
-    return ExpenseModel.fromJson(response['data']);
+    return ExpenseModel.fromJson(_extractMap(response));
   }
 
   @override

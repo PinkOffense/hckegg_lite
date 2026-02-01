@@ -1,4 +1,5 @@
 import '../../../../core/api/api_client.dart';
+import '../../../../core/errors/failures.dart';
 import '../models/egg_sale_model.dart';
 import 'sale_remote_datasource.dart';
 
@@ -9,17 +10,33 @@ class SaleApiDataSourceImpl implements SaleRemoteDataSource {
 
   SaleApiDataSourceImpl(this._apiClient);
 
+  List<dynamic> _extractList(Map<String, dynamic> response) {
+    final data = response['data'];
+    if (data == null) {
+      throw const ServerFailure(message: 'Invalid response: missing data', code: 'INVALID_RESPONSE');
+    }
+    return data as List;
+  }
+
+  Map<String, dynamic> _extractMap(Map<String, dynamic> response) {
+    final data = response['data'];
+    if (data == null) {
+      throw const ServerFailure(message: 'Invalid response: missing data', code: 'INVALID_RESPONSE');
+    }
+    return data as Map<String, dynamic>;
+  }
+
   @override
   Future<List<EggSaleModel>> getSales() async {
     final response = await _apiClient.get<Map<String, dynamic>>(_basePath);
-    final data = response['data'] as List;
+    final data = _extractList(response);
     return data.map((json) => EggSaleModel.fromJson(json)).toList();
   }
 
   @override
   Future<EggSaleModel> getSaleById(String id) async {
     final response = await _apiClient.get<Map<String, dynamic>>('$_basePath/$id');
-    return EggSaleModel.fromJson(response['data']);
+    return EggSaleModel.fromJson(_extractMap(response));
   }
 
   @override
@@ -31,7 +48,7 @@ class SaleApiDataSourceImpl implements SaleRemoteDataSource {
       _basePath,
       queryParameters: {'start_date': startDate, 'end_date': endDate},
     );
-    final data = response['data'] as List;
+    final data = _extractList(response);
     return data.map((json) => EggSaleModel.fromJson(json)).toList();
   }
 
@@ -41,7 +58,7 @@ class SaleApiDataSourceImpl implements SaleRemoteDataSource {
       _basePath,
       queryParameters: {'payment_status': 'pending', 'is_lost': 'false'},
     );
-    final data = response['data'] as List;
+    final data = _extractList(response);
     return data.map((json) => EggSaleModel.fromJson(json)).toList();
   }
 
@@ -51,7 +68,7 @@ class SaleApiDataSourceImpl implements SaleRemoteDataSource {
       _basePath,
       queryParameters: {'is_lost': 'true'},
     );
-    final data = response['data'] as List;
+    final data = _extractList(response);
     return data.map((json) => EggSaleModel.fromJson(json)).toList();
   }
 
@@ -61,7 +78,7 @@ class SaleApiDataSourceImpl implements SaleRemoteDataSource {
       _basePath,
       data: sale.toInsertJson(''),
     );
-    return EggSaleModel.fromJson(response['data']);
+    return EggSaleModel.fromJson(_extractMap(response));
   }
 
   @override
@@ -70,7 +87,7 @@ class SaleApiDataSourceImpl implements SaleRemoteDataSource {
       '$_basePath/${sale.id}',
       data: sale.toInsertJson(''),
     );
-    return EggSaleModel.fromJson(response['data']);
+    return EggSaleModel.fromJson(_extractMap(response));
   }
 
   @override
