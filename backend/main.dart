@@ -6,6 +6,9 @@ import 'lib/core/core.dart';
 
 /// Main entry point for the HCKEgg API server
 Future<void> main() async {
+  // Configure logger
+  Logger.configureFromEnvironment();
+
   // Load environment variables
   final supabaseUrl = Platform.environment['SUPABASE_URL'] ?? '';
   final supabaseServiceKey =
@@ -17,23 +20,16 @@ Future<void> main() async {
       url: supabaseUrl,
       anonKey: supabaseServiceKey,
     );
-    print('✓ Supabase initialized');
+    Logger.info('Supabase initialized');
   } else {
-    print('⚠ Supabase not configured - set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+    Logger.warning('Supabase not configured - set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
   }
 
   // Get server configuration
   final port = int.parse(Platform.environment['PORT'] ?? '8080');
   final host = Platform.environment['HOST'] ?? '0.0.0.0';
 
-  print('');
-  print('╔════════════════════════════════════════╗');
-  print('║         HCKEgg API Server              ║');
-  print('║         Clean Architecture             ║');
-  print('╠════════════════════════════════════════╣');
-  print('║  Starting server on $host:$port');
-  print('╚════════════════════════════════════════╝');
-  print('');
+  Logger.info('HCKEgg API Server starting on $host:$port');
 
   // Note: Dart Frog handles the server startup
   // This file is for initialization only

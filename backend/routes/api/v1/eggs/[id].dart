@@ -12,6 +12,14 @@ import '../../../../lib/features/eggs/domain/usecases/egg_usecases.dart';
 /// PUT - Update egg record
 /// DELETE - Delete egg record
 Future<Response> onRequest(RequestContext context, String id) async {
+  // Validate ID format
+  if (!Validators.isValidUuid(id)) {
+    return Response.json(
+      statusCode: HttpStatus.badRequest,
+      body: {'error': 'Invalid ID format'},
+    );
+  }
+
   return switch (context.request.method) {
     HttpMethod.get => _getEggRecord(context, id),
     HttpMethod.put => _updateEggRecord(context, id),
@@ -27,6 +35,7 @@ Future<Response> _getEggRecord(RequestContext context, String id) async {
   try {
     final userId = context.request.headers['x-user-id'];
     if (userId == null) {
+      Logger.warning('GET /eggs/$id - Missing user ID');
       return Response.json(
         statusCode: HttpStatus.unauthorized,
         body: {'error': 'Unauthorized'},
@@ -39,29 +48,32 @@ Future<Response> _getEggRecord(RequestContext context, String id) async {
 
     return result.fold(
       onSuccess: (record) {
-        // Verify ownership
         if (record.userId != userId) {
+          Logger.warning('GET /eggs/$id - Access denied for user $userId');
           return Response.json(
             statusCode: HttpStatus.forbidden,
             body: {'error': 'Access denied'},
           );
         }
+        Logger.debug('GET /eggs/$id - Retrieved for user $userId');
         return Response.json(body: {'data': record.toJson()});
       },
       onFailure: (failure) {
         final statusCode = failure is NotFoundFailure
             ? HttpStatus.notFound
             : HttpStatus.internalServerError;
+        Logger.error('GET /eggs/$id - Failed', failure.message);
         return Response.json(
           statusCode: statusCode,
           body: {'error': failure.message},
         );
       },
     );
-  } catch (e) {
+  } catch (e, stackTrace) {
+    Logger.error('GET /eggs/$id - Exception', e, stackTrace);
     return Response.json(
       statusCode: HttpStatus.internalServerError,
-      body: {'error': e.toString()},
+      body: {'error': 'Internal server error'},
     );
   }
 }
@@ -71,19 +83,20 @@ Future<Response> _updateEggRecord(RequestContext context, String id) async {
   try {
     final userId = context.request.headers['x-user-id'];
     if (userId == null) {
+      Logger.warning('PUT /eggs/$id - Missing user ID');
       return Response.json(
         statusCode: HttpStatus.unauthorized,
         body: {'error': 'Unauthorized'},
       );
     }
 
-    // First get existing record to verify ownership
     final repository = EggRepositoryImpl(SupabaseClientManager.client);
     final getUseCase = GetEggRecordById(repository);
     final existingResult = await getUseCase(GetEggRecordByIdParams(id: id));
 
     final existingRecord = existingResult.valueOrNull;
     if (existingRecord == null) {
+      Logger.warning('PUT /eggs/$id - Record not found');
       return Response.json(
         statusCode: HttpStatus.notFound,
         body: {'error': 'Egg record not found'},
@@ -91,6 +104,7 @@ Future<Response> _updateEggRecord(RequestContext context, String id) async {
     }
 
     if (existingRecord.userId != userId) {
+      Logger.warning('PUT /eggs/$id - Access denied for user $userId');
       return Response.json(
         statusCode: HttpStatus.forbidden,
         body: {'error': 'Access denied'},
@@ -98,6 +112,16 @@ Future<Response> _updateEggRecord(RequestContext context, String id) async {
     }
 
     final body = await context.request.json() as Map<String, dynamic>;
+
+    // Validate input
+    final validation = EggRecordValidator.validate(body, isUpdate: true);
+    if (!validation.isValid) {
+      Logger.warning('PUT /eggs/$id - Validation failed: ${validation.errors}');
+      return Response.json(
+        statusCode: HttpStatus.badRequest,
+        body: {'error': 'Validation failed', 'details': validation.errors},
+      );
+    }
 
     final updatedRecord = EggRecord(
       id: id,
@@ -120,16 +144,23 @@ Future<Response> _updateEggRecord(RequestContext context, String id) async {
         await updateUseCase(UpdateEggRecordParams(record: updatedRecord));
 
     return result.fold(
-      onSuccess: (record) => Response.json(body: {'data': record.toJson()}),
-      onFailure: (failure) => Response.json(
-        statusCode: HttpStatus.internalServerError,
-        body: {'error': failure.message},
-      ),
+      onSuccess: (record) {
+        Logger.info('PUT /eggs/$id - Updated for user $userId');
+        return Response.json(body: {'data': record.toJson()});
+      },
+      onFailure: (failure) {
+        Logger.error('PUT /eggs/$id - Failed to update', failure.message);
+        return Response.json(
+          statusCode: HttpStatus.internalServerError,
+          body: {'error': failure.message},
+        );
+      },
     );
-  } catch (e) {
+  } catch (e, stackTrace) {
+    Logger.error('PUT /eggs/$id - Exception', e, stackTrace);
     return Response.json(
       statusCode: HttpStatus.internalServerError,
-      body: {'error': e.toString()},
+      body: {'error': 'Internal server error'},
     );
   }
 }
@@ -139,19 +170,20 @@ Future<Response> _deleteEggRecord(RequestContext context, String id) async {
   try {
     final userId = context.request.headers['x-user-id'];
     if (userId == null) {
+      Logger.warning('DELETE /eggs/$id - Missing user ID');
       return Response.json(
         statusCode: HttpStatus.unauthorized,
         body: {'error': 'Unauthorized'},
       );
     }
 
-    // First verify ownership
     final repository = EggRepositoryImpl(SupabaseClientManager.client);
     final getUseCase = GetEggRecordById(repository);
     final existingResult = await getUseCase(GetEggRecordByIdParams(id: id));
 
     final existingRecord = existingResult.valueOrNull;
     if (existingRecord == null) {
+      Logger.warning('DELETE /eggs/$id - Record not found');
       return Response.json(
         statusCode: HttpStatus.notFound,
         body: {'error': 'Egg record not found'},
@@ -159,6 +191,7 @@ Future<Response> _deleteEggRecord(RequestContext context, String id) async {
     }
 
     if (existingRecord.userId != userId) {
+      Logger.warning('DELETE /eggs/$id - Access denied for user $userId');
       return Response.json(
         statusCode: HttpStatus.forbidden,
         body: {'error': 'Access denied'},
@@ -169,16 +202,23 @@ Future<Response> _deleteEggRecord(RequestContext context, String id) async {
     final result = await deleteUseCase(DeleteEggRecordParams(id: id));
 
     return result.fold(
-      onSuccess: (_) => Response(statusCode: HttpStatus.noContent),
-      onFailure: (failure) => Response.json(
-        statusCode: HttpStatus.internalServerError,
-        body: {'error': failure.message},
-      ),
+      onSuccess: (_) {
+        Logger.info('DELETE /eggs/$id - Deleted for user $userId');
+        return Response(statusCode: HttpStatus.noContent);
+      },
+      onFailure: (failure) {
+        Logger.error('DELETE /eggs/$id - Failed to delete', failure.message);
+        return Response.json(
+          statusCode: HttpStatus.internalServerError,
+          body: {'error': failure.message},
+        );
+      },
     );
-  } catch (e) {
+  } catch (e, stackTrace) {
+    Logger.error('DELETE /eggs/$id - Exception', e, stackTrace);
     return Response.json(
       statusCode: HttpStatus.internalServerError,
-      body: {'error': e.toString()},
+      body: {'error': 'Internal server error'},
     );
   }
 }
