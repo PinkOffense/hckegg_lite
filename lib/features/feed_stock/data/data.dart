@@ -6,6 +6,7 @@ export 'models/feed_stock_model.dart';
 
 // Data sources
 export 'datasources/feed_stock_remote_datasource.dart';
+export 'datasources/feed_stock_api_datasource.dart';
 
 // Repository implementation
 export 'repositories/feed_stock_repository_impl.dart';
