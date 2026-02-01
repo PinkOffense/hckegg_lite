@@ -149,49 +149,34 @@ docker run -p 8080:8080 \
 
 ## Deployment
 
-### Railway (Recommended)
+### Render (Free Tier)
 
-The backend is configured for automatic deployment to Railway:
+The backend is configured for automatic deployment to Render using the Blueprint specification (`render.yaml`).
 
-1. **Create Railway Account**: https://railway.app
-2. **Create New Project**: Connect your GitHub repository
-3. **Configure Service**:
-   - Root Directory: `backend`
-   - Build: Dockerfile
-4. **Add Environment Variables**:
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `PORT` (Railway sets this automatically)
-5. **Get Railway Token**:
-   - Go to Account Settings → Tokens
-   - Create new token
-   - Add as `RAILWAY_TOKEN` secret in GitHub repository
+#### Quick Setup
 
-### GitHub Actions
+1. **Create Render Account**: https://render.com (free, no credit card)
+2. **New → Blueprint**
+3. **Connect GitHub Repository**: `PinkOffense/hckegg_lite`
+4. **Render detects `render.yaml`** and configures automatically
+5. **Add Environment Variables** in Render Dashboard:
+   - `SUPABASE_URL`: Your Supabase project URL
+   - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
 
-Deployment is automated via GitHub Actions:
-- Push to `master` branch triggers deployment
-- Only deploys when files in `backend/` are changed
-- Workflow: `.github/workflows/deploy-backend.yml`
+#### How It Works
 
-### Required Secrets (GitHub Repository)
+- Push to `master` → Render auto-deploys
+- No GitHub Actions needed (Render has native GitHub integration)
+- Free tier: Server sleeps after 15min inactivity, wakes in ~30s
 
-| Secret | Description |
-|--------|-------------|
-| `RAILWAY_TOKEN` | Railway API token for deployment |
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
+#### Your Backend URL
 
-### Required Variables (GitHub Repository)
-
-| Variable | Description |
-|----------|-------------|
-| `BACKEND_URL` | Deployed backend URL (e.g., https://hckegg-api.up.railway.app) |
+After deployment: `https://hckegg-api.onrender.com`
 
 ## API Documentation
 
 - **Local**: http://localhost:8080/docs
-- **Production**: https://your-railway-url/docs
+- **Production**: https://hckegg-api.onrender.com/docs
 - **GitHub Pages**: https://pinkoffense.github.io/hckegg_lite/api-docs/
 
 ## License
