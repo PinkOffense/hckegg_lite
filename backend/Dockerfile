@@ -20,7 +20,7 @@ COPY . .
 RUN dart pub global run dart_frog_cli:dart_frog build
 
 # Stage 2: Production
-FROM dart:stable-slim AS production
+FROM dart:stable AS production
 
 WORKDIR /app
 
@@ -32,16 +32,8 @@ COPY --from=build /app/docs /app/docs
 # Install production dependencies only
 RUN dart pub get --no-dev-dependencies
 
-# Create non-root user for security
-RUN useradd -r -u 1001 appuser
-USER appuser
-
 # Expose port
 EXPOSE 8080
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8080/health || exit 1
 
 # Run the server
 CMD ["dart", "build/bin/server.dart"]
