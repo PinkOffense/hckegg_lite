@@ -136,18 +136,48 @@ dart test
 
 ## Docker
 
-```dockerfile
-FROM dart:stable AS build
-WORKDIR /app
-COPY . .
-RUN dart pub get
-RUN dart_frog build
+```bash
+# Build
+docker build -t hckegg-api .
 
-FROM dart:stable
-COPY --from=build /app/build /app
-WORKDIR /app
-CMD ["dart", "bin/server.dart"]
+# Run
+docker run -p 8080:8080 \
+  -e SUPABASE_URL=your-url \
+  -e SUPABASE_SERVICE_ROLE_KEY=your-key \
+  hckegg-api
 ```
+
+## Deployment
+
+### Render (Free Tier)
+
+The backend is configured for automatic deployment to Render using the Blueprint specification (`render.yaml`).
+
+#### Quick Setup
+
+1. **Create Render Account**: https://render.com (free, no credit card)
+2. **New → Blueprint**
+3. **Connect GitHub Repository**: `PinkOffense/hckegg_lite`
+4. **Render detects `render.yaml`** and configures automatically
+5. **Add Environment Variables** in Render Dashboard:
+   - `SUPABASE_URL`: Your Supabase project URL
+   - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
+
+#### How It Works
+
+- Push to `master` → Render auto-deploys
+- No GitHub Actions needed (Render has native GitHub integration)
+- Free tier: Server sleeps after 15min inactivity, wakes in ~30s
+
+#### Your Backend URL
+
+After deployment: `https://hckegg-api.onrender.com`
+
+## API Documentation
+
+- **Local**: http://localhost:8080/docs
+- **Production**: https://hckegg-api.onrender.com/docs
+- **GitHub Pages**: https://pinkoffense.github.io/hckegg_lite/api-docs/
 
 ## License
 

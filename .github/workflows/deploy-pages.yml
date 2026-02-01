@@ -39,6 +39,12 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
+      - name: Add API Documentation (Swagger UI)
+        run: |
+          mkdir -p build/web/api-docs
+          cp web/api-docs/index.html build/web/api-docs/
+          cp backend/docs/openapi.yaml build/web/api-docs/
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
