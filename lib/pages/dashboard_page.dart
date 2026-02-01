@@ -6,6 +6,7 @@ import '../state/providers/providers.dart';
 import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/skeleton_loading.dart';
 import '../dialogs/daily_record_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
@@ -63,6 +64,24 @@ class _DashboardPageState extends State<DashboardPage>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _onRefresh() async {
+    final eggProvider = context.read<EggProvider>();
+    final saleProvider = context.read<SaleProvider>();
+    final expenseProvider = context.read<ExpenseProvider>();
+    final reservationProvider = context.read<ReservationProvider>();
+    final feedStockProvider = context.read<FeedStockProvider>();
+    final vetRecordProvider = context.read<VetRecordProvider>();
+
+    await Future.wait([
+      eggProvider.loadRecords(),
+      saleProvider.loadSales(),
+      expenseProvider.loadExpenses(),
+      reservationProvider.loadReservations(),
+      feedStockProvider.loadFeedStocks(),
+      vetRecordProvider.loadRecords(),
+    ]);
   }
 
   // Cache today's date string (computed once per page lifecycle)
@@ -210,6 +229,11 @@ class _DashboardPageState extends State<DashboardPage>
           position: _slideAnimation,
           child: Consumer6<EggProvider, SaleProvider, ExpenseProvider, ReservationProvider, FeedStockProvider, VetRecordProvider>(
             builder: (context, eggProvider, saleProvider, expenseProvider, reservationProvider, feedStockProvider, vetRecordProvider, _) {
+              // Show loading skeleton on initial load
+              if (eggProvider.state == EggState.loading && eggProvider.records.isEmpty) {
+                return const SkeletonPage(showStats: true, showChart: true, listItemCount: 3);
+              }
+
               final records = eggProvider.records;
               final sales = saleProvider.sales;
               final todayRecord = eggProvider.getRecordByDate(_todayString);
@@ -245,9 +269,12 @@ class _DashboardPageState extends State<DashboardPage>
               );
             }
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
+            return RefreshIndicator(
+              onRefresh: _onRefresh,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Today's Collection - Big Number
@@ -549,7 +576,8 @@ class _DashboardPageState extends State<DashboardPage>
                           builder: (_) => DailyRecordDialog(existingRecord: record),
                         ),
                       )),
-                ],
+                  ],
+                ),
               ),
             );
           }),
@@ -608,27 +636,30 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
+    return Semantics(
+      label: '$label: $value',
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 28, semanticLabel: label),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: theme.textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: theme.textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );

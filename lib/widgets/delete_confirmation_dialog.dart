@@ -32,13 +32,13 @@ class DeleteConfirmationDialog extends StatelessWidget {
   }) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => DeleteConfirmationDialog(
+      builder: (dialogContext) => DeleteConfirmationDialog(
         title: title,
         message: message,
         itemName: itemName,
         confirmText: confirmText ?? (locale == 'pt' ? 'Apagar' : 'Delete'),
         cancelText: cancelText ?? (locale == 'pt' ? 'Cancelar' : 'Cancel'),
-        onConfirm: () => Navigator.of(context).pop(true),
+        onConfirm: () {}, // Navigation handled by widget's build method
       ),
     );
     return result ?? false;
