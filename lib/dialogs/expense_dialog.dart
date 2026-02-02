@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../core/date_utils.dart';
+import '../core/utils/validators.dart';
 import '../models/expense.dart';
 import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
+import 'base_dialog.dart';
 
 class ExpenseDialog extends StatefulWidget {
   final Expense? existingExpense;
@@ -16,7 +18,7 @@ class ExpenseDialog extends StatefulWidget {
   State<ExpenseDialog> createState() => _ExpenseDialogState();
 }
 
-class _ExpenseDialogState extends State<ExpenseDialog> {
+class _ExpenseDialogState extends State<ExpenseDialog> with DialogStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -53,7 +55,6 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final locale = Provider.of<LocaleProvider>(context).code;
     final t = (String k) => Translations.of(locale, k);
 
@@ -64,37 +65,10 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Header
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                border: Border(
-                  bottom: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.account_balance_wallet,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      widget.existingExpense != null ? t('edit_expense') : t('add_expense'),
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
+            DialogHeader(
+              title: widget.existingExpense != null ? t('edit_expense') : t('add_expense'),
+              icon: Icons.account_balance_wallet,
+              onClose: () => Navigator.of(context).pop(),
             ),
             // Body
             Expanded(
@@ -103,9 +77,16 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
                 child: ListView(
                   padding: const EdgeInsets.all(20),
                   children: [
+                    // Error banner
+                    if (hasError)
+                      DialogErrorBanner(
+                        message: errorMessage!,
+                        onDismiss: clearError,
+                      ),
+
                     // Date
                     InkWell(
-                      onTap: () => _selectDate(context, locale),
+                      onTap: isLoading ? null : () => _selectDate(context, locale),
                       child: InputDecorator(
                         decoration: InputDecoration(
                           labelText: t('date'),
@@ -113,7 +94,7 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
                         ),
                         child: Text(
                           _formatDate(_selectedDate, locale),
-                          style: theme.textTheme.bodyLarge,
+                          style: Theme.of(context).textTheme.bodyLarge,
                         ),
                       ),
                     ),
@@ -133,23 +114,18 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
                           case ExpenseCategory.feed:
                             icon = Icons.grass;
                             color = Colors.green;
-                            break;
                           case ExpenseCategory.maintenance:
                             icon = Icons.build;
                             color = Colors.orange;
-                            break;
                           case ExpenseCategory.equipment:
                             icon = Icons.hardware;
                             color = Colors.purple;
-                            break;
                           case ExpenseCategory.utilities:
                             icon = Icons.electrical_services;
                             color = Colors.amber;
-                            break;
                           case ExpenseCategory.other:
                             icon = Icons.more_horiz;
                             color = Colors.grey;
-                            break;
                         }
                         return DropdownMenuItem(
                           value: category,
@@ -162,7 +138,7 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
                           ),
                         );
                       }).toList(),
-                      onChanged: (value) {
+                      onChanged: isLoading ? null : (value) {
                         if (value != null) {
                           setState(() => _selectedCategory = value);
                         }
@@ -179,18 +155,8 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
                         suffixText: '€',
                       ),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return locale == 'pt' ? 'Valor inválido' : 'Invalid value';
-                        }
-                        if (double.parse(value) <= 0) {
-                          return locale == 'pt' ? 'Deve ser maior que zero' : 'Must be greater than zero';
-                        }
-                        return null;
-                      },
+                      enabled: !isLoading,
+                      validator: FormValidators.positiveNumber(locale: locale),
                     ),
                     const SizedBox(height: 16),
 
@@ -202,12 +168,11 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
                         prefixIcon: const Icon(Icons.description),
                       ),
                       maxLines: 2,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
-                        }
-                        return null;
-                      },
+                      enabled: !isLoading,
+                      validator: FormValidators.combine([
+                        FormValidators.required(locale: locale),
+                        FormValidators.maxLength(500, locale: locale),
+                      ]),
                     ),
                     const SizedBox(height: 16),
 
@@ -220,37 +185,20 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
                         alignLabelWithHint: true,
                       ),
                       maxLines: 3,
+                      enabled: !isLoading,
+                      validator: FormValidators.maxLength(500, locale: locale),
                     ),
                   ],
                 ),
               ),
             ),
             // Footer with buttons
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(
-                  top: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                  ),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(t('cancel')),
-                  ),
-                  const SizedBox(width: 12),
-                  FilledButton.icon(
-                    onPressed: _saveExpense,
-                    icon: const Icon(Icons.check),
-                    label: Text(t('save')),
-                  ),
-                ],
-              ),
+            DialogFooter(
+              onCancel: () => Navigator.pop(context),
+              onSave: _saveExpense,
+              cancelText: t('cancel'),
+              saveText: t('save'),
+              isLoading: isLoading,
             ),
           ],
         ),
@@ -267,7 +215,7 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
       locale: Locale(locale),
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() => _selectedDate = picked);
     }
   }
@@ -282,27 +230,37 @@ class _ExpenseDialogState extends State<ExpenseDialog> {
     }
   }
 
-  void _saveExpense() {
+  Future<void> _saveExpense() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final amount = double.parse(_amountController.text);
-    final description = _descriptionController.text.trim();
-    final notes = _notesController.text.trim();
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
 
-    final expense = Expense(
-      id: widget.existingExpense?.id ?? const Uuid().v4(),
-      date: AppDateUtils.toIsoDateString(_selectedDate),
-      category: _selectedCategory,
-      amount: amount,
-      description: description,
-      notes: notes.isEmpty ? null : notes,
-      createdAt: widget.existingExpense?.createdAt ?? DateTime.now(),
+    await executeSave(
+      locale: locale,
+      saveAction: () async {
+        final amount = double.parse(_amountController.text);
+        final description = _descriptionController.text.trim();
+        final notes = _notesController.text.trim();
+
+        final expense = Expense(
+          id: widget.existingExpense?.id ?? const Uuid().v4(),
+          date: AppDateUtils.toIsoDateString(_selectedDate),
+          category: _selectedCategory,
+          amount: amount,
+          description: description,
+          notes: notes.isEmpty ? null : notes,
+          createdAt: widget.existingExpense?.createdAt ?? DateTime.now(),
+        );
+
+        await context.read<ExpenseProvider>().saveExpense(expense);
+      },
+      onSuccess: () {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      },
     );
-
-    context.read<ExpenseProvider>().saveExpense(expense);
-
-    Navigator.pop(context);
   }
 }
