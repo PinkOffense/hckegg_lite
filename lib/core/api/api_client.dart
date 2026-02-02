@@ -42,9 +42,10 @@ class ApiClient {
 
   ApiClient({required this.baseUrl}) : _dio = Dio() {
     _dio.options.baseUrl = baseUrl;
-    _dio.options.connectTimeout = const Duration(seconds: 15);
-    _dio.options.receiveTimeout = const Duration(seconds: 15);
-    _dio.options.sendTimeout = const Duration(seconds: 15);
+    // Increased timeouts for Render cold starts (can take 30+ seconds)
+    _dio.options.connectTimeout = const Duration(seconds: 45);
+    _dio.options.receiveTimeout = const Duration(seconds: 45);
+    _dio.options.sendTimeout = const Duration(seconds: 30);
     _dio.options.headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
