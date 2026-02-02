@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
-import '../../../../lib/core/core.dart';
-import '../../../../lib/features/feed_stock/data/repositories/feed_stock_repository_impl.dart';
-import '../../../../lib/features/feed_stock/domain/entities/feed_stock.dart';
+import '../../../../../lib/core/core.dart';
+import '../../../../../lib/features/feed_stock/data/repositories/feed_stock_repository_impl.dart';
+import '../../../../../lib/features/feed_stock/domain/entities/feed_stock.dart';
 
 Future<Response> onRequest(RequestContext context, String id) async {
   return switch (context.request.method) {
