@@ -63,9 +63,41 @@ class UserProfile {
   }
 }
 
+/// Exception for invalid avatar file
+class InvalidAvatarException implements Exception {
+  final String message;
+  InvalidAvatarException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 class ProfileService {
   final ApiClient _apiClient;
   final SupabaseClient _supabase;
+
+  /// Maximum avatar file size (5 MB)
+  static const int maxAvatarSizeBytes = 5 * 1024 * 1024;
+
+  /// Allowed image types with their magic bytes
+  static const Map<String, List<List<int>>> _imageMagicBytes = {
+    'jpg': [
+      [0xFF, 0xD8, 0xFF],
+    ],
+    'jpeg': [
+      [0xFF, 0xD8, 0xFF],
+    ],
+    'png': [
+      [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
+    ],
+    'gif': [
+      [0x47, 0x49, 0x46, 0x38, 0x37, 0x61], // GIF87a
+      [0x47, 0x49, 0x46, 0x38, 0x39, 0x61], // GIF89a
+    ],
+    'webp': [
+      [0x52, 0x49, 0x46, 0x46], // RIFF header (WebP starts with RIFF)
+    ],
+  };
 
   ProfileService({
     ApiClient? apiClient,
@@ -74,6 +106,78 @@ class ProfileService {
         _supabase = supabaseClient ?? Supabase.instance.client;
 
   String? get currentUserId => _supabase.auth.currentUser?.id;
+
+  /// Validate image file by checking magic bytes (file signature)
+  /// Returns the detected image type or null if invalid
+  String? _detectImageType(Uint8List bytes) {
+    if (bytes.length < 8) return null;
+
+    for (final entry in _imageMagicBytes.entries) {
+      for (final signature in entry.value) {
+        if (bytes.length >= signature.length) {
+          bool matches = true;
+          for (int i = 0; i < signature.length; i++) {
+            if (bytes[i] != signature[i]) {
+              matches = false;
+              break;
+            }
+          }
+          if (matches) {
+            // Special handling for WebP - check for WEBP marker at offset 8
+            if (entry.key == 'webp') {
+              if (bytes.length >= 12 &&
+                  bytes[8] == 0x57 &&
+                  bytes[9] == 0x45 &&
+                  bytes[10] == 0x42 &&
+                  bytes[11] == 0x50) {
+                return 'webp';
+              }
+              continue;
+            }
+            return entry.key;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Validate avatar file for security
+  void _validateAvatarFile(Uint8List bytes, String claimedExtension) {
+    // Check file size
+    if (bytes.length > maxAvatarSizeBytes) {
+      throw InvalidAvatarException(
+        'File too large. Maximum size is ${maxAvatarSizeBytes ~/ (1024 * 1024)} MB.',
+      );
+    }
+
+    // Check if file is empty
+    if (bytes.isEmpty) {
+      throw InvalidAvatarException('File is empty.');
+    }
+
+    // Detect actual file type from magic bytes
+    final detectedType = _detectImageType(bytes);
+    if (detectedType == null) {
+      throw InvalidAvatarException(
+        'Invalid image file. Only JPG, PNG, GIF, and WebP are allowed.',
+      );
+    }
+
+    // Normalize claimed extension
+    final normalizedClaimed = claimedExtension.toLowerCase();
+    final normalizedDetected = detectedType == 'jpeg' ? 'jpg' : detectedType;
+    final normalizedClaimedCheck =
+        normalizedClaimed == 'jpeg' ? 'jpg' : normalizedClaimed;
+
+    // Verify extension matches detected type
+    if (normalizedClaimedCheck != normalizedDetected) {
+      throw InvalidAvatarException(
+        'File extension does not match actual file type. '
+        'Claimed: $claimedExtension, Detected: $detectedType',
+      );
+    }
+  }
 
   /// Get the current user's profile via API
   Future<UserProfile?> getProfile() async {
@@ -124,14 +228,19 @@ class ProfileService {
 
   /// Upload avatar image and return the public URL
   /// Note: Avatar storage still uses Supabase Storage directly
+  /// Throws [InvalidAvatarException] if file validation fails
   Future<String?> uploadAvatar(Uint8List imageBytes, String fileExtension) async {
     final userId = currentUserId;
     if (userId == null) return null;
 
+    // Validate file before upload (checks size, magic bytes, extension match)
+    _validateAvatarFile(imageBytes, fileExtension);
+
     try {
-      // Create unique filename
+      // Use detected extension (normalized)
+      final safeExtension = fileExtension.toLowerCase();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = '$userId/avatar_$timestamp.$fileExtension';
+      final fileName = '$userId/avatar_$timestamp.$safeExtension';
 
       // Delete old avatar if exists
       try {
@@ -155,7 +264,7 @@ class ProfileService {
             fileName,
             imageBytes,
             fileOptions: FileOptions(
-              contentType: 'image/$fileExtension',
+              contentType: 'image/$safeExtension',
               upsert: true,
             ),
           );
