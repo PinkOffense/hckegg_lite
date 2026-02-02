@@ -8,13 +8,30 @@ class AnalyticsRepository {
   final SupabaseClient _client;
 
   /// Get complete dashboard analytics
+  /// Uses parallel queries for better performance
   Future<Result<DashboardAnalytics>> getDashboardAnalytics(String userId) async {
     try {
-      final production = await _getProductionSummary(userId);
-      final sales = await _getSalesSummary(userId);
-      final expenses = await _getExpensesSummary(userId, sales.totalRevenue);
-      final feed = await _getFeedSummary(userId, production.totalCollected);
-      final health = await _getHealthSummary(userId);
+      // Phase 1: Run independent queries in parallel
+      final results = await Future.wait([
+        _getProductionSummary(userId),
+        _getSalesSummary(userId),
+        _getHealthSummary(userId),
+      ]);
+
+      final production = results[0] as ProductionSummary;
+      final sales = results[1] as SalesSummary;
+      final health = results[2] as HealthSummary;
+
+      // Phase 2: Run dependent queries in parallel
+      final dependentResults = await Future.wait([
+        _getExpensesSummary(userId, sales.totalRevenue),
+        _getFeedSummary(userId, production.totalCollected),
+      ]);
+
+      final expenses = dependentResults[0] as ExpensesSummary;
+      final feed = dependentResults[1] as FeedSummary;
+
+      // Phase 3: Get alerts (depends on feed and health)
       final alerts = await _getAlerts(userId, feed, health);
 
       return Result.success(DashboardAnalytics(
@@ -470,6 +487,7 @@ class AnalyticsRepository {
   }
 
   /// Get week statistics
+  /// Uses parallel queries for better performance
   Future<Result<WeekStats>> getWeekStats(String userId) async {
     try {
       final now = DateTime.now();
@@ -477,58 +495,58 @@ class AnalyticsRepository {
       final startDate = _formatDate(weekAgo);
       final endDate = _formatDate(now);
 
-      // Get egg records for the week
-      final eggRecords = await _client
-          .from('daily_egg_records')
-          .select()
-          .eq('user_id', userId)
-          .gte('date', startDate)
-          .lte('date', endDate);
+      // Run all queries in parallel - they are independent
+      final results = await Future.wait([
+        _client
+            .from('daily_egg_records')
+            .select()
+            .eq('user_id', userId)
+            .gte('date', startDate)
+            .lte('date', endDate),
+        _client
+            .from('egg_sales')
+            .select()
+            .eq('user_id', userId)
+            .gte('date', startDate)
+            .lte('date', endDate),
+        _client
+            .from('expenses')
+            .select()
+            .eq('user_id', userId)
+            .gte('date', startDate)
+            .lte('date', endDate),
+        _client
+            .from('vet_records')
+            .select('cost')
+            .eq('user_id', userId)
+            .gte('date', startDate)
+            .lte('date', endDate),
+      ]);
 
+      // Process egg records
       int eggsCollected = 0;
       int eggsConsumed = 0;
-      for (final r in eggRecords as List) {
+      for (final r in results[0] as List) {
         eggsCollected += (r['eggs_collected'] as num?)?.toInt() ?? 0;
         eggsConsumed += (r['eggs_consumed'] as num?)?.toInt() ?? 0;
       }
 
-      // Get sales for the week
-      final sales = await _client
-          .from('egg_sales')
-          .select()
-          .eq('user_id', userId)
-          .gte('date', startDate)
-          .lte('date', endDate);
-
+      // Process sales
       int eggsSold = 0;
       double revenue = 0;
-      for (final s in sales as List) {
+      for (final s in results[1] as List) {
         eggsSold += (s['quantity_sold'] as num?)?.toInt() ?? 0;
         revenue += (s['total_amount'] as num?)?.toDouble() ?? 0.0;
       }
 
-      // Get expenses for the week
-      final expenses = await _client
-          .from('expenses')
-          .select()
-          .eq('user_id', userId)
-          .gte('date', startDate)
-          .lte('date', endDate);
-
+      // Process expenses
       double totalExpenses = 0;
-      for (final e in expenses as List) {
+      for (final e in results[2] as List) {
         totalExpenses += (e['amount'] as num?)?.toDouble() ?? 0.0;
       }
 
       // Add vet costs
-      final vetRecords = await _client
-          .from('vet_records')
-          .select('cost')
-          .eq('user_id', userId)
-          .gte('date', startDate)
-          .lte('date', endDate);
-
-      for (final v in vetRecords as List) {
+      for (final v in results[3] as List) {
         totalExpenses += (v['cost'] as num?)?.toDouble() ?? 0.0;
       }
 
