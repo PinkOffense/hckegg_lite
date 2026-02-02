@@ -378,6 +378,22 @@ class _SettingsPageState extends State<SettingsPage> {
                     if (value.length < 8) {
                       return locale == 'pt' ? 'Mínimo 8 caracteres' : 'Minimum 8 characters';
                     }
+                    // Password complexity validation
+                    if (!value.contains(RegExp(r'[A-Z]'))) {
+                      return locale == 'pt'
+                          ? 'Deve conter letra maiúscula'
+                          : 'Must contain uppercase letter';
+                    }
+                    if (!value.contains(RegExp(r'[a-z]'))) {
+                      return locale == 'pt'
+                          ? 'Deve conter letra minúscula'
+                          : 'Must contain lowercase letter';
+                    }
+                    if (!value.contains(RegExp(r'[0-9]'))) {
+                      return locale == 'pt'
+                          ? 'Deve conter um número'
+                          : 'Must contain a number';
+                    }
                     return null;
                   },
                 ),

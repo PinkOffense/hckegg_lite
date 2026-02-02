@@ -37,6 +37,12 @@ class _LoginPageState extends State<LoginPage>
   String? _passError;
   String? _confirmPassError;
 
+  // Rate limiting for brute force protection
+  int _failedAttempts = 0;
+  DateTime? _lockoutUntil;
+  static const int _maxAttempts = 5;
+  static const Duration _baseLockoutDuration = Duration(seconds: 30);
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -196,7 +202,42 @@ class _LoginPageState extends State<LoginPage>
     return isValid;
   }
 
+  /// Check if user is currently locked out due to failed attempts
+  bool _isLockedOut() {
+    if (_lockoutUntil == null) return false;
+    if (DateTime.now().isAfter(_lockoutUntil!)) {
+      _lockoutUntil = null;
+      return false;
+    }
+    return true;
+  }
+
+  /// Get remaining lockout time in seconds
+  int _getRemainingLockoutSeconds() {
+    if (_lockoutUntil == null) return 0;
+    final remaining = _lockoutUntil!.difference(DateTime.now()).inSeconds;
+    return remaining > 0 ? remaining : 0;
+  }
+
+  /// Apply lockout with exponential backoff
+  void _applyLockout() {
+    // Exponential backoff: 30s, 60s, 120s, 240s...
+    final multiplier = (_failedAttempts ~/ _maxAttempts);
+    final lockoutDuration = _baseLockoutDuration * (1 << multiplier);
+    _lockoutUntil = DateTime.now().add(lockoutDuration);
+  }
+
   Future<void> _submit() async {
+    // Check rate limiting (login only, not signup)
+    if (!_isSignup && _isLockedOut()) {
+      final remaining = _getRemainingLockoutSeconds();
+      _showMessage(
+        'Too many failed attempts. Please wait $remaining seconds.',
+        isError: true,
+      );
+      return;
+    }
+
     // Validate form
     if (!_validateForm()) {
       return;
@@ -225,12 +266,35 @@ class _LoginPageState extends State<LoginPage>
       } else {
         final res = await auth.signIn(email, pass);
         if (res.session == null) {
-          _showMessage('Login failed. Please try again.', isError: true);
+          _failedAttempts++;
+          if (_failedAttempts >= _maxAttempts) {
+            _applyLockout();
+            final seconds = _getRemainingLockoutSeconds();
+            _showMessage(
+              'Too many failed attempts. Locked for $seconds seconds.',
+              isError: true,
+            );
+          } else {
+            final remaining = _maxAttempts - _failedAttempts;
+            _showMessage(
+              'Login failed. $remaining attempts remaining.',
+              isError: true,
+            );
+          }
         } else {
+          // Reset on successful login
+          _failedAttempts = 0;
+          _lockoutUntil = null;
           _showMessage('Welcome back!');
         }
       }
     } on AuthException catch (e) {
+      if (!_isSignup) {
+        _failedAttempts++;
+        if (_failedAttempts >= _maxAttempts) {
+          _applyLockout();
+        }
+      }
       _showMessage(e.message, isError: true);
     } catch (e) {
       _showMessage('An error occurred. Please try again.', isError: true);

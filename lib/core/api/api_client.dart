@@ -14,13 +14,16 @@ class _CacheEntry {
 }
 
 /// API Client for communicating with the HCKEgg backend API
-/// Includes in-memory caching for GET requests
+/// Includes in-memory caching for GET requests and automatic token refresh
 class ApiClient {
   final Dio _dio;
   final String baseUrl;
 
   /// In-memory cache for GET requests
   final Map<String, _CacheEntry> _cache = {};
+
+  /// Flag to prevent infinite refresh loops
+  bool _isRefreshing = false;
 
   /// Default cache TTL (5 minutes)
   static const Duration defaultCacheTtl = Duration(minutes: 5);
@@ -41,7 +44,7 @@ class ApiClient {
       'Accept': 'application/json',
     };
 
-    // Add auth interceptor
+    // Add auth interceptor with 401 retry logic
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -51,7 +54,20 @@ class ApiClient {
           }
           return handler.next(options);
         },
-        onError: (error, handler) {
+        onError: (error, handler) async {
+          // Handle 401 Unauthorized - attempt token refresh and retry
+          if (error.response?.statusCode == 401 && !_isRefreshing) {
+            final refreshed = await _refreshToken();
+            if (refreshed) {
+              // Retry the original request with new token
+              try {
+                final retryResponse = await _retryRequest(error.requestOptions);
+                return handler.resolve(retryResponse);
+              } catch (retryError) {
+                return handler.next(error);
+              }
+            }
+          }
           return handler.next(error);
         },
       ),
@@ -66,6 +82,40 @@ class ApiClient {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Attempt to refresh the Supabase token
+  Future<bool> _refreshToken() async {
+    if (_isRefreshing) return false;
+
+    _isRefreshing = true;
+    try {
+      final response = await Supabase.instance.client.auth.refreshSession();
+      return response.session != null;
+    } catch (_) {
+      return false;
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
+  /// Retry a failed request with fresh token
+  Future<Response<dynamic>> _retryRequest(RequestOptions requestOptions) async {
+    final token = await _getAccessToken();
+    final options = Options(
+      method: requestOptions.method,
+      headers: {
+        ...requestOptions.headers,
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    return _dio.request(
+      requestOptions.path,
+      data: requestOptions.data,
+      queryParameters: requestOptions.queryParameters,
+      options: options,
+    );
   }
 
   /// GET request with optional caching
