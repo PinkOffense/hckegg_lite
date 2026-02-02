@@ -34,6 +34,12 @@ class ApiClient {
     '/api/v1/analytics/week-stats': Duration(minutes: 2),
   };
 
+  /// Endpoints that should never be cached (sensitive data)
+  static const List<String> _noCachePaths = [
+    '/api/v1/auth/profile',
+    '/api/v1/auth/',
+  ];
+
   ApiClient({required this.baseUrl}) : _dio = Dio() {
     _dio.options.baseUrl = baseUrl;
     _dio.options.connectTimeout = const Duration(seconds: 15);
@@ -64,8 +70,13 @@ class ApiClient {
                 final retryResponse = await _retryRequest(error.requestOptions);
                 return handler.resolve(retryResponse);
               } catch (retryError) {
+                // Clear cache on auth failure
+                _cache.clear();
                 return handler.next(error);
               }
+            } else {
+              // Token refresh failed - clear cache to prevent stale data
+              _cache.clear();
             }
           }
           return handler.next(error);
@@ -118,19 +129,28 @@ class ApiClient {
     );
   }
 
+  /// Check if path contains sensitive data that should not be cached
+  bool _isSensitivePath(String path) {
+    return _noCachePaths.any((p) => path.startsWith(p));
+  }
+
   /// GET request with optional caching
   /// Set [useCache] to false to bypass cache
+  /// Sensitive endpoints are never cached regardless of useCache setting
   Future<T> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
     T Function(dynamic)? fromJson,
     bool useCache = true,
   }) async {
+    // Never cache sensitive paths
+    final shouldCache = useCache && !_isSensitivePath(path);
+
     // Build cache key from path and query params
     final cacheKey = _buildCacheKey(path, queryParameters);
 
     // Check cache first
-    if (useCache) {
+    if (shouldCache) {
       final cached = _getFromCache(cacheKey);
       if (cached != null) {
         if (fromJson != null) {
@@ -143,8 +163,8 @@ class ApiClient {
     try {
       final response = await _dio.get(path, queryParameters: queryParameters);
 
-      // Store in cache
-      if (useCache) {
+      // Store in cache (only if not sensitive)
+      if (shouldCache) {
         final ttl = _getCacheTtl(path);
         _cache[cacheKey] = _CacheEntry(response.data, ttl);
       }
@@ -276,6 +296,43 @@ class ApiClient {
     }
   }
 
+  /// Sanitize error message from backend to avoid exposing sensitive details
+  /// Only allows safe, user-friendly messages through
+  String _sanitizeErrorMessage(String? backendMessage, String fallback) {
+    if (backendMessage == null || backendMessage.isEmpty) {
+      return fallback;
+    }
+
+    // Block messages that might expose internal details
+    final sensitivePatterns = [
+      RegExp(r'sql', caseSensitive: false),
+      RegExp(r'database', caseSensitive: false),
+      RegExp(r'exception', caseSensitive: false),
+      RegExp(r'stack\s*trace', caseSensitive: false),
+      RegExp(r'internal\s*error', caseSensitive: false),
+      RegExp(r'null\s*pointer', caseSensitive: false),
+      RegExp(r'undefined', caseSensitive: false),
+      RegExp(r'\.dart:', caseSensitive: false),
+      RegExp(r'\.js:', caseSensitive: false),
+      RegExp(r'at\s+line\s+\d+', caseSensitive: false),
+      RegExp(r'postgres', caseSensitive: false),
+      RegExp(r'supabase', caseSensitive: false),
+    ];
+
+    for (final pattern in sensitivePatterns) {
+      if (pattern.hasMatch(backendMessage)) {
+        return fallback;
+      }
+    }
+
+    // Limit message length to prevent verbose error dumps
+    if (backendMessage.length > 200) {
+      return fallback;
+    }
+
+    return backendMessage;
+  }
+
   /// Handle HTTP response errors
   Failure _handleResponseError(Response? response) {
     if (response == null) {
@@ -287,50 +344,56 @@ class ApiClient {
 
     final statusCode = response.statusCode ?? 0;
     final data = response.data;
-    final errorMessage = data is Map ? data['error'] ?? data['message'] : null;
+    final rawMessage = data is Map
+        ? (data['error'] ?? data['message'])?.toString()
+        : null;
 
     switch (statusCode) {
       case 400:
         return ValidationFailure(
-          message: errorMessage ?? 'Invalid request.',
+          message: _sanitizeErrorMessage(rawMessage, 'Invalid request.'),
           code: 'BAD_REQUEST',
         );
 
       case 401:
         return AuthFailure(
-          message: errorMessage ?? 'Authentication required.',
+          message: _sanitizeErrorMessage(rawMessage, 'Authentication required.'),
           code: 'UNAUTHORIZED',
         );
 
       case 403:
         return PermissionFailure(
-          message: errorMessage ?? 'You do not have permission to perform this action.',
+          message: _sanitizeErrorMessage(
+            rawMessage,
+            'You do not have permission to perform this action.',
+          ),
           code: 'FORBIDDEN',
         );
 
       case 404:
         return NotFoundFailure(
-          message: errorMessage ?? 'Resource not found.',
+          message: _sanitizeErrorMessage(rawMessage, 'Resource not found.'),
           code: 'NOT_FOUND',
         );
 
       case 422:
         return ValidationFailure(
-          message: errorMessage ?? 'Validation error.',
+          message: _sanitizeErrorMessage(rawMessage, 'Validation error.'),
           code: 'VALIDATION_ERROR',
         );
 
       case 500:
       case 502:
       case 503:
-        return ServerFailure(
-          message: errorMessage ?? 'Server error. Please try again later.',
+        // Never expose server error details to users
+        return const ServerFailure(
+          message: 'Server error. Please try again later.',
           code: 'SERVER_ERROR',
         );
 
       default:
         return ServerFailure(
-          message: errorMessage ?? 'An unexpected error occurred.',
+          message: _sanitizeErrorMessage(rawMessage, 'An unexpected error occurred.'),
           code: statusCode.toString(),
         );
     }
