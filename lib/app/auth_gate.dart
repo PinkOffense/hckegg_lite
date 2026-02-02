@@ -8,6 +8,7 @@ import '../pages/login_page.dart';
 import '../pages/dashboard_page.dart';
 import '../state/providers/providers.dart';
 import '../features/eggs/presentation/providers/egg_provider.dart';
+import '../features/analytics/presentation/providers/analytics_provider.dart';
 
 /// Authentication gate that handles routing between login and dashboard.
 ///
@@ -89,6 +90,7 @@ class _AuthGateState extends State<AuthGate> {
         context.read<SaleProvider>().loadSales(),
         context.read<ReservationProvider>().loadReservations(),
         context.read<FeedStockProvider>().loadFeedStocks(),
+        context.read<AnalyticsProvider>().loadDashboardAnalytics(),
       ]);
 
       _dataLoaded = true;

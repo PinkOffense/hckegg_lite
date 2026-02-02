@@ -159,6 +159,16 @@ class _DashboardPageState extends State<DashboardPage>
                 return const SkeletonPage(showStats: true, showChart: true, listItemCount: 3);
               }
 
+              // Show error state with retry option
+              final hasError = eggProvider.hasError || analyticsProvider.hasError;
+              if (hasError && eggProvider.records.isEmpty) {
+                return _ErrorView(
+                  locale: locale,
+                  errorMessage: eggProvider.errorMessage ?? analyticsProvider.errorMessage,
+                  onRetry: _onRefresh,
+                );
+              }
+
               final records = eggProvider.records;
               final todayRecord = eggProvider.getRecordByDate(_todayString);
               final recentRecords = eggProvider.getRecentRecords(7);
@@ -917,6 +927,81 @@ class _AlertsCardFromApi extends StatelessWidget {
                 ],
               ),
             )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Error view with retry button
+class _ErrorView extends StatelessWidget {
+  final String locale;
+  final String? errorMessage;
+  final VoidCallback onRetry;
+
+  const _ErrorView({
+    required this.locale,
+    required this.errorMessage,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.cloud_off,
+              size: 80,
+              color: theme.colorScheme.error.withValues(alpha: 0.7),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              locale == 'pt' ? 'Erro de Ligação' : 'Connection Error',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              locale == 'pt'
+                  ? 'Não foi possível carregar os dados. Verifique a sua ligação à internet.'
+                  : 'Unable to load data. Please check your internet connection.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+              ),
+            ),
+            if (errorMessage != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: Text(locale == 'pt' ? 'Tentar Novamente' : 'Try Again'),
+            ),
           ],
         ),
       ),
