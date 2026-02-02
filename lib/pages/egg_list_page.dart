@@ -39,11 +39,40 @@ class _EggListPageState extends State<EggListPage> {
       title: locale == 'pt' ? 'Registos Diários' : 'Daily Records',
       body: Consumer<EggProvider>(
         builder: (context, eggProvider, _) {
+          final allRecords = eggProvider.records;
           final records = _searchQuery.isEmpty
-              ? eggProvider.records
+              ? allRecords
               : eggProvider.search(_searchQuery);
 
-          if (eggProvider.records.isEmpty) {
+          // Only show loading if no cached data
+          if (eggProvider.isLoading && allRecords.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // Show error only if no cached data
+          if (eggProvider.hasError && allRecords.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
+                  const SizedBox(height: 16),
+                  Text(
+                    locale == 'pt' ? 'Erro ao carregar registos' : 'Error loading records',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () => eggProvider.loadRecords(),
+                    icon: const Icon(Icons.refresh),
+                    label: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (allRecords.isEmpty) {
             return ChickenEmptyState(
               title: locale == 'pt' ? 'Sem Registos' : 'No Records Yet',
               message: locale == 'pt'

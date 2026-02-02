@@ -48,6 +48,40 @@ class _ReservationsPageState extends State<ReservationsPage> {
       return DateTime.parse(r.pickupDate!).isBefore(DateTime.now());
     }).toList();
 
+    // Loading state
+    if (reservationProvider.isLoading && allReservations.isEmpty) {
+      return AppScaffold(
+        title: locale == 'pt' ? 'Reservas de Ovos' : 'Egg Reservations',
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Error state
+    if (reservationProvider.hasError && allReservations.isEmpty) {
+      return AppScaffold(
+        title: locale == 'pt' ? 'Reservas de Ovos' : 'Egg Reservations',
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
+              const SizedBox(height: 16),
+              Text(
+                locale == 'pt' ? 'Erro ao carregar reservas' : 'Error loading reservations',
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () => reservationProvider.loadReservations(),
+                icon: const Icon(Icons.refresh),
+                label: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return AppScaffold(
       title: locale == 'pt' ? 'Reservas de Ovos' : 'Egg Reservations',
       fab: GradientFAB(

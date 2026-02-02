@@ -51,6 +51,40 @@ class _HenHealthPageState extends State<HenHealthPage> {
         })
         .length;
 
+    // Loading state
+    if (vetProvider.isLoading && allRecords.isEmpty) {
+      return AppScaffold(
+        title: t('hen_health'),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Error state
+    if (vetProvider.hasError && allRecords.isEmpty) {
+      return AppScaffold(
+        title: t('hen_health'),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
+              const SizedBox(height: 16),
+              Text(
+                locale == 'pt' ? 'Erro ao carregar registos' : 'Error loading records',
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () => vetProvider.loadRecords(),
+                icon: const Icon(Icons.refresh),
+                label: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return AppScaffold(
       title: t('hen_health'),
       fab: GradientFAB(
