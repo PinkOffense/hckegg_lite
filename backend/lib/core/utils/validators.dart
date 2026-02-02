@@ -301,24 +301,53 @@ class ReservationValidator {
 
 /// Feed stock validation
 class FeedStockValidator {
+  static const _validFeedTypes = ['layer', 'grower', 'starter', 'scratch', 'supplement', 'other'];
+
   static ValidationResult validate(Map<String, dynamic> data, {bool isUpdate = false}) {
     final errors = <String>[];
 
-    if (!isUpdate || data.containsKey('name')) {
-      if (!Validators.isNotEmpty(data['name'] as String?)) {
-        errors.add('name is required');
+    // Type validation (required on create)
+    if (!isUpdate || data.containsKey('type')) {
+      final type = data['type'] as String?;
+      if (!isUpdate && (type == null || type.isEmpty)) {
+        errors.add('type is required');
+      } else if (type != null && !_validFeedTypes.contains(type)) {
+        errors.add('type must be one of: ${_validFeedTypes.join(', ')}');
       }
     }
 
-    if (data.containsKey('quantity')) {
-      if (!Validators.isNonNegativeNumber(data['quantity'])) {
-        errors.add('quantity must be a non-negative number');
+    // Current quantity validation
+    if (data.containsKey('current_quantity_kg')) {
+      if (!Validators.isNonNegativeNumber(data['current_quantity_kg'])) {
+        errors.add('current_quantity_kg must be a non-negative number');
       }
     }
 
-    if (data.containsKey('min_stock_level')) {
-      if (!Validators.isNonNegativeNumber(data['min_stock_level'])) {
-        errors.add('min_stock_level must be a non-negative number');
+    // Minimum quantity validation
+    if (data.containsKey('minimum_quantity_kg')) {
+      if (!Validators.isNonNegativeNumber(data['minimum_quantity_kg'])) {
+        errors.add('minimum_quantity_kg must be a non-negative number');
+      }
+    }
+
+    // Price per kg validation
+    if (data.containsKey('price_per_kg') && data['price_per_kg'] != null) {
+      if (!Validators.isPositiveNumber(data['price_per_kg'])) {
+        errors.add('price_per_kg must be a positive number');
+      }
+    }
+
+    // Brand max length
+    if (data.containsKey('brand') && data['brand'] != null) {
+      if (!Validators.maxLength(data['brand'] as String?, 100)) {
+        errors.add('brand cannot exceed 100 characters');
+      }
+    }
+
+    // Notes max length
+    if (data.containsKey('notes') && data['notes'] != null) {
+      if (!Validators.maxLength(data['notes'] as String?, 500)) {
+        errors.add('notes cannot exceed 500 characters');
       }
     }
 
