@@ -5,9 +5,11 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import '../core/utils/validators.dart';
 import '../models/feed_stock.dart';
 import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
+import 'base_dialog.dart';
 
 class FeedStockDialog extends StatefulWidget {
   final FeedStock? existingStock;
@@ -18,7 +20,7 @@ class FeedStockDialog extends StatefulWidget {
   State<FeedStockDialog> createState() => _FeedStockDialogState();
 }
 
-class _FeedStockDialogState extends State<FeedStockDialog> {
+class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin {
   final _formKey = GlobalKey<FormState>();
   late FeedType _type;
   final _brandController = TextEditingController();
@@ -778,15 +780,8 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
                         hintText: locale == 'pt' ? 'Ex: 25' : 'E.g.: 25',
                       ),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return locale == 'pt' ? 'Número inválido' : 'Invalid number';
-                        }
-                        return null;
-                      },
+                      enabled: !isLoading,
+                      validator: FormValidators.positiveNumber(locale: locale),
                     ),
                     const SizedBox(height: 16),
 
@@ -836,33 +831,23 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
               ),
             ),
 
-            // Footer with buttons
-            Container(
-              padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
-                border: Border(
-                  top: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                  ),
+            // Error banner
+            if (hasError)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: DialogErrorBanner(
+                  message: errorMessage!,
+                  onDismiss: clearError,
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
-                  ),
-                  const SizedBox(width: 12),
-                  FilledButton.icon(
-                    onPressed: _save,
-                    icon: const Icon(Icons.check),
-                    label: Text(locale == 'pt' ? 'Guardar' : 'Save'),
-                  ),
-                ],
-              ),
+
+            // Footer with buttons
+            DialogFooter(
+              onCancel: () => Navigator.pop(context),
+              onSave: _save,
+              cancelText: locale == 'pt' ? 'Cancelar' : 'Cancel',
+              saveText: locale == 'pt' ? 'Guardar' : 'Save',
+              isLoading: isLoading,
             ),
           ],
         ),
@@ -969,43 +954,34 @@ class _FeedStockDialogState extends State<FeedStockDialog> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final now = DateTime.now();
-    final stock = FeedStock(
-      id: widget.existingStock?.id ?? const Uuid().v4(),
-      type: _type,
-      brand: _brandController.text.isEmpty ? null : _brandController.text,
-      currentQuantityKg: double.parse(_quantityController.text),
-      minimumQuantityKg: double.tryParse(_minQuantityController.text) ?? 10.0,
-      pricePerKg: double.tryParse(_priceController.text),
-      notes: _notesController.text.isEmpty ? null : _notesController.text,
-      lastUpdated: now,
-      createdAt: widget.existingStock?.createdAt ?? now,
-    );
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
 
-    try {
-      final success = await context.read<FeedStockProvider>().saveFeedStock(stock);
-      if (mounted) {
-        if (success) {
-          Navigator.pop(context);
-        } else {
-          final error = context.read<FeedStockProvider>().error;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erro ao guardar: ${error ?? "Erro desconhecido"}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao guardar: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+    await executeSave(
+      locale: locale,
+      saveAction: () async {
+        final now = DateTime.now();
+        final stock = FeedStock(
+          id: widget.existingStock?.id ?? const Uuid().v4(),
+          type: _type,
+          brand: _brandController.text.isEmpty ? null : _brandController.text,
+          currentQuantityKg: double.parse(_quantityController.text),
+          minimumQuantityKg: double.tryParse(_minQuantityController.text) ?? 10.0,
+          pricePerKg: double.tryParse(_priceController.text),
+          notes: _notesController.text.isEmpty ? null : _notesController.text,
+          lastUpdated: now,
+          createdAt: widget.existingStock?.createdAt ?? now,
         );
-      }
-    }
+
+        final success = await context.read<FeedStockProvider>().saveFeedStock(stock);
+        if (!success) {
+          throw Exception(context.read<FeedStockProvider>().error ?? 'Unknown error');
+        }
+      },
+      onSuccess: () {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      },
+    );
   }
 }

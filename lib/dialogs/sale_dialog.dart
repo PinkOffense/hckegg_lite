@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../core/date_utils.dart';
+import '../core/utils/validators.dart';
 import '../models/egg_sale.dart';
 import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
+import 'base_dialog.dart';
 
 class SaleDialog extends StatefulWidget {
   final EggSale? existingSale;
@@ -16,7 +18,7 @@ class SaleDialog extends StatefulWidget {
   State<SaleDialog> createState() => _SaleDialogState();
 }
 
-class _SaleDialogState extends State<SaleDialog> {
+class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _quantityController = TextEditingController();
   final _pricePerEggController = TextEditingController();
@@ -141,39 +143,12 @@ class _SaleDialogState extends State<SaleDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Header
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                border: Border(
-                  bottom: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.point_of_sale,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      widget.existingSale != null
-                          ? (locale == 'pt' ? 'Editar Venda' : 'Edit Sale')
-                          : (locale == 'pt' ? 'Nova Venda' : 'New Sale'),
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
+            DialogHeader(
+              title: widget.existingSale != null
+                  ? (locale == 'pt' ? 'Editar Venda' : 'Edit Sale')
+                  : (locale == 'pt' ? 'Nova Venda' : 'New Sale'),
+              icon: Icons.point_of_sale,
+              onClose: () => Navigator.of(context).pop(),
             ),
             // Body
             Expanded(
@@ -182,9 +157,16 @@ class _SaleDialogState extends State<SaleDialog> {
                 child: ListView(
                   padding: const EdgeInsets.all(20),
                   children: [
+                    // Error banner
+                    if (hasError)
+                      DialogErrorBanner(
+                        message: errorMessage!,
+                        onDismiss: clearError,
+                      ),
+
                     // Date
                     InkWell(
-                      onTap: () => _selectDate(context, locale),
+                      onTap: isLoading ? null : () => _selectDate(context, locale),
                       child: InputDecorator(
                         decoration: InputDecoration(
                           labelText: t('date'),
@@ -207,18 +189,8 @@ class _SaleDialogState extends State<SaleDialog> {
                         suffixText: locale == 'pt' ? 'ovos' : 'eggs',
                       ),
                       keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
-                        }
-                        if (int.tryParse(value) == null) {
-                          return locale == 'pt' ? 'Valor inválido' : 'Invalid value';
-                        }
-                        if (int.parse(value) <= 0) {
-                          return locale == 'pt' ? 'Deve ser maior que zero' : 'Must be greater than zero';
-                        }
-                        return null;
-                      },
+                      enabled: !isLoading,
+                      validator: FormValidators.positiveInt(locale: locale),
                     ),
                     const SizedBox(height: 16),
 
@@ -234,18 +206,8 @@ class _SaleDialogState extends State<SaleDialog> {
                               suffixText: '€',
                             ),
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return locale == 'pt' ? 'Obrigatório' : 'Required';
-                              }
-                              if (double.tryParse(value) == null) {
-                                return locale == 'pt' ? 'Inválido' : 'Invalid';
-                              }
-                              if (double.parse(value) <= 0) {
-                                return locale == 'pt' ? '> 0' : '> 0';
-                              }
-                              return null;
-                            },
+                            enabled: !isLoading,
+                            validator: FormValidators.positiveNumber(locale: locale),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -258,18 +220,8 @@ class _SaleDialogState extends State<SaleDialog> {
                               suffixText: '€',
                             ),
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return locale == 'pt' ? 'Obrigatório' : 'Required';
-                              }
-                              if (double.tryParse(value) == null) {
-                                return locale == 'pt' ? 'Inválido' : 'Invalid';
-                              }
-                              if (double.parse(value) <= 0) {
-                                return locale == 'pt' ? '> 0' : '> 0';
-                              }
-                              return null;
-                            },
+                            enabled: !isLoading,
+                            validator: FormValidators.positiveNumber(locale: locale),
                           ),
                         ),
                       ],
@@ -320,18 +272,9 @@ class _SaleDialogState extends State<SaleDialog> {
                     const SizedBox(height: 24),
 
                     // Customer Information Section
-                    Row(
-                      children: [
-                        Icon(Icons.person, size: 20, color: theme.colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          locale == 'pt' ? 'Informação do Cliente (opcional)' : 'Customer Information (optional)',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ],
+                    DialogSectionHeader(
+                      title: locale == 'pt' ? 'Informação do Cliente (opcional)' : 'Customer Information (optional)',
+                      icon: Icons.person,
                     ),
                     const SizedBox(height: 16),
 
@@ -342,6 +285,8 @@ class _SaleDialogState extends State<SaleDialog> {
                         labelText: locale == 'pt' ? 'Nome do Cliente' : 'Customer Name',
                         prefixIcon: const Icon(Icons.person_outline),
                       ),
+                      enabled: !isLoading,
+                      validator: FormValidators.maxLength(100, locale: locale),
                     ),
                     const SizedBox(height: 16),
 
@@ -353,6 +298,8 @@ class _SaleDialogState extends State<SaleDialog> {
                         prefixIcon: Icon(Icons.email_outlined),
                       ),
                       keyboardType: TextInputType.emailAddress,
+                      enabled: !isLoading,
+                      validator: FormValidators.email(locale: locale),
                     ),
                     const SizedBox(height: 16),
 
@@ -364,6 +311,8 @@ class _SaleDialogState extends State<SaleDialog> {
                         prefixIcon: const Icon(Icons.phone_outlined),
                       ),
                       keyboardType: TextInputType.phone,
+                      enabled: !isLoading,
+                      validator: FormValidators.phone(locale: locale),
                     ),
                     const SizedBox(height: 16),
 
@@ -376,22 +325,15 @@ class _SaleDialogState extends State<SaleDialog> {
                         alignLabelWithHint: true,
                       ),
                       maxLines: 3,
+                      enabled: !isLoading,
+                      validator: FormValidators.maxLength(500, locale: locale),
                     ),
                     const SizedBox(height: 24),
 
                     // Payment Section
-                    Row(
-                      children: [
-                        Icon(Icons.payment, size: 20, color: theme.colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          locale == 'pt' ? 'Pagamento' : 'Payment',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ],
+                    DialogSectionHeader(
+                      title: locale == 'pt' ? 'Pagamento' : 'Payment',
+                      icon: Icons.payment,
                     ),
                     const SizedBox(height: 16),
 
@@ -411,7 +353,7 @@ class _SaleDialogState extends State<SaleDialog> {
                           child: Text(status.displayName),
                         );
                       }).toList(),
-                      onChanged: (value) {
+                      onChanged: isLoading ? null : (value) {
                         if (value != null) {
                           setState(() {
                             _paymentStatus = value;
@@ -428,31 +370,12 @@ class _SaleDialogState extends State<SaleDialog> {
               ),
             ),
             // Footer with buttons
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(
-                  top: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                  ),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(t('cancel')),
-                  ),
-                  const SizedBox(width: 12),
-                  FilledButton.icon(
-                    onPressed: _saveSale,
-                    icon: const Icon(Icons.check),
-                    label: Text(t('save')),
-                  ),
-                ],
-              ),
+            DialogFooter(
+              onCancel: () => Navigator.pop(context),
+              onSave: _saveSale,
+              cancelText: t('cancel'),
+              saveText: t('save'),
+              isLoading: isLoading,
             ),
           ],
         ),
@@ -469,7 +392,7 @@ class _SaleDialogState extends State<SaleDialog> {
       locale: Locale(locale),
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() => _selectedDate = picked);
     }
   }
@@ -484,39 +407,53 @@ class _SaleDialogState extends State<SaleDialog> {
     }
   }
 
-  void _saveSale() {
+  Future<void> _saveSale() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final quantity = int.parse(_quantityController.text);
-    final pricePerEgg = double.parse(_pricePerEggController.text);
-    final pricePerDozen = double.parse(_pricePerDozenController.text);
-    final customerName = _customerNameController.text.trim();
-    final customerEmail = _customerEmailController.text.trim();
-    final customerPhone = _customerPhoneController.text.trim();
-    final notes = _notesController.text.trim();
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
 
-    final sale = EggSale(
-      id: widget.existingSale?.id ?? const Uuid().v4(),
-      date: AppDateUtils.toIsoDateString(_selectedDate),
-      quantitySold: quantity,
-      pricePerEgg: pricePerEgg,
-      pricePerDozen: pricePerDozen,
-      customerName: customerName.isEmpty ? null : customerName,
-      customerEmail: customerEmail.isEmpty ? null : customerEmail,
-      customerPhone: customerPhone.isEmpty ? null : customerPhone,
-      notes: notes.isEmpty ? null : notes,
-      paymentStatus: _paymentStatus,
-      paymentDate: _paymentDate != null ? AppDateUtils.toIsoDateString(_paymentDate!) : null,
-      isReservation: false, // Sales are never reservations (reservations are separate)
-      reservationNotes: null,
-      isLost: false, // New sales are never marked as lost initially
-      createdAt: widget.existingSale?.createdAt ?? DateTime.now(),
+    final success = await executeSave(
+      locale: locale,
+      saveAction: () async {
+        final quantity = int.parse(_quantityController.text);
+        final pricePerEgg = double.parse(_pricePerEggController.text);
+        final pricePerDozen = double.parse(_pricePerDozenController.text);
+        final customerName = _customerNameController.text.trim();
+        final customerEmail = _customerEmailController.text.trim();
+        final customerPhone = _customerPhoneController.text.trim();
+        final notes = _notesController.text.trim();
+
+        final sale = EggSale(
+          id: widget.existingSale?.id ?? const Uuid().v4(),
+          date: AppDateUtils.toIsoDateString(_selectedDate),
+          quantitySold: quantity,
+          pricePerEgg: pricePerEgg,
+          pricePerDozen: pricePerDozen,
+          customerName: customerName.isEmpty ? null : customerName,
+          customerEmail: customerEmail.isEmpty ? null : customerEmail,
+          customerPhone: customerPhone.isEmpty ? null : customerPhone,
+          notes: notes.isEmpty ? null : notes,
+          paymentStatus: _paymentStatus,
+          paymentDate: _paymentDate != null ? AppDateUtils.toIsoDateString(_paymentDate!) : null,
+          isReservation: false,
+          reservationNotes: null,
+          isLost: false,
+          createdAt: widget.existingSale?.createdAt ?? DateTime.now(),
+        );
+
+        await context.read<SaleProvider>().saveSale(sale);
+      },
+      onSuccess: () {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      },
     );
 
-    context.read<SaleProvider>().saveSale(sale);
-
-    Navigator.pop(context);
+    if (!success && mounted) {
+      // Error is already shown via setError in executeSave
+    }
   }
 }
