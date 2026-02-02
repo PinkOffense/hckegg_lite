@@ -95,15 +95,22 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   void _loadProvidersInBackground() {
-    // Fire and forget - don't await
-    // Providers notify listeners when done, triggering UI updates
-    context.read<EggProvider>().loadRecords();
-    context.read<ExpenseProvider>().loadExpenses();
-    context.read<VetRecordProvider>().loadVetRecords();
-    context.read<SaleProvider>().loadSales();
-    context.read<ReservationProvider>().loadReservations();
-    context.read<FeedStockProvider>().loadFeedStocks();
-    context.read<AnalyticsProvider>().loadDashboardAnalytics();
+    // Priority 1: Load critical dashboard data first (shown immediately on dashboard)
+    // These run in parallel for faster initial render
+    Future.wait([
+      context.read<EggProvider>().loadRecords(),
+      context.read<AnalyticsProvider>().loadDashboardAnalytics(),
+      context.read<SaleProvider>().loadSales(),
+    ]).then((_) {
+      // Priority 2: Load secondary data after dashboard is visible
+      // These are needed for other pages or less critical dashboard features
+      if (mounted) {
+        context.read<ExpenseProvider>().loadExpenses();
+        context.read<ReservationProvider>().loadReservations();
+        context.read<VetRecordProvider>().loadVetRecords();
+        context.read<FeedStockProvider>().loadFeedStocks();
+      }
+    });
   }
 
   @override
