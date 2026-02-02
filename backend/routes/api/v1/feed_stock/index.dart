@@ -35,16 +35,25 @@ Future<Response> _createFeedStock(RequestContext context) async {
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
     final body = await context.request.json() as Map<String, dynamic>;
+
+    // Validate required fields
+    final validation = FeedStockValidator.validate(body);
+    if (!validation.isValid) {
+      return Response.json(statusCode: HttpStatus.badRequest, body: {'error': validation.errors.join(', ')});
+    }
+
+    final now = DateTime.now().toUtc();
     final feedStock = FeedStock(
       id: '',
       userId: userId,
-      date: body['date'] as String,
-      feedType: body['feed_type'] as String,
-      quantityKg: (body['quantity_kg'] as num).toDouble(),
-      cost: (body['cost'] as num).toDouble(),
-      supplier: body['supplier'] as String?,
+      type: FeedType.fromString(body['type'] as String),
+      brand: body['brand'] as String?,
+      currentQuantityKg: (body['current_quantity_kg'] as num?)?.toDouble() ?? 0.0,
+      minimumQuantityKg: (body['minimum_quantity_kg'] as num?)?.toDouble() ?? 10.0,
+      pricePerKg: (body['price_per_kg'] as num?)?.toDouble(),
       notes: body['notes'] as String?,
-      createdAt: DateTime.now().toUtc(),
+      lastUpdated: now,
+      createdAt: now,
     );
 
     final repository = FeedStockRepositoryImpl(SupabaseClientManager.client);

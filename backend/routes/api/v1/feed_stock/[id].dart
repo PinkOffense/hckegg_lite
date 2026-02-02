@@ -44,15 +44,25 @@ Future<Response> _updateFeedStock(RequestContext context, String id) async {
     if (existingFeedStock.userId != userId) return Response.json(statusCode: HttpStatus.forbidden, body: {'error': 'Access denied'});
 
     final body = await context.request.json() as Map<String, dynamic>;
+
+    // Validate for update
+    final validation = FeedStockValidator.validate(body, isUpdate: true);
+    if (!validation.isValid) {
+      return Response.json(statusCode: HttpStatus.badRequest, body: {'error': validation.errors.join(', ')});
+    }
+
     final updated = FeedStock(
       id: id,
       userId: existingFeedStock.userId,
-      date: (body['date'] as String?) ?? existingFeedStock.date,
-      feedType: (body['feed_type'] as String?) ?? existingFeedStock.feedType,
-      quantityKg: (body['quantity_kg'] as num?)?.toDouble() ?? existingFeedStock.quantityKg,
-      cost: (body['cost'] as num?)?.toDouble() ?? existingFeedStock.cost,
-      supplier: body['supplier'] as String? ?? existingFeedStock.supplier,
-      notes: body['notes'] as String? ?? existingFeedStock.notes,
+      type: body['type'] != null
+          ? FeedType.fromString(body['type'] as String)
+          : existingFeedStock.type,
+      brand: body.containsKey('brand') ? body['brand'] as String? : existingFeedStock.brand,
+      currentQuantityKg: (body['current_quantity_kg'] as num?)?.toDouble() ?? existingFeedStock.currentQuantityKg,
+      minimumQuantityKg: (body['minimum_quantity_kg'] as num?)?.toDouble() ?? existingFeedStock.minimumQuantityKg,
+      pricePerKg: body.containsKey('price_per_kg') ? (body['price_per_kg'] as num?)?.toDouble() : existingFeedStock.pricePerKg,
+      notes: body.containsKey('notes') ? body['notes'] as String? : existingFeedStock.notes,
+      lastUpdated: DateTime.now().toUtc(),
       createdAt: existingFeedStock.createdAt,
     );
 
