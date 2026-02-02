@@ -44,3 +44,8 @@ class NotFoundFailure extends Failure {
 class PermissionFailure extends Failure {
   const PermissionFailure({required super.message, super.code});
 }
+
+/// Network failure (connectivity issues)
+class NetworkFailure extends Failure {
+  const NetworkFailure({required super.message, super.code});
+}

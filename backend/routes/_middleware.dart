@@ -1,6 +1,8 @@
 import 'package:dart_frog/dart_frog.dart';
 
 import '../lib/core/core.dart';
+import '../lib/core/middleware/cors.dart';
+import '../lib/core/middleware/rate_limiter.dart';
 
 /// Global middleware for all routes
 Handler middleware(Handler handler) {
@@ -9,6 +11,7 @@ Handler middleware(Handler handler) {
 
   return handler
       .use(requestLogger())
+      .use(rateLimiter())
       .use(corsMiddleware())
       .use(supabaseProvider());
 }
@@ -34,34 +37,6 @@ Middleware requestLogger() {
     };
   };
 }
-
-/// CORS middleware
-Middleware corsMiddleware() {
-  return (handler) {
-    return (context) async {
-      // Handle preflight requests
-      if (context.request.method == HttpMethod.options) {
-        return Response(
-          statusCode: 200,
-          headers: _corsHeaders,
-        );
-      }
-
-      final response = await handler(context);
-
-      return response.copyWith(
-        headers: {...response.headers, ..._corsHeaders},
-      );
-    };
-  };
-}
-
-const _corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Origin, Content-Type, Authorization, x-user-id',
-  'Access-Control-Max-Age': '86400',
-};
 
 /// Supabase client provider middleware
 Middleware supabaseProvider() {
