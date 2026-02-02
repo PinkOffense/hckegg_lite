@@ -2,48 +2,54 @@ import '../../../../core/core.dart';
 import '../entities/feed_stock.dart';
 
 abstract class FeedStockRepository {
+  // Feed Stock operations
   Future<Result<List<FeedStock>>> getFeedStocks(String userId);
   Future<Result<FeedStock>> getFeedStockById(String id);
-  Future<Result<List<FeedStock>>> getFeedStocksInRange(String userId, String startDate, String endDate);
-  Future<Result<List<FeedStock>>> getFeedStocksByType(String userId, String feedType);
+  Future<Result<List<FeedStock>>> getLowStockItems(String userId);
   Future<Result<FeedStock>> createFeedStock(FeedStock feedStock);
   Future<Result<FeedStock>> updateFeedStock(FeedStock feedStock);
   Future<Result<void>> deleteFeedStock(String id);
-  Future<Result<FeedStockStatistics>> getStatistics(String userId, String startDate, String endDate);
+
+  // Feed Movement operations
+  Future<Result<List<FeedMovement>>> getFeedMovements(
+    String userId,
+    String feedStockId,
+  );
+  Future<Result<FeedMovement>> addFeedMovement(FeedMovement movement);
 }
 
 class FeedStockStatistics {
   const FeedStockStatistics({
-    required this.totalRecords,
+    required this.totalStocks,
+    required this.lowStockCount,
     required this.totalQuantityKg,
-    required this.totalCost,
-    required this.byFeedType,
+    required this.byType,
   });
 
-  final int totalRecords;
+  final int totalStocks;
+  final int lowStockCount;
   final double totalQuantityKg;
-  final double totalCost;
-  final Map<String, FeedTypeStats> byFeedType;
+  final Map<String, FeedTypeStats> byType;
 
   Map<String, dynamic> toJson() => {
-        'total_records': totalRecords,
+        'total_stocks': totalStocks,
+        'low_stock_count': lowStockCount,
         'total_quantity_kg': totalQuantityKg,
-        'total_cost': totalCost,
-        'by_feed_type': byFeedType.map((k, v) => MapEntry(k, v.toJson())),
+        'by_type': byType.map((k, v) => MapEntry(k, v.toJson())),
       };
 }
 
 class FeedTypeStats {
   const FeedTypeStats({
+    required this.count,
     required this.quantityKg,
-    required this.cost,
   });
 
+  final int count;
   final double quantityKg;
-  final double cost;
 
   Map<String, dynamic> toJson() => {
+        'count': count,
         'quantity_kg': quantityKg,
-        'cost': cost,
       };
 }

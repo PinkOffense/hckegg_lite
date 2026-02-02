@@ -11,8 +11,16 @@ class VetRepositoryImpl implements VetRepository {
   @override
   Future<Result<List<VetRecord>>> getVetRecords(String userId) async {
     try {
-      final response = await _client.from(_table).select().eq('user_id', userId).order('date', ascending: false);
-      return Result.success((response as List).map((j) => VetRecord.fromJson(j as Map<String, dynamic>)).toList());
+      final response = await _client
+          .from(_table)
+          .select()
+          .eq('user_id', userId)
+          .order('date', ascending: false);
+      return Result.success(
+        (response as List)
+            .map((j) => VetRecord.fromJson(j as Map<String, dynamic>))
+            .toList(),
+      );
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }
@@ -21,10 +29,15 @@ class VetRepositoryImpl implements VetRepository {
   @override
   Future<Result<VetRecord>> getVetRecordById(String id) async {
     try {
-      final response = await _client.from(_table).select().eq('id', id).single();
+      final response =
+          await _client.from(_table).select().eq('id', id).single();
       return Result.success(VetRecord.fromJson(response));
     } on PostgrestException catch (e) {
-      if (e.code == 'PGRST116') return Result.failure(const NotFoundFailure(message: 'Vet record not found'));
+      if (e.code == 'PGRST116') {
+        return Result.failure(
+          const NotFoundFailure(message: 'Vet record not found'),
+        );
+      }
       return Result.failure(ServerFailure(message: e.message));
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
@@ -32,20 +45,65 @@ class VetRepositoryImpl implements VetRepository {
   }
 
   @override
-  Future<Result<List<VetRecord>>> getVetRecordsInRange(String userId, String startDate, String endDate) async {
+  Future<Result<List<VetRecord>>> getVetRecordsInRange(
+    String userId,
+    String startDate,
+    String endDate,
+  ) async {
     try {
-      final response = await _client.from(_table).select().eq('user_id', userId).gte('date', startDate).lte('date', endDate).order('date', ascending: false);
-      return Result.success((response as List).map((j) => VetRecord.fromJson(j as Map<String, dynamic>)).toList());
+      final response = await _client
+          .from(_table)
+          .select()
+          .eq('user_id', userId)
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', ascending: false);
+      return Result.success(
+        (response as List)
+            .map((j) => VetRecord.fromJson(j as Map<String, dynamic>))
+            .toList(),
+      );
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }
   }
 
   @override
-  Future<Result<List<VetRecord>>> getVetRecordsByType(String userId, VetRecordType recordType) async {
+  Future<Result<List<VetRecord>>> getVetRecordsByType(
+    String userId,
+    VetRecordType type,
+  ) async {
     try {
-      final response = await _client.from(_table).select().eq('user_id', userId).eq('record_type', recordType.name);
-      return Result.success((response as List).map((j) => VetRecord.fromJson(j as Map<String, dynamic>)).toList());
+      final response = await _client
+          .from(_table)
+          .select()
+          .eq('user_id', userId)
+          .eq('type', type.name);
+      return Result.success(
+        (response as List)
+            .map((j) => VetRecord.fromJson(j as Map<String, dynamic>))
+            .toList(),
+      );
+    } catch (e) {
+      return Result.failure(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<List<VetRecord>>> getUpcomingAppointments(String userId) async {
+    try {
+      final today = DateTime.now().toIso8601String().substring(0, 10);
+      final response = await _client
+          .from(_table)
+          .select()
+          .eq('user_id', userId)
+          .gte('next_action_date', today)
+          .order('next_action_date', ascending: true);
+      return Result.success(
+        (response as List)
+            .map((j) => VetRecord.fromJson(j as Map<String, dynamic>))
+            .toList(),
+      );
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }
@@ -54,18 +112,23 @@ class VetRepositoryImpl implements VetRepository {
   @override
   Future<Result<VetRecord>> createVetRecord(VetRecord vetRecord) async {
     try {
+      final now = DateTime.now().toUtc();
       final data = {
         'user_id': vetRecord.userId,
         'date': vetRecord.date,
-        'record_type': vetRecord.recordType.name,
+        'type': vetRecord.type.name,
         'hens_affected': vetRecord.hensAffected,
         'description': vetRecord.description,
-        'vet_name': vetRecord.vetName,
+        'medication': vetRecord.medication,
         'cost': vetRecord.cost,
+        'next_action_date': vetRecord.nextActionDate,
         'notes': vetRecord.notes,
-        'created_at': DateTime.now().toUtc().toIso8601String(),
+        'severity': vetRecord.severity.name,
+        'created_at': now.toIso8601String(),
+        'updated_at': now.toIso8601String(),
       };
-      final response = await _client.from(_table).insert(data).select().single();
+      final response =
+          await _client.from(_table).insert(data).select().single();
       return Result.success(VetRecord.fromJson(response));
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
@@ -77,14 +140,22 @@ class VetRepositoryImpl implements VetRepository {
     try {
       final data = {
         'date': vetRecord.date,
-        'record_type': vetRecord.recordType.name,
+        'type': vetRecord.type.name,
         'hens_affected': vetRecord.hensAffected,
         'description': vetRecord.description,
-        'vet_name': vetRecord.vetName,
+        'medication': vetRecord.medication,
         'cost': vetRecord.cost,
+        'next_action_date': vetRecord.nextActionDate,
         'notes': vetRecord.notes,
+        'severity': vetRecord.severity.name,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       };
-      final response = await _client.from(_table).update(data).eq('id', vetRecord.id).select().single();
+      final response = await _client
+          .from(_table)
+          .update(data)
+          .eq('id', vetRecord.id)
+          .select()
+          .single();
       return Result.success(VetRecord.fromJson(response));
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
@@ -102,31 +173,44 @@ class VetRepositoryImpl implements VetRepository {
   }
 
   @override
-  Future<Result<VetStatistics>> getStatistics(String userId, String startDate, String endDate) async {
+  Future<Result<VetStatistics>> getStatistics(
+    String userId,
+    String startDate,
+    String endDate,
+  ) async {
     try {
-      final response = await _client.from(_table).select().eq('user_id', userId).gte('date', startDate).lte('date', endDate);
-      final vetRecords = (response as List).map((j) => VetRecord.fromJson(j as Map<String, dynamic>)).toList();
+      final response = await _client
+          .from(_table)
+          .select()
+          .eq('user_id', userId)
+          .gte('date', startDate)
+          .lte('date', endDate);
+      final vetRecords = (response as List)
+          .map((j) => VetRecord.fromJson(j as Map<String, dynamic>))
+          .toList();
 
-      final byRecordType = <String, VetTypeStats>{};
+      final byType = <String, VetTypeStats>{};
       var totalCost = 0.0;
       var totalHensAffected = 0;
       for (final v in vetRecords) {
-        totalCost += v.cost;
+        totalCost += v.cost ?? 0;
         totalHensAffected += v.hensAffected;
-        final existing = byRecordType[v.recordType.name];
-        byRecordType[v.recordType.name] = VetTypeStats(
+        final existing = byType[v.type.name];
+        byType[v.type.name] = VetTypeStats(
           count: (existing?.count ?? 0) + 1,
-          cost: (existing?.cost ?? 0) + v.cost,
+          cost: (existing?.cost ?? 0) + (v.cost ?? 0),
           hensAffected: (existing?.hensAffected ?? 0) + v.hensAffected,
         );
       }
 
-      return Result.success(VetStatistics(
-        totalRecords: vetRecords.length,
-        totalCost: totalCost,
-        totalHensAffected: totalHensAffected,
-        byRecordType: byRecordType,
-      ));
+      return Result.success(
+        VetStatistics(
+          totalRecords: vetRecords.length,
+          totalCost: totalCost,
+          totalHensAffected: totalHensAffected,
+          byType: byType,
+        ),
+      );
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }

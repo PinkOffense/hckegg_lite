@@ -185,12 +185,14 @@ Future<Response> _updateEggRecord(RequestContext context, String id) async {
       date: (body['date'] as String?) ?? existingRecord.date,
       eggsCollected:
           (body['eggs_collected'] as int?) ?? existingRecord.eggsCollected,
-      eggsBroken: (body['eggs_broken'] as int?) ?? existingRecord.eggsBroken,
       eggsConsumed:
           (body['eggs_consumed'] as int?) ?? existingRecord.eggsConsumed,
       notes: body.containsKey('notes')
           ? body['notes'] as String?
           : existingRecord.notes,
+      henCount: body.containsKey('hen_count')
+          ? body['hen_count'] as int?
+          : existingRecord.henCount,
       createdAt: existingRecord.createdAt,
       updatedAt: DateTime.now().toUtc(),
     );

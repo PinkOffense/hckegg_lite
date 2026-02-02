@@ -105,9 +105,9 @@ class EggRepositoryImpl implements EggRepository {
         'user_id': record.userId,
         'date': record.date,
         'eggs_collected': record.eggsCollected,
-        'eggs_broken': record.eggsBroken,
         'eggs_consumed': record.eggsConsumed,
         'notes': record.notes,
+        'hen_count': record.henCount,
         'created_at': now.toIso8601String(),
         'updated_at': now.toIso8601String(),
       };
@@ -135,9 +135,9 @@ class EggRepositoryImpl implements EggRepository {
     try {
       final data = {
         'eggs_collected': record.eggsCollected,
-        'eggs_broken': record.eggsBroken,
         'eggs_consumed': record.eggsConsumed,
         'notes': record.notes,
+        'hen_count': record.henCount,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       };
 
@@ -208,11 +208,10 @@ class EggRepositoryImpl implements EggRepository {
 
       if (records.isEmpty) {
         return Result.success(
-          EggStatistics(
+          const EggStatistics(
             totalCollected: 0,
-            totalBroken: 0,
             totalConsumed: 0,
-            totalAvailable: 0,
+            totalRemaining: 0,
             averageDaily: 0,
             recordCount: 0,
           ),
@@ -220,24 +219,21 @@ class EggRepositoryImpl implements EggRepository {
       }
 
       var totalCollected = 0;
-      var totalBroken = 0;
       var totalConsumed = 0;
 
       for (final record in records) {
         totalCollected += record['eggs_collected'] as int;
-        totalBroken += (record['eggs_broken'] as int?) ?? 0;
         totalConsumed += (record['eggs_consumed'] as int?) ?? 0;
       }
 
-      final totalAvailable = totalCollected - totalBroken - totalConsumed;
+      final totalRemaining = totalCollected - totalConsumed;
       final averageDaily = totalCollected / records.length;
 
       return Result.success(
         EggStatistics(
           totalCollected: totalCollected,
-          totalBroken: totalBroken,
           totalConsumed: totalConsumed,
-          totalAvailable: totalAvailable,
+          totalRemaining: totalRemaining,
           averageDaily: averageDaily,
           recordCount: records.length,
         ),

@@ -44,25 +44,22 @@ abstract class EggRepository {
 class EggStatistics {
   const EggStatistics({
     required this.totalCollected,
-    required this.totalBroken,
     required this.totalConsumed,
-    required this.totalAvailable,
+    required this.totalRemaining,
     required this.averageDaily,
     required this.recordCount,
   });
 
   final int totalCollected;
-  final int totalBroken;
   final int totalConsumed;
-  final int totalAvailable;
+  final int totalRemaining;
   final double averageDaily;
   final int recordCount;
 
   Map<String, dynamic> toJson() => {
         'total_collected': totalCollected,
-        'total_broken': totalBroken,
         'total_consumed': totalConsumed,
-        'total_available': totalAvailable,
+        'total_remaining': totalRemaining,
         'average_daily': averageDaily,
         'record_count': recordCount,
       };

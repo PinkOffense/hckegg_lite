@@ -52,7 +52,7 @@ class Expense {
       'amount': amount,
       'description': description,
       'notes': notes,
-      'createdAt': createdAt.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
     };
   }
 
@@ -67,7 +67,9 @@ class Expense {
       amount: (json['amount'] as num).toDouble(),
       description: json['description'] as String,
       notes: json['notes'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
     );
   }
 
