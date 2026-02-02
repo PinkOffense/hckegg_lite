@@ -190,6 +190,7 @@ class _RecordCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const _RecordCard({
+    super.key,
     required this.record,
     required this.locale,
     required this.onTap,

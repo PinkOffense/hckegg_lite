@@ -572,6 +572,7 @@ class _EventCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const _EventCard({
+    super.key,
     required this.record,
     required this.locale,
     this.showDate = false,

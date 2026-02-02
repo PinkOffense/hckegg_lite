@@ -393,6 +393,7 @@ class _StockCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const _StockCard({
+    super.key,
     required this.stock,
     required this.locale,
     required this.onConsume,

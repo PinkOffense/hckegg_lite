@@ -298,6 +298,7 @@ class _VetRecordCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const _VetRecordCard({
+    super.key,
     required this.record,
     required this.locale,
     required this.onTap,
