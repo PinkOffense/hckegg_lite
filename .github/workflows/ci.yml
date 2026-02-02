@@ -26,6 +26,10 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Generate localizations
+        run: flutter gen-l10n
+        continue-on-error: true
+
       - name: Check formatting
         run: dart format --set-exit-if-changed .
 
@@ -49,6 +53,10 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Generate localizations
+        run: flutter gen-l10n
+        continue-on-error: true
+
       - name: Run unit tests with coverage
         run: flutter test --coverage
 
@@ -62,10 +70,15 @@ jobs:
       - name: Check coverage threshold
         run: |
           if [ -f coverage/lcov.info ]; then
-            COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | sed 's/.*: //' | sed 's/%.*//')
+            # Install lcov if not present
+            sudo apt-get update && sudo apt-get install -y lcov || true
+            COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | sed 's/.*: //' | sed 's/%.*//' || echo "0")
             echo "Coverage: $COVERAGE%"
-            if (( $(echo "$COVERAGE < 50" | bc -l) )); then
-              echo "::warning::Coverage is below 50%"
+            if [ -n "$COVERAGE" ]; then
+              COVERAGE_INT=${COVERAGE%.*}
+              if [ "$COVERAGE_INT" -lt 60 ]; then
+                echo "::warning::Coverage is below 60% threshold"
+              fi
             fi
           fi
 
@@ -91,6 +104,10 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+        continue-on-error: true
 
       - name: Build APK (debug)
         run: flutter build apk --debug
@@ -119,5 +136,87 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Generate localizations
+        run: flutter gen-l10n
+        continue-on-error: true
+
       - name: Build iOS (no codesign)
         run: flutter build ios --no-codesign --debug
+
+  build-web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+        continue-on-error: true
+
+      - name: Build Web
+        run: flutter build web --release
+
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web/
+          retention-days: 7
+
+  # Deploy web to GitHub Pages (main branch only)
+  deploy-web:
+    name: Deploy Web to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-web
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download web artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: build/web/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Notify on failure
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [analyze, test, build-android, build-ios, build-web]
+    if: failure()
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "❌ Build failed!"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Run: ${{ github.run_id }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
