@@ -31,6 +31,7 @@ class HckEggApp extends StatelessWidget {
         ChangeNotifierProvider<VetRecordProvider>(create: (_) => sl.createVetProvider()),
         ChangeNotifierProvider<FeedStockProvider>(create: (_) => sl.createFeedStockProvider()),
         ChangeNotifierProvider<ReservationProvider>(create: (_) => sl.createReservationProvider()),
+        ChangeNotifierProvider<AnalyticsProvider>(create: (_) => sl.createAnalyticsProvider()),
         // UI providers
         ChangeNotifierProvider(create: (_) => LocaleProvider('en')),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),

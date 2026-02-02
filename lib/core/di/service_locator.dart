@@ -11,6 +11,8 @@ import '../../features/expenses/expenses.dart';
 import '../../features/health/health.dart';
 import '../../features/feed_stock/feed_stock.dart';
 import '../../features/reservations/reservations.dart';
+import '../../features/analytics/data/datasources/analytics_api_datasource.dart';
+import '../../features/analytics/presentation/providers/analytics_provider.dart';
 
 /// Service Locator for dependency injection
 /// All data operations go through the backend API
@@ -37,6 +39,7 @@ class ServiceLocator {
   late final VetRemoteDataSource _vetDataSource;
   late final FeedStockRemoteDataSource _feedStockDataSource;
   late final ReservationRemoteDataSource _reservationDataSource;
+  late final AnalyticsApiDataSource _analyticsDataSource;
 
   // Repositories
   late final EggRepository _eggRepository;
@@ -60,6 +63,7 @@ class ServiceLocator {
     _vetDataSource = VetApiDataSourceImpl(_apiClient);
     _feedStockDataSource = FeedStockApiDataSourceImpl(apiClient: _apiClient);
     _reservationDataSource = ReservationApiDataSourceImpl(apiClient: _apiClient);
+    _analyticsDataSource = AnalyticsApiDataSource(_apiClient);
 
     // Initialize Repositories
     _eggRepository = EggRepositoryImpl(remoteDataSource: _eggDataSource);
@@ -148,5 +152,11 @@ class ServiceLocator {
       deleteReservation: DeleteReservation(_reservationRepository),
       createSale: CreateSale(_saleRepository),
     );
+  }
+
+  // ===== ANALYTICS FEATURE =====
+
+  AnalyticsProvider createAnalyticsProvider() {
+    return AnalyticsProvider(_analyticsDataSource);
   }
 }
