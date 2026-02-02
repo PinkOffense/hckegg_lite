@@ -9,7 +9,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../services/auth_service.dart';
-import '../widgets/accessible_text_field.dart';
 import '../widgets/animated_chickens.dart';
 
 class LoginPage extends StatefulWidget {
