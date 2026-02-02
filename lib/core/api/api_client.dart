@@ -3,10 +3,33 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../errors/failures.dart';
 
+/// Simple in-memory cache entry with TTL
+class _CacheEntry {
+  final dynamic data;
+  final DateTime expiresAt;
+
+  _CacheEntry(this.data, Duration ttl) : expiresAt = DateTime.now().add(ttl);
+
+  bool get isExpired => DateTime.now().isAfter(expiresAt);
+}
+
 /// API Client for communicating with the HCKEgg backend API
+/// Includes in-memory caching for GET requests
 class ApiClient {
   final Dio _dio;
   final String baseUrl;
+
+  /// In-memory cache for GET requests
+  final Map<String, _CacheEntry> _cache = {};
+
+  /// Default cache TTL (5 minutes)
+  static const Duration defaultCacheTtl = Duration(minutes: 5);
+
+  /// Cache TTL for different endpoints
+  static const Map<String, Duration> _cacheTtlByPath = {
+    '/api/v1/analytics': Duration(minutes: 2),
+    '/api/v1/analytics/week-stats': Duration(minutes: 2),
+  };
 
   ApiClient({required this.baseUrl}) : _dio = Dio() {
     _dio.options.baseUrl = baseUrl;
@@ -44,14 +67,37 @@ class ApiClient {
     }
   }
 
-  /// GET request
+  /// GET request with optional caching
+  /// Set [useCache] to false to bypass cache
   Future<T> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
     T Function(dynamic)? fromJson,
+    bool useCache = true,
   }) async {
+    // Build cache key from path and query params
+    final cacheKey = _buildCacheKey(path, queryParameters);
+
+    // Check cache first
+    if (useCache) {
+      final cached = _getFromCache(cacheKey);
+      if (cached != null) {
+        if (fromJson != null) {
+          return fromJson(cached);
+        }
+        return cached as T;
+      }
+    }
+
     try {
       final response = await _dio.get(path, queryParameters: queryParameters);
+
+      // Store in cache
+      if (useCache) {
+        final ttl = _getCacheTtl(path);
+        _cache[cacheKey] = _CacheEntry(response.data, ttl);
+      }
+
       if (fromJson != null) {
         return fromJson(response.data);
       }
@@ -59,6 +105,47 @@ class ApiClient {
     } on DioException catch (e) {
       throw _handleError(e);
     }
+  }
+
+  /// Build a cache key from path and query parameters
+  String _buildCacheKey(String path, Map<String, dynamic>? queryParams) {
+    if (queryParams == null || queryParams.isEmpty) {
+      return path;
+    }
+    final sortedParams = queryParams.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final queryString = sortedParams.map((e) => '${e.key}=${e.value}').join('&');
+    return '$path?$queryString';
+  }
+
+  /// Get cached data if not expired
+  dynamic _getFromCache(String key) {
+    final entry = _cache[key];
+    if (entry == null || entry.isExpired) {
+      _cache.remove(key);
+      return null;
+    }
+    return entry.data;
+  }
+
+  /// Get cache TTL for a path
+  Duration _getCacheTtl(String path) {
+    for (final entry in _cacheTtlByPath.entries) {
+      if (path.startsWith(entry.key)) {
+        return entry.value;
+      }
+    }
+    return defaultCacheTtl;
+  }
+
+  /// Clear all cached data
+  void clearCache() {
+    _cache.clear();
+  }
+
+  /// Clear cache for a specific path
+  void invalidateCache(String pathPrefix) {
+    _cache.removeWhere((key, _) => key.startsWith(pathPrefix));
   }
 
   /// POST request
