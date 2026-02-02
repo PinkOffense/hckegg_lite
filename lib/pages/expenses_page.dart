@@ -13,6 +13,7 @@ import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/expense.dart';
 import '../dialogs/expense_dialog.dart';
+import '../widgets/skeleton_loading.dart';
 
 class ExpensesPage extends StatefulWidget {
   const ExpensesPage({super.key});
@@ -41,6 +42,12 @@ class _ExpensesPageState extends State<ExpensesPage> {
       title: t('expenses'),
       body: Consumer3<SaleProvider, ExpenseProvider, VetProvider>(
         builder: (context, saleProvider, expenseProvider, vetProvider, _) {
+          // Show loading state while data is being fetched
+          final isLoading = expenseProvider.isLoading || saleProvider.isLoading;
+          if (isLoading && expenseProvider.expenses.isEmpty && saleProvider.sales.isEmpty) {
+            return const SkeletonPage(showStats: true, showChart: true, listItemCount: 3);
+          }
+
           final sales = saleProvider.sales;
           final standaloneExpenses = expenseProvider.expenses;
           final vetRecords = vetProvider.vetRecords;
