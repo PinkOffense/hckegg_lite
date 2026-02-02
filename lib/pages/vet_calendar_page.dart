@@ -401,6 +401,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                   itemBuilder: (context, index) {
                     final record = events[index];
                     return _EventCard(
+                      key: ValueKey(record.id),
                       record: record,
                       locale: locale,
                       onTap: () => _editRecord(context, record),
@@ -464,6 +465,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                   itemBuilder: (context, index) {
                     final record = events[index];
                     return _EventCard(
+                      key: ValueKey('upcoming_${record.id}'),
                       record: record,
                       locale: locale,
                       showDate: true,

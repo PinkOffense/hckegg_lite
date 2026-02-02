@@ -93,6 +93,7 @@ class _EggListPageState extends State<EggListPage> {
                           itemBuilder: (context, index) {
                             final record = records[index];
                             return _RecordCard(
+                              key: ValueKey(record.date),
                               record: record,
                               locale: locale,
                               onTap: () => showDialog(

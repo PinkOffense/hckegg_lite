@@ -140,6 +140,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
                 itemBuilder: (context, index) {
                   final stock = stocks[index];
                   return _StockCard(
+                    key: ValueKey(stock.id),
                     stock: stock,
                     locale: locale,
                     onConsume: () => _showConsumeDialog(context, locale, stock),
