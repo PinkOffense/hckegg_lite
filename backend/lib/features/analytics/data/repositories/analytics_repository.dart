@@ -1,20 +1,42 @@
 import 'dart:math';
 import 'package:supabase/supabase.dart';
 import '../../../../core/core.dart';
+import '../../../../core/config/analytics_config.dart';
 import '../../domain/entities/analytics_data.dart';
 
 class AnalyticsRepository {
   AnalyticsRepository(this._client);
   final SupabaseClient _client;
 
+  /// Flag to track if RPC functions are available
+  /// Set to false after first failed RPC call to avoid repeated failures
+  bool _useRpcFunctions = true;
+
   /// Get complete dashboard analytics
+  /// Uses parallel queries for better performance
   Future<Result<DashboardAnalytics>> getDashboardAnalytics(String userId) async {
     try {
-      final production = await _getProductionSummary(userId);
-      final sales = await _getSalesSummary(userId);
-      final expenses = await _getExpensesSummary(userId, sales.totalRevenue);
-      final feed = await _getFeedSummary(userId, production.totalCollected);
-      final health = await _getHealthSummary(userId);
+      // Phase 1: Run independent queries in parallel
+      final results = await Future.wait([
+        _getProductionSummary(userId),
+        _getSalesSummary(userId),
+        _getHealthSummary(userId),
+      ]);
+
+      final production = results[0] as ProductionSummary;
+      final sales = results[1] as SalesSummary;
+      final health = results[2] as HealthSummary;
+
+      // Phase 2: Run dependent queries in parallel
+      final dependentResults = await Future.wait([
+        _getExpensesSummary(userId, sales.totalRevenue),
+        _getFeedSummary(userId, production.totalCollected),
+      ]);
+
+      final expenses = dependentResults[0] as ExpensesSummary;
+      final feed = dependentResults[1] as FeedSummary;
+
+      // Phase 3: Get alerts (depends on feed and health)
       final alerts = await _getAlerts(userId, feed, health);
 
       return Result.success(DashboardAnalytics(
@@ -30,8 +52,64 @@ class AnalyticsRepository {
     }
   }
 
-  /// Get production summary
+  /// Get production summary using database aggregates when available
   Future<ProductionSummary> _getProductionSummary(String userId) async {
+    if (_useRpcFunctions) {
+      try {
+        return await _getProductionSummaryRpc(userId);
+      } catch (_) {
+        // RPC functions not available, fall back to manual aggregation
+        _useRpcFunctions = false;
+      }
+    }
+    return _getProductionSummaryManual(userId);
+  }
+
+  /// Get production summary using RPC functions (database-side aggregation)
+  Future<ProductionSummary> _getProductionSummaryRpc(String userId) async {
+    // Run RPC calls in parallel
+    final results = await Future.wait([
+      _client.rpc('get_production_totals', params: {'p_user_id': userId}),
+      _client.rpc('get_production_week_data', params: {'p_user_id': userId}),
+      _client.rpc('get_total_eggs_sold', params: {'p_user_id': userId}),
+    ]);
+
+    final totals = (results[0] as List).isNotEmpty ? results[0][0] : {};
+    final weekDataRaw = results[1] as List;
+    final totalSold = (results[2] as num?)?.toInt() ?? 0;
+
+    final totalCollected = (totals['total_collected'] as num?)?.toInt() ?? 0;
+    final totalConsumed = (totals['total_consumed'] as num?)?.toInt() ?? 0;
+    final todayCollected = (totals['today_collected'] as num?)?.toInt() ?? 0;
+    final todayConsumed = (totals['today_consumed'] as num?)?.toInt() ?? 0;
+
+    final weekData = weekDataRaw
+        .map((r) => (r['eggs_collected'] as num?)?.toInt() ?? 0)
+        .toList();
+
+    final totalRemaining = totalCollected - totalConsumed - totalSold;
+    final weekAverage = weekData.isEmpty
+        ? 0.0
+        : weekData.reduce((a, b) => a + b) / weekData.length;
+
+    ProductionPrediction? prediction;
+    if (weekData.length >= AnalyticsConfig.minRecordsForPrediction) {
+      prediction = _calculatePrediction(weekData);
+    }
+
+    return ProductionSummary(
+      totalCollected: totalCollected,
+      totalConsumed: totalConsumed,
+      totalRemaining: totalRemaining < 0 ? 0 : totalRemaining,
+      todayCollected: todayCollected,
+      todayConsumed: todayConsumed,
+      weekAverage: weekAverage,
+      prediction: prediction,
+    );
+  }
+
+  /// Get production summary using manual aggregation (fallback)
+  Future<ProductionSummary> _getProductionSummaryManual(String userId) async {
     final now = DateTime.now();
     final today = _formatDate(now);
     final weekAgo = _formatDate(now.subtract(const Duration(days: 7)));
@@ -85,7 +163,7 @@ class AnalyticsRepository {
 
     // Calculate prediction
     ProductionPrediction? prediction;
-    if (weekData.length >= 3) {
+    if (weekData.length >= AnalyticsConfig.minRecordsForPrediction) {
       prediction = _calculatePrediction(weekData);
     }
 
@@ -114,9 +192,9 @@ class AnalyticsRepository {
       final recentAvg = weekData.take(3).reduce((a, b) => a + b) / min(3, weekData.length);
       final olderAvg = weekData.skip(3).isEmpty ? avg : weekData.skip(3).reduce((a, b) => a + b) / weekData.skip(3).length;
 
-      if (recentAvg > olderAvg * 1.05) {
+      if (recentAvg > olderAvg * (1 + AnalyticsConfig.trendThreshold)) {
         trend = 'up';
-      } else if (recentAvg < olderAvg * 0.95) {
+      } else if (recentAvg < olderAvg * (1 - AnalyticsConfig.trendThreshold)) {
         trend = 'down';
       }
     }
@@ -124,7 +202,9 @@ class AnalyticsRepository {
     final predicted = avg.round();
     final minEggs = (avg - stdDev).round();
     final maxEggs = (avg + stdDev).round();
-    final confidence = weekData.length >= 7 ? 0.85 : 0.6;
+    final confidence = weekData.length >= AnalyticsConfig.highConfidenceThreshold
+        ? AnalyticsConfig.highConfidenceValue
+        : AnalyticsConfig.lowConfidenceValue;
 
     return ProductionPrediction(
       predictedEggs: predicted,
@@ -135,8 +215,42 @@ class AnalyticsRepository {
     );
   }
 
-  /// Get sales summary
+  /// Get sales summary using database aggregates when available
   Future<SalesSummary> _getSalesSummary(String userId) async {
+    if (_useRpcFunctions) {
+      try {
+        return await _getSalesSummaryRpc(userId);
+      } catch (_) {
+        _useRpcFunctions = false;
+      }
+    }
+    return _getSalesSummaryManual(userId);
+  }
+
+  /// Get sales summary using RPC functions (database-side aggregation)
+  Future<SalesSummary> _getSalesSummaryRpc(String userId) async {
+    final result = await _client.rpc('get_sales_totals', params: {'p_user_id': userId});
+    final data = (result as List).isNotEmpty ? result[0] : {};
+
+    final totalQuantity = (data['total_quantity'] as num?)?.toInt() ?? 0;
+    final totalRevenue = (data['total_revenue'] as num?)?.toDouble() ?? 0.0;
+    final avgPrice = totalQuantity > 0 ? totalRevenue / totalQuantity : 0.0;
+
+    return SalesSummary(
+      totalQuantity: totalQuantity,
+      totalRevenue: totalRevenue,
+      averagePricePerEgg: avgPrice,
+      paidAmount: (data['paid_amount'] as num?)?.toDouble() ?? 0.0,
+      pendingAmount: (data['pending_amount'] as num?)?.toDouble() ?? 0.0,
+      advanceAmount: (data['advance_amount'] as num?)?.toDouble() ?? 0.0,
+      lostAmount: (data['lost_amount'] as num?)?.toDouble() ?? 0.0,
+      weekRevenue: (data['week_revenue'] as num?)?.toDouble() ?? 0.0,
+      monthRevenue: (data['month_revenue'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  /// Get sales summary using manual aggregation (fallback)
+  Future<SalesSummary> _getSalesSummaryManual(String userId) async {
     final now = DateTime.now();
     final weekAgo = _formatDate(now.subtract(const Duration(days: 7)));
     final monthAgo = _formatDate(now.subtract(const Duration(days: 30)));
@@ -203,8 +317,66 @@ class AnalyticsRepository {
     );
   }
 
-  /// Get expenses summary
+  /// Get expenses summary using database aggregates when available
   Future<ExpensesSummary> _getExpensesSummary(String userId, double totalRevenue) async {
+    if (_useRpcFunctions) {
+      try {
+        return await _getExpensesSummaryRpc(userId, totalRevenue);
+      } catch (_) {
+        _useRpcFunctions = false;
+      }
+    }
+    return _getExpensesSummaryManual(userId, totalRevenue);
+  }
+
+  /// Get expenses summary using RPC functions (database-side aggregation)
+  Future<ExpensesSummary> _getExpensesSummaryRpc(String userId, double totalRevenue) async {
+    final results = await Future.wait([
+      _client.rpc('get_expenses_totals', params: {'p_user_id': userId}),
+      _client.rpc('get_vet_costs_totals', params: {'p_user_id': userId}),
+    ]);
+
+    final expData = (results[0] as List).isNotEmpty ? results[0][0] : {};
+    final vetData = (results[1] as List).isNotEmpty ? results[1][0] : {};
+
+    final totalExpenses = (expData['total_expenses'] as num?)?.toDouble() ?? 0.0;
+    final totalVetCosts = (vetData['total_vet_costs'] as num?)?.toDouble() ?? 0.0;
+    final weekExpenses = (expData['week_expenses'] as num?)?.toDouble() ?? 0.0;
+    final weekVetCosts = (vetData['week_vet_costs'] as num?)?.toDouble() ?? 0.0;
+    final monthExpenses = (expData['month_expenses'] as num?)?.toDouble() ?? 0.0;
+    final monthVetCosts = (vetData['month_vet_costs'] as num?)?.toDouble() ?? 0.0;
+
+    final byCategory = <String, double>{};
+    if ((expData['feed_expenses'] as num?)?.toDouble() != 0) {
+      byCategory['feed'] = (expData['feed_expenses'] as num).toDouble();
+    }
+    if ((expData['maintenance_expenses'] as num?)?.toDouble() != 0) {
+      byCategory['maintenance'] = (expData['maintenance_expenses'] as num).toDouble();
+    }
+    if ((expData['equipment_expenses'] as num?)?.toDouble() != 0) {
+      byCategory['equipment'] = (expData['equipment_expenses'] as num).toDouble();
+    }
+    if ((expData['utilities_expenses'] as num?)?.toDouble() != 0) {
+      byCategory['utilities'] = (expData['utilities_expenses'] as num).toDouble();
+    }
+    if ((expData['other_expenses'] as num?)?.toDouble() != 0) {
+      byCategory['other'] = (expData['other_expenses'] as num).toDouble();
+    }
+    if (totalVetCosts > 0) {
+      byCategory['vet'] = totalVetCosts;
+    }
+
+    return ExpensesSummary(
+      totalExpenses: totalExpenses + totalVetCosts,
+      byCategory: byCategory,
+      weekExpenses: weekExpenses + weekVetCosts,
+      monthExpenses: monthExpenses + monthVetCosts,
+      netProfit: totalRevenue - (totalExpenses + totalVetCosts),
+    );
+  }
+
+  /// Get expenses summary using manual aggregation (fallback)
+  Future<ExpensesSummary> _getExpensesSummaryManual(String userId, double totalRevenue) async {
     final now = DateTime.now();
     final weekAgo = _formatDate(now.subtract(const Duration(days: 7)));
     final monthAgo = _formatDate(now.subtract(const Duration(days: 30)));
@@ -267,8 +439,78 @@ class AnalyticsRepository {
     );
   }
 
-  /// Get feed summary
+  /// Get feed summary using database aggregates when available
   Future<FeedSummary> _getFeedSummary(String userId, int totalEggsCollected) async {
+    if (_useRpcFunctions) {
+      try {
+        return await _getFeedSummaryRpc(userId, totalEggsCollected);
+      } catch (_) {
+        _useRpcFunctions = false;
+      }
+    }
+    return _getFeedSummaryManual(userId, totalEggsCollected);
+  }
+
+  /// Get feed summary using RPC functions (database-side aggregation)
+  Future<FeedSummary> _getFeedSummaryRpc(String userId, int totalEggsCollected) async {
+    final results = await Future.wait([
+      _client.rpc('get_feed_totals', params: {'p_user_id': userId}),
+      _client.rpc('get_feed_consumed_total', params: {'p_user_id': userId}),
+    ]);
+
+    final feedData = (results[0] as List).isNotEmpty ? results[0][0] : {};
+    final totalConsumedKg = (results[1] as num?)?.toDouble() ?? 0.0;
+
+    final totalStockKg = (feedData['total_stock_kg'] as num?)?.toDouble() ?? 0.0;
+    final lowStockCount = (feedData['low_stock_count'] as num?)?.toInt() ?? 0;
+
+    final byType = <String, double>{};
+    if ((feedData['layer_stock'] as num?)?.toDouble() != 0) {
+      byType['layer'] = (feedData['layer_stock'] as num).toDouble();
+    }
+    if ((feedData['grower_stock'] as num?)?.toDouble() != 0) {
+      byType['grower'] = (feedData['grower_stock'] as num).toDouble();
+    }
+    if ((feedData['starter_stock'] as num?)?.toDouble() != 0) {
+      byType['starter'] = (feedData['starter_stock'] as num).toDouble();
+    }
+    if ((feedData['scratch_stock'] as num?)?.toDouble() != 0) {
+      byType['scratch'] = (feedData['scratch_stock'] as num).toDouble();
+    }
+    if ((feedData['supplement_stock'] as num?)?.toDouble() != 0) {
+      byType['supplement'] = (feedData['supplement_stock'] as num).toDouble();
+    }
+    if ((feedData['other_stock'] as num?)?.toDouble() != 0) {
+      byType['other'] = (feedData['other_stock'] as num).toDouble();
+    }
+
+    final estimatedDays = totalStockKg > 0
+        ? (totalStockKg / AnalyticsConfig.defaultDailyFeedConsumption).round()
+        : 0;
+
+    FeedEfficiency? feedEfficiency;
+    if (totalConsumedKg > 0 && totalEggsCollected > 0) {
+      final kgPerEgg = totalConsumedKg / totalEggsCollected;
+      feedEfficiency = FeedEfficiency(
+        kgPerEgg: kgPerEgg,
+        eggsPerKg: totalEggsCollected / totalConsumedKg,
+        isEfficient: kgPerEgg <= AnalyticsConfig.feedEfficiencyBenchmark,
+        benchmark: AnalyticsConfig.feedEfficiencyBenchmark,
+      );
+    }
+
+    return FeedSummary(
+      totalStockKg: totalStockKg,
+      totalConsumedKg: totalConsumedKg,
+      lowStockCount: lowStockCount,
+      estimatedDaysRemaining: estimatedDays,
+      feedEfficiency: feedEfficiency,
+      byType: byType,
+    );
+  }
+
+  /// Get feed summary using manual aggregation (fallback)
+  Future<FeedSummary> _getFeedSummaryManual(String userId, int totalEggsCollected) async {
     final feedStocks = await _client
         .from('feed_stocks')
         .select()
@@ -308,20 +550,20 @@ class AnalyticsRepository {
       }
     }
 
-    // Calculate estimated days remaining (assuming 0.5 kg/day consumption)
-    final dailyConsumption = 0.5; // Could be calculated from historical data
-    final estimatedDays = totalStockKg > 0 ? (totalStockKg / dailyConsumption).round() : 0;
+    // Calculate estimated days remaining
+    final estimatedDays = totalStockKg > 0
+        ? (totalStockKg / AnalyticsConfig.defaultDailyFeedConsumption).round()
+        : 0;
 
     // Calculate feed efficiency
     FeedEfficiency? feedEfficiency;
     if (totalConsumedKg > 0 && totalEggsCollected > 0) {
       final kgPerEgg = totalConsumedKg / totalEggsCollected;
-      const benchmark = 0.13;
       feedEfficiency = FeedEfficiency(
         kgPerEgg: kgPerEgg,
         eggsPerKg: totalEggsCollected / totalConsumedKg,
-        isEfficient: kgPerEgg <= benchmark,
-        benchmark: benchmark,
+        isEfficient: kgPerEgg <= AnalyticsConfig.feedEfficiencyBenchmark,
+        benchmark: AnalyticsConfig.feedEfficiencyBenchmark,
       );
     }
 
@@ -335,8 +577,34 @@ class AnalyticsRepository {
     );
   }
 
-  /// Get health summary
+  /// Get health summary using database aggregates when available
   Future<HealthSummary> _getHealthSummary(String userId) async {
+    if (_useRpcFunctions) {
+      try {
+        return await _getHealthSummaryRpc(userId);
+      } catch (_) {
+        _useRpcFunctions = false;
+      }
+    }
+    return _getHealthSummaryManual(userId);
+  }
+
+  /// Get health summary using RPC functions (database-side aggregation)
+  Future<HealthSummary> _getHealthSummaryRpc(String userId) async {
+    final result = await _client.rpc('get_health_totals', params: {'p_user_id': userId});
+    final data = (result as List).isNotEmpty ? result[0] : {};
+
+    return HealthSummary(
+      totalDeaths: (data['total_deaths'] as num?)?.toInt() ?? 0,
+      totalAffected: (data['total_affected'] as num?)?.toInt() ?? 0,
+      totalVetCosts: (data['total_vet_costs'] as num?)?.toDouble() ?? 0.0,
+      upcomingActions: (data['upcoming_actions'] as num?)?.toInt() ?? 0,
+      recentRecords: (data['recent_records'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  /// Get health summary using manual aggregation (fallback)
+  Future<HealthSummary> _getHealthSummaryManual(String userId) async {
     final now = DateTime.now();
     final monthAgo = _formatDate(now.subtract(const Duration(days: 30)));
     final today = _formatDate(now);
@@ -409,10 +677,11 @@ class AnalyticsRepository {
         final minQty = (f['minimum_quantity_kg'] as num?)?.toDouble() ?? 10.0;
         if (qty <= minQty) {
           final type = f['type'] as String;
-          final daysRemaining = (qty / 0.5).round();
+          final daysRemaining = (qty / AnalyticsConfig.defaultDailyFeedConsumption).round();
+          final isHighSeverity = qty <= minQty * AnalyticsConfig.lowStockHighSeverityThreshold;
           alerts.add(DashboardAlert(
             type: 'low_stock',
-            severity: qty <= minQty * 0.5 ? 'high' : 'medium',
+            severity: isHighSeverity ? 'high' : 'medium',
             title: 'Low Stock: $type',
             message: '${qty.toStringAsFixed(1)} kg remaining (~$daysRemaining days)',
             data: {'feed_type': type, 'quantity_kg': qty, 'days_remaining': daysRemaining},
@@ -469,66 +738,102 @@ class AnalyticsRepository {
     return alerts;
   }
 
-  /// Get week statistics
+  /// Get week statistics using database aggregates when available
   Future<Result<WeekStats>> getWeekStats(String userId) async {
+    if (_useRpcFunctions) {
+      try {
+        return await _getWeekStatsRpc(userId);
+      } catch (_) {
+        _useRpcFunctions = false;
+      }
+    }
+    return _getWeekStatsManual(userId);
+  }
+
+  /// Get week statistics using RPC function (single database call)
+  Future<Result<WeekStats>> _getWeekStatsRpc(String userId) async {
+    try {
+      final result = await _client.rpc('get_week_stats', params: {'p_user_id': userId});
+      final data = (result as List).isNotEmpty ? result[0] : {};
+
+      final expenses = (data['expenses'] as num?)?.toDouble() ?? 0.0;
+      final revenue = (data['revenue'] as num?)?.toDouble() ?? 0.0;
+
+      return Result.success(WeekStats(
+        eggsCollected: (data['eggs_collected'] as num?)?.toInt() ?? 0,
+        eggsConsumed: (data['eggs_consumed'] as num?)?.toInt() ?? 0,
+        eggsSold: (data['eggs_sold'] as num?)?.toInt() ?? 0,
+        revenue: revenue,
+        expenses: expenses,
+        netProfit: revenue - expenses,
+        startDate: data['start_date']?.toString() ?? '',
+        endDate: data['end_date']?.toString() ?? '',
+      ));
+    } catch (e) {
+      return Result.failure(ServerFailure(message: e.toString()));
+    }
+  }
+
+  /// Get week statistics using manual aggregation (fallback)
+  Future<Result<WeekStats>> _getWeekStatsManual(String userId) async {
     try {
       final now = DateTime.now();
       final weekAgo = now.subtract(const Duration(days: 7));
       final startDate = _formatDate(weekAgo);
       final endDate = _formatDate(now);
 
-      // Get egg records for the week
-      final eggRecords = await _client
-          .from('daily_egg_records')
-          .select()
-          .eq('user_id', userId)
-          .gte('date', startDate)
-          .lte('date', endDate);
+      // Run all queries in parallel - they are independent
+      final results = await Future.wait([
+        _client
+            .from('daily_egg_records')
+            .select()
+            .eq('user_id', userId)
+            .gte('date', startDate)
+            .lte('date', endDate),
+        _client
+            .from('egg_sales')
+            .select()
+            .eq('user_id', userId)
+            .gte('date', startDate)
+            .lte('date', endDate),
+        _client
+            .from('expenses')
+            .select()
+            .eq('user_id', userId)
+            .gte('date', startDate)
+            .lte('date', endDate),
+        _client
+            .from('vet_records')
+            .select('cost')
+            .eq('user_id', userId)
+            .gte('date', startDate)
+            .lte('date', endDate),
+      ]);
 
+      // Process egg records
       int eggsCollected = 0;
       int eggsConsumed = 0;
-      for (final r in eggRecords as List) {
+      for (final r in results[0] as List) {
         eggsCollected += (r['eggs_collected'] as num?)?.toInt() ?? 0;
         eggsConsumed += (r['eggs_consumed'] as num?)?.toInt() ?? 0;
       }
 
-      // Get sales for the week
-      final sales = await _client
-          .from('egg_sales')
-          .select()
-          .eq('user_id', userId)
-          .gte('date', startDate)
-          .lte('date', endDate);
-
+      // Process sales
       int eggsSold = 0;
       double revenue = 0;
-      for (final s in sales as List) {
+      for (final s in results[1] as List) {
         eggsSold += (s['quantity_sold'] as num?)?.toInt() ?? 0;
         revenue += (s['total_amount'] as num?)?.toDouble() ?? 0.0;
       }
 
-      // Get expenses for the week
-      final expenses = await _client
-          .from('expenses')
-          .select()
-          .eq('user_id', userId)
-          .gte('date', startDate)
-          .lte('date', endDate);
-
+      // Process expenses
       double totalExpenses = 0;
-      for (final e in expenses as List) {
+      for (final e in results[2] as List) {
         totalExpenses += (e['amount'] as num?)?.toDouble() ?? 0.0;
       }
 
       // Add vet costs
-      final vetRecords = await _client
-          .from('vet_records')
-          .select('cost')
-          .eq('user_id', userId)
-          .gte('date', startDate)
-          .lte('date', endDate);
-
-      for (final v in vetRecords as List) {
+      for (final v in results[3] as List) {
         totalExpenses += (v['cost'] as num?)?.toDouble() ?? 0.0;
       }
 
