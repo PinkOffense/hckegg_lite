@@ -183,8 +183,9 @@ class ExpensesSummary {
   factory ExpensesSummary.fromJson(Map<String, dynamic> json) {
     final byCat = <String, double>{};
     if (json['by_category'] != null) {
-      (json['by_category'] as Map<String, dynamic>).forEach((k, v) {
-        byCat[k] = (v as num).toDouble();
+      final rawMap = json['by_category'] as Map;
+      rawMap.forEach((k, v) {
+        byCat[k.toString()] = (v as num).toDouble();
       });
     }
     return ExpensesSummary(
@@ -226,8 +227,9 @@ class FeedSummary {
   factory FeedSummary.fromJson(Map<String, dynamic> json) {
     final byT = <String, double>{};
     if (json['by_type'] != null) {
-      (json['by_type'] as Map<String, dynamic>).forEach((k, v) {
-        byT[k] = (v as num).toDouble();
+      final rawMap = json['by_type'] as Map;
+      rawMap.forEach((k, v) {
+        byT[k.toString()] = (v as num).toDouble();
       });
     }
     return FeedSummary(
