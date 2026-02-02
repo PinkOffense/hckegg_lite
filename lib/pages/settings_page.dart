@@ -20,7 +20,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final _profileService = ProfileService(Supabase.instance.client);
+  final _profileService = ProfileService();
   final _authService = AuthService(Supabase.instance.client);
   UserProfile? _profile;
   bool _isLoading = true;

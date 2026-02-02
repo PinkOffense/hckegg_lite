@@ -2,6 +2,53 @@
 class Validators {
   Validators._();
 
+  /// Email regex pattern (RFC 5322 simplified)
+  static final _emailRegex = RegExp(
+    r'^[a-zA-Z0-9.!#$%&*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$',
+  );
+
+  /// URL regex pattern
+  static final _urlRegex = RegExp(
+    r'^https?:\/\/[^\s/$.?#].[^\s]*$',
+    caseSensitive: false,
+  );
+
+  /// Validate email format
+  static bool isValidEmail(String? email) {
+    if (email == null || email.isEmpty) return false;
+    if (email.length > 254) return false; // Max email length per RFC
+    return _emailRegex.hasMatch(email);
+  }
+
+  /// Validate password strength
+  /// Minimum 8 characters
+  static bool isValidPassword(String? password) {
+    if (password == null) return false;
+    return password.length >= 8;
+  }
+
+  /// Validate URL format
+  static bool isValidUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+    if (url.length > 2048) return false; // Practical URL limit
+    return _urlRegex.hasMatch(url);
+  }
+
+  /// Validate display name (alphanumeric, spaces, some punctuation)
+  static bool isValidDisplayName(String? name) {
+    if (name == null) return true; // Optional field
+    if (name.isEmpty) return true;
+    if (name.length > 100) return false;
+    // Allow letters, numbers, spaces, hyphens, apostrophes
+    return RegExp(r"^[\p{L}\p{N}\s\-'\.]+$", unicode: true).hasMatch(name);
+  }
+
+  /// Validate bio text
+  static bool isValidBio(String? bio) {
+    if (bio == null) return true; // Optional field
+    return bio.length <= 500;
+  }
+
   /// Validate ISO date format (YYYY-MM-DD)
   static bool isValidDate(String? date) {
     if (date == null || date.isEmpty) return false;

@@ -13,23 +13,24 @@ import '../../features/feed_stock/feed_stock.dart';
 import '../../features/reservations/reservations.dart';
 
 /// Service Locator for dependency injection
-/// Provides all features with their dependencies properly wired
-/// Supports both Supabase (direct) and API backend modes
+/// All data operations go through the backend API
+/// Supabase is only used for authentication (token management)
 class ServiceLocator {
   static final ServiceLocator _instance = ServiceLocator._internal();
   static ServiceLocator get instance => _instance;
 
   ServiceLocator._internal();
 
-  late final SupabaseClient _client;
-  ApiClient? _apiClient;
+  late final ApiClient _apiClient;
   bool _initialized = false;
 
-  /// Current data source mode
-  DataSourceMode get mode =>
-      ApiConfig.isApiEnabled ? DataSourceMode.api : DataSourceMode.supabase;
+  /// Get the Supabase client (for auth only)
+  SupabaseClient get supabaseClient => Supabase.instance.client;
 
-  // Data Sources
+  /// Get the API client
+  ApiClient get apiClient => _apiClient;
+
+  // Data Sources (all use API)
   late final EggRemoteDataSource _eggDataSource;
   late final SaleRemoteDataSource _saleDataSource;
   late final ExpenseRemoteDataSource _expenseDataSource;
@@ -49,17 +50,18 @@ class ServiceLocator {
   void initialize() {
     if (_initialized) return;
 
-    _client = Supabase.instance.client;
+    // Initialize API client
+    _apiClient = ApiClient(baseUrl: ApiConfig.apiUrl);
 
-    // Initialize API client if API mode is enabled
-    if (ApiConfig.isApiEnabled) {
-      _apiClient = ApiClient(baseUrl: ApiConfig.apiUrl);
-      _initializeApiDataSources();
-    } else {
-      _initializeSupabaseDataSources();
-    }
+    // Initialize all data sources using the API backend
+    _eggDataSource = EggApiDataSourceImpl(_apiClient);
+    _saleDataSource = SaleApiDataSourceImpl(_apiClient);
+    _expenseDataSource = ExpenseApiDataSourceImpl(_apiClient);
+    _vetDataSource = VetApiDataSourceImpl(_apiClient);
+    _feedStockDataSource = FeedStockApiDataSourceImpl(apiClient: _apiClient);
+    _reservationDataSource = ReservationApiDataSourceImpl(apiClient: _apiClient);
 
-    // Initialize Repositories (same for both modes since they use abstract interfaces)
+    // Initialize Repositories
     _eggRepository = EggRepositoryImpl(remoteDataSource: _eggDataSource);
     _saleRepository = SaleRepositoryImpl(remoteDataSource: _saleDataSource);
     _expenseRepository =
@@ -71,27 +73,6 @@ class ServiceLocator {
         ReservationRepositoryImpl(remoteDataSource: _reservationDataSource);
 
     _initialized = true;
-  }
-
-  /// Initialize data sources using Supabase directly
-  void _initializeSupabaseDataSources() {
-    _eggDataSource = EggRemoteDataSourceImpl(_client);
-    _saleDataSource = SaleRemoteDataSourceImpl(_client);
-    _expenseDataSource = ExpenseRemoteDataSourceImpl(_client);
-    _vetDataSource = VetRemoteDataSourceImpl(_client);
-    _feedStockDataSource = FeedStockRemoteDataSourceImpl(client: _client);
-    _reservationDataSource = ReservationRemoteDataSourceImpl(client: _client);
-  }
-
-  /// Initialize data sources using the custom API backend
-  void _initializeApiDataSources() {
-    final apiClient = _apiClient!;
-    _eggDataSource = EggApiDataSourceImpl(apiClient);
-    _saleDataSource = SaleApiDataSourceImpl(apiClient);
-    _expenseDataSource = ExpenseApiDataSourceImpl(apiClient);
-    _vetDataSource = VetApiDataSourceImpl(apiClient);
-    _feedStockDataSource = FeedStockApiDataSourceImpl(apiClient: apiClient);
-    _reservationDataSource = ReservationApiDataSourceImpl(apiClient: apiClient);
   }
 
   // ===== EGG FEATURE =====
