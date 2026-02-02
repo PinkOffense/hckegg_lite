@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/constants/date_constants.dart';
-import '../core/models/week_stats.dart';
 import '../state/providers/providers.dart';
 import '../features/eggs/presentation/providers/egg_provider.dart';
+import '../features/analytics/domain/entities/analytics_data.dart' as analytics;
 import '../widgets/app_scaffold.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/skeleton_loading.dart';
@@ -12,13 +12,10 @@ import '../dialogs/daily_record_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/daily_egg_record.dart';
-import '../models/feed_stock.dart';
 import '../widgets/charts/production_chart.dart';
 import '../widgets/charts/revenue_chart.dart';
 import '../widgets/charts/revenue_vs_expenses_chart.dart';
 import '../services/dashboard_export_service.dart';
-import '../services/production_analytics_service.dart';
-import '../core/date_utils.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -34,7 +31,6 @@ class _DashboardPageState extends State<DashboardPage>
   late Animation<Offset> _slideAnimation;
 
   // Services - created once, reused
-  final _analyticsService = ProductionAnalyticsService();
   final _exportService = DashboardExportService();
 
   @override
@@ -73,7 +69,8 @@ class _DashboardPageState extends State<DashboardPage>
     final expenseProvider = context.read<ExpenseProvider>();
     final reservationProvider = context.read<ReservationProvider>();
     final feedStockProvider = context.read<FeedStockProvider>();
-    final vetRecordProvider = context.read<VetRecordProvider>();
+    final vetProvider = context.read<VetProvider>();
+    final analyticsProvider = context.read<AnalyticsProvider>();
 
     await Future.wait([
       eggProvider.loadRecords(),
@@ -81,7 +78,8 @@ class _DashboardPageState extends State<DashboardPage>
       expenseProvider.loadExpenses(),
       reservationProvider.loadReservations(),
       feedStockProvider.loadFeedStocks(),
-      vetRecordProvider.loadRecords(),
+      vetProvider.loadRecords(),
+      analyticsProvider.loadDashboardAnalytics(),
     ]);
   }
 
@@ -97,104 +95,20 @@ class _DashboardPageState extends State<DashboardPage>
     return DateConstants.formatMonthDay(date, locale);
   }
 
-  /// Build consolidated today's alerts data from multiple providers
-  TodayAlertsData _buildTodayAlertsData({
-    required FeedStockProvider feedStockProvider,
-    required ReservationProvider reservationProvider,
-    required VetRecordProvider vetRecordProvider,
-  }) {
-    final now = DateTime.now();
-    final todayStr = AppDateUtils.toIsoDateString(now);
-    final tomorrowStr = AppDateUtils.toIsoDateString(now.add(const Duration(days: 1)));
-
-    // Feed stock alerts (low stock or any stock for visibility)
-    final feedAlerts = <FeedStockAlertItem>[];
-    for (final stock in feedStockProvider.feedStocks) {
-      // Estimate days remaining based on average consumption
-      // Assume ~0.12-0.15 kg/hen/day, but we'll use a simple calculation
-      final estimatedDays = stock.currentQuantityKg > 0
-          ? (stock.currentQuantityKg / 0.5).round().clamp(0, 999) // rough estimate
-          : 0;
-
-      if (stock.isLowStock || estimatedDays <= 7) {
-        feedAlerts.add(FeedStockAlertItem(
-          feedType: stock.type,
-          currentKg: stock.currentQuantityKg,
-          estimatedDaysRemaining: estimatedDays,
-          isLowStock: stock.isLowStock,
-        ));
-      }
-    }
-
-    // Reservation alerts (today and tomorrow)
-    final reservationAlerts = <ReservationAlertItem>[];
-    for (final reservation in reservationProvider.reservations) {
-      if (reservation.date == todayStr || reservation.date == tomorrowStr) {
-        reservationAlerts.add(ReservationAlertItem(
-          customerName: reservation.customerName ?? 'Unknown',
-          quantity: reservation.quantity,
-          date: reservation.date,
-          isToday: reservation.date == todayStr,
-        ));
-      }
-    }
-
-    // Vet appointment alerts (today)
-    final vetAlerts = <VetAppointmentAlertItem>[];
-    for (final record in vetRecordProvider.getTodayAppointments()) {
-      vetAlerts.add(VetAppointmentAlertItem(
-        description: record.description,
-        date: record.nextActionDate ?? todayStr,
-        hensAffected: record.hensAffected,
-      ));
-    }
-
-    return TodayAlertsData(
-      feedAlerts: feedAlerts,
-      reservationAlerts: reservationAlerts,
-      vetAlerts: vetAlerts,
-    );
-  }
-
   Future<void> _exportDashboard(BuildContext context, String locale) async {
     final eggProvider = context.read<EggProvider>();
-    final saleProvider = context.read<SaleProvider>();
-    final expenseProvider = context.read<ExpenseProvider>();
-    final reservationProvider = context.read<ReservationProvider>();
-    final feedStockProvider = context.read<FeedStockProvider>();
-    final vetRecordProvider = context.read<VetRecordProvider>();
+    final analyticsProvider = context.read<AnalyticsProvider>();
 
     final todayRecord = eggProvider.getRecordByDate(_todayString);
-    final weekStats = eggProvider.getWeekStats(
-      sales: saleProvider.sales,
-      expenses: expenseProvider.expenses,
-    );
     final recentRecords = eggProvider.getRecentRecords(7);
-    final availableEggs = eggProvider.totalEggsCollected - eggProvider.totalEggsConsumed - saleProvider.totalEggsSold;
-    final reservedEggs = reservationProvider.reservations.fold<int>(0, (sum, r) => sum + r.quantity);
-
-    // Get prediction and alert for PDF
-    final prediction = _analyticsService.predictTomorrow(eggProvider.records);
-    final alert = _analyticsService.checkProductionDrop(eggProvider.records);
-
-    // Get today's alerts for PDF
-    final todayAlertsData = _buildTodayAlertsData(
-      feedStockProvider: feedStockProvider,
-      reservationProvider: reservationProvider,
-      vetRecordProvider: vetRecordProvider,
-    );
+    final dashboard = analyticsProvider.dashboard;
 
     try {
-      await _exportService.exportToPdf(
+      await _exportService.exportToPdfFromAnalytics(
         locale: locale,
         todayEggs: todayRecord?.eggsCollected ?? 0,
-        weekStats: weekStats,
         recentRecords: recentRecords,
-        availableEggs: availableEggs,
-        reservedEggs: reservedEggs,
-        prediction: prediction,
-        alert: alert,
-        todayAlerts: todayAlertsData,
+        dashboard: dashboard,
       );
     } catch (e) {
       if (context.mounted) {
@@ -237,33 +151,25 @@ class _DashboardPageState extends State<DashboardPage>
         opacity: _fadeAnimation,
         child: SlideTransition(
           position: _slideAnimation,
-          child: Consumer6<EggProvider, SaleProvider, ExpenseProvider, ReservationProvider, FeedStockProvider, VetRecordProvider>(
-            builder: (context, eggProvider, saleProvider, expenseProvider, reservationProvider, feedStockProvider, vetRecordProvider, _) {
+          child: Consumer3<EggProvider, SaleProvider, AnalyticsProvider>(
+            builder: (context, eggProvider, saleProvider, analyticsProvider, _) {
               // Show loading skeleton on initial load
-              if (eggProvider.state == EggState.loading && eggProvider.records.isEmpty) {
+              final isLoading = eggProvider.state == EggState.loading || analyticsProvider.isLoading;
+              if (isLoading && eggProvider.records.isEmpty) {
                 return const SkeletonPage(showStats: true, showChart: true, listItemCount: 3);
               }
 
               final records = eggProvider.records;
-              final sales = saleProvider.sales;
               final todayRecord = eggProvider.getRecordByDate(_todayString);
-              final weekStats = eggProvider.getWeekStats(
-                sales: sales,
-                expenses: expenseProvider.expenses,
-              );
               final recentRecords = eggProvider.getRecentRecords(7);
               final recentSales = saleProvider.getRecentSales(7);
 
-              // Analytics
-              final prediction = _analyticsService.predictTomorrow(records);
-              final alert = _analyticsService.checkProductionDrop(records);
+              // Analytics from backend
+              final dashboard = analyticsProvider.dashboard;
+              final weekStatsData = analyticsProvider.weekStats;
 
-              // Build today's alerts data
-              final todayAlertsData = _buildTodayAlertsData(
-                feedStockProvider: feedStockProvider,
-                reservationProvider: reservationProvider,
-                vetRecordProvider: vetRecordProvider,
-              );
+            // Get reservation provider for reserved count
+            final reservationProvider = context.watch<ReservationProvider>();
 
             if (records.isEmpty) {
               return ChickenEmptyState(
@@ -344,20 +250,17 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                   const SizedBox(height: 16),
 
-                  // Production Alert (if any)
-                  if (alert != null)
-                    _ProductionAlertCard(alert: alert, locale: locale),
+                  // Tomorrow's Prediction (from backend)
+                  if (dashboard.production.prediction != null)
+                    _PredictionCardFromApi(prediction: dashboard.production.prediction!, locale: locale),
 
-                  // Tomorrow's Prediction
-                  if (prediction != null)
-                    _PredictionCard(prediction: prediction, locale: locale),
-
-                  // Today's Consolidated Alerts
-                  _TodayAlertsCard(alertsData: todayAlertsData, locale: locale),
+                  // Today's Alerts (from backend)
+                  if (dashboard.alerts.isNotEmpty)
+                    _AlertsCardFromApi(alerts: dashboard.alerts, locale: locale),
 
                   const SizedBox(height: 8),
 
-                  // This Week's Stats
+                  // This Week's Stats (from backend)
                   Text(
                     locale == 'pt' ? 'Esta Semana' : 'This Week',
                     style: theme.textTheme.titleLarge?.copyWith(
@@ -371,7 +274,7 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.egg,
                           label: locale == 'pt' ? 'Recolhidos' : 'Collected',
-                          value: '${weekStats.collected}',
+                          value: '${weekStatsData.eggsCollected}',
                           color: colorScheme.primary,
                         ),
                       ),
@@ -380,7 +283,7 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.sell,
                           label: locale == 'pt' ? 'Vendidos' : 'Sold',
-                          value: '${weekStats.sold}',
+                          value: '${weekStatsData.eggsSold}',
                           color: colorScheme.secondary,
                         ),
                       ),
@@ -393,7 +296,7 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.restaurant,
                           label: locale == 'pt' ? 'Consumidos' : 'Consumed',
-                          value: '${weekStats.consumed}',
+                          value: '${weekStatsData.eggsConsumed}',
                           color: colorScheme.tertiary,
                         ),
                       ),
@@ -402,7 +305,7 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.euro,
                           label: locale == 'pt' ? 'Receita' : 'Revenue',
-                          value: '€${weekStats.revenue.toStringAsFixed(2)}',
+                          value: '€${weekStatsData.revenue.toStringAsFixed(2)}',
                           color: Colors.green,
                         ),
                       ),
@@ -417,7 +320,7 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.inventory,
                           label: locale == 'pt' ? 'Disponíveis' : 'Available',
-                          value: '${eggProvider.totalEggsCollected - eggProvider.totalEggsConsumed - saleProvider.totalEggsSold}',
+                          value: '${dashboard.production.totalRemaining}',
                           color: Colors.purple,
                         ),
                       ),
@@ -441,17 +344,17 @@ class _DashboardPageState extends State<DashboardPage>
                         child: _StatCard(
                           icon: Icons.trending_down,
                           label: locale == 'pt' ? 'Despesas' : 'Expenses',
-                          value: '€${weekStats.expenses.toStringAsFixed(2)}',
+                          value: '€${weekStatsData.expenses.toStringAsFixed(2)}',
                           color: Colors.orange,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _StatCard(
-                          icon: weekStats.hasProfit ? Icons.trending_up : Icons.trending_down,
+                          icon: weekStatsData.netProfit >= 0 ? Icons.trending_up : Icons.trending_down,
                           label: locale == 'pt' ? 'Lucro Líquido' : 'Net Profit',
-                          value: '€${weekStats.netProfit.toStringAsFixed(2)}',
-                          color: weekStats.hasProfit ? Colors.green : Colors.red,
+                          value: '€${weekStatsData.netProfit.toStringAsFixed(2)}',
+                          color: weekStatsData.netProfit >= 0 ? Colors.green : Colors.red,
                         ),
                       ),
                     ],
@@ -770,14 +673,36 @@ class _DayRecordCard extends StatelessWidget {
   }
 }
 
-class _PredictionCard extends StatelessWidget {
-  final ProductionPrediction prediction;
+/// Prediction card using backend analytics data
+class _PredictionCardFromApi extends StatelessWidget {
+  final analytics.ProductionPrediction prediction;
   final String locale;
 
-  const _PredictionCard({
+  const _PredictionCardFromApi({
     required this.prediction,
     required this.locale,
   });
+
+  String _getTrendIcon() {
+    switch (prediction.trend) {
+      case 'up':
+        return '↑';
+      case 'down':
+        return '↓';
+      default:
+        return '→';
+    }
+  }
+
+  String _getConfidenceLabel(String locale) {
+    if (prediction.confidence >= 0.8) {
+      return locale == 'pt' ? 'Alta' : 'High';
+    } else if (prediction.confidence >= 0.5) {
+      return locale == 'pt' ? 'Média' : 'Medium';
+    } else {
+      return locale == 'pt' ? 'Baixa' : 'Low';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -836,7 +761,7 @@ class _PredictionCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        locale == 'pt' ? 'ovos' : 'eggs',
+                        '${locale == 'pt' ? 'ovos' : 'eggs'} ${_getTrendIcon()}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.blue.shade600,
                         ),
@@ -846,8 +771,8 @@ class _PredictionCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     locale == 'pt'
-                        ? 'Intervalo: ${prediction.minRange}-${prediction.maxRange} • Confiança: ${prediction.confidence.displayName(locale)}'
-                        : 'Range: ${prediction.minRange}-${prediction.maxRange} • Confidence: ${prediction.confidence.displayName(locale)}',
+                        ? 'Intervalo: ${prediction.minEggs}-${prediction.maxEggs} • Confiança: ${_getConfidenceLabel(locale)}'
+                        : 'Range: ${prediction.minEggs}-${prediction.maxEggs} • Confidence: ${_getConfidenceLabel(locale)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                     ),
@@ -862,185 +787,45 @@ class _PredictionCard extends StatelessWidget {
   }
 }
 
-class _ProductionAlertCard extends StatelessWidget {
-  final ProductionAlert alert;
+/// Alerts card using backend analytics data
+class _AlertsCardFromApi extends StatelessWidget {
+  final List<analytics.DashboardAlert> alerts;
   final String locale;
 
-  const _ProductionAlertCard({
-    required this.alert,
+  const _AlertsCardFromApi({
+    required this.alerts,
     required this.locale,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final Color alertColor;
-    final IconData alertIcon;
-
-    switch (alert.severity) {
-      case AlertSeverity.high:
-        alertColor = Colors.red;
-        alertIcon = Icons.warning_rounded;
-        break;
-      case AlertSeverity.medium:
-        alertColor = Colors.orange;
-        alertIcon = Icons.warning_amber_rounded;
-        break;
-      case AlertSeverity.low:
-        alertColor = Colors.amber;
-        alertIcon = Icons.info_outline;
-        break;
+  Color _getSeverityColor(String severity) {
+    switch (severity) {
+      case 'high':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      default:
+        return Colors.amber;
     }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              alertColor.withValues(alpha: 0.15),
-              alertColor.withValues(alpha: 0.05),
-            ],
-          ),
-          border: Border.all(
-            color: alertColor.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: alertColor.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                alertIcon,
-                color: alertColor,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    locale == 'pt' ? 'Alerta de Produção' : 'Production Alert',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: alertColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    locale == 'pt' ? alert.messagePt : alert.message,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    locale == 'pt'
-                        ? 'Hoje: ${alert.todayValue} ovos • Média: ${alert.averageValue} ovos'
-                        : 'Today: ${alert.todayValue} eggs • Average: ${alert.averageValue} eggs',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
-}
 
-/// Data class for consolidated today's alerts
-class TodayAlertsData {
-  final List<FeedStockAlertItem> feedAlerts;
-  final List<ReservationAlertItem> reservationAlerts;
-  final List<VetAppointmentAlertItem> vetAlerts;
-
-  TodayAlertsData({
-    required this.feedAlerts,
-    required this.reservationAlerts,
-    required this.vetAlerts,
-  });
-
-  bool get hasAlerts =>
-      feedAlerts.isNotEmpty ||
-      reservationAlerts.isNotEmpty ||
-      vetAlerts.isNotEmpty;
-
-  int get totalAlerts =>
-      feedAlerts.length + reservationAlerts.length + vetAlerts.length;
-}
-
-class FeedStockAlertItem {
-  final FeedType feedType;
-  final double currentKg;
-  final int estimatedDaysRemaining;
-  final bool isLowStock;
-
-  FeedStockAlertItem({
-    required this.feedType,
-    required this.currentKg,
-    required this.estimatedDaysRemaining,
-    required this.isLowStock,
-  });
-}
-
-class ReservationAlertItem {
-  final String customerName;
-  final int quantity;
-  final String date;
-  final bool isToday;
-
-  ReservationAlertItem({
-    required this.customerName,
-    required this.quantity,
-    required this.date,
-    required this.isToday,
-  });
-}
-
-class VetAppointmentAlertItem {
-  final String description;
-  final String date;
-  final int hensAffected;
-
-  VetAppointmentAlertItem({
-    required this.description,
-    required this.date,
-    required this.hensAffected,
-  });
-}
-
-class _TodayAlertsCard extends StatelessWidget {
-  final TodayAlertsData alertsData;
-  final String locale;
-
-  const _TodayAlertsCard({
-    required this.alertsData,
-    required this.locale,
-  });
+  IconData _getAlertIcon(String type) {
+    switch (type) {
+      case 'low_stock':
+        return Icons.inventory_2;
+      case 'reservation':
+        return Icons.bookmark;
+      case 'vet':
+        return Icons.medical_services;
+      case 'production':
+        return Icons.trending_down;
+      default:
+        return Icons.notifications;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    if (!alertsData.hasAlerts) {
-      return const SizedBox.shrink();
-    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1088,8 +873,8 @@ class _TodayAlertsCard extends StatelessWidget {
                       ),
                       Text(
                         locale == 'pt'
-                            ? '${alertsData.totalAlerts} ${alertsData.totalAlerts == 1 ? 'item' : 'itens'} a verificar'
-                            : '${alertsData.totalAlerts} ${alertsData.totalAlerts == 1 ? 'item' : 'items'} to check',
+                            ? '${alerts.length} ${alerts.length == 1 ? 'item' : 'itens'} a verificar'
+                            : '${alerts.length} ${alerts.length == 1 ? 'item' : 'items'} to check',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                         ),
@@ -1100,137 +885,40 @@ class _TodayAlertsCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-
-            // Feed Stock Alerts
-            if (alertsData.feedAlerts.isNotEmpty) ...[
-              _AlertSection(
-                icon: Icons.inventory_2,
-                iconColor: Colors.orange,
-                title: locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
-                children: alertsData.feedAlerts.map((alert) => _AlertItem(
-                  text: locale == 'pt'
-                      ? '${alert.feedType.displayName('pt')}: ${alert.currentKg.toStringAsFixed(1)}kg (~${alert.estimatedDaysRemaining} dias)'
-                      : '${alert.feedType.displayName('en')}: ${alert.currentKg.toStringAsFixed(1)}kg (~${alert.estimatedDaysRemaining} days)',
-                  isWarning: alert.isLowStock,
-                )).toList(),
+            ...alerts.map((alert) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    _getAlertIcon(alert.type),
+                    size: 18,
+                    color: _getSeverityColor(alert.severity),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          alert.title,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          alert.message,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-            ],
-
-            // Reservation Alerts
-            if (alertsData.reservationAlerts.isNotEmpty) ...[
-              _AlertSection(
-                icon: Icons.bookmark,
-                iconColor: Colors.blue,
-                title: locale == 'pt' ? 'Reservas Pendentes' : 'Pending Reservations',
-                children: alertsData.reservationAlerts.map((alert) => _AlertItem(
-                  text: locale == 'pt'
-                      ? '${alert.customerName}: ${alert.quantity} ovos ${alert.isToday ? "(HOJE)" : "(amanhã)"}'
-                      : '${alert.customerName}: ${alert.quantity} eggs ${alert.isToday ? "(TODAY)" : "(tomorrow)"}',
-                  isWarning: alert.isToday,
-                )).toList(),
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // Vet Appointment Alerts
-            if (alertsData.vetAlerts.isNotEmpty) ...[
-              _AlertSection(
-                icon: Icons.medical_services,
-                iconColor: Colors.red,
-                title: locale == 'pt' ? 'Consultas Veterinárias' : 'Vet Appointments',
-                children: alertsData.vetAlerts.map((alert) => _AlertItem(
-                  text: locale == 'pt'
-                      ? '${alert.description} (${alert.hensAffected} galinhas)'
-                      : '${alert.description} (${alert.hensAffected} hens)',
-                  isWarning: true,
-                )).toList(),
-              ),
-            ],
+            )),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _AlertSection extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final List<Widget> children;
-
-  const _AlertSection({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.children,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 16, color: iconColor),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ...children,
-      ],
-    );
-  }
-}
-
-class _AlertItem extends StatelessWidget {
-  final String text;
-  final bool isWarning;
-
-  const _AlertItem({
-    required this.text,
-    required this.isWarning,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.only(left: 24, bottom: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: isWarning ? Colors.orange : Colors.grey,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: isWarning
-                    ? theme.textTheme.bodyMedium?.color
-                    : theme.textTheme.bodySmall?.color,
-                fontWeight: isWarning ? FontWeight.w500 : null,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
