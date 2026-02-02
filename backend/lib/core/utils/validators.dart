@@ -177,10 +177,10 @@ class EggRecordValidator {
       }
     }
 
-    // Eggs broken validation
-    if (data.containsKey('eggs_broken')) {
-      if (!Validators.isNonNegativeInt(data['eggs_broken'])) {
-        errors.add('eggs_broken must be a non-negative integer');
+    // Hen count validation
+    if (data.containsKey('hen_count') && data['hen_count'] != null) {
+      if (!Validators.isNonNegativeInt(data['hen_count'])) {
+        errors.add('hen_count must be a non-negative integer');
       }
     }
 

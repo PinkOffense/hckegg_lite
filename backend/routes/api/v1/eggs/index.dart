@@ -131,9 +131,9 @@ Future<Response> _createEggRecord(RequestContext context) async {
       userId: userId,
       date: body['date'] as String,
       eggsCollected: body['eggs_collected'] as int,
-      eggsBroken: (body['eggs_broken'] as int?) ?? 0,
       eggsConsumed: (body['eggs_consumed'] as int?) ?? 0,
       notes: body['notes'] as String?,
+      henCount: body['hen_count'] as int?,
       createdAt: now,
       updatedAt: now,
     );

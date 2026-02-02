@@ -1,15 +1,16 @@
 import 'package:equatable/equatable.dart';
 
 /// Domain entity for daily egg record
+/// Matches database schema: daily_egg_records table
 class EggRecord extends Equatable {
   const EggRecord({
     required this.id,
     required this.userId,
     required this.date,
     required this.eggsCollected,
-    required this.eggsBroken,
     required this.eggsConsumed,
     this.notes,
+    this.henCount,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -18,14 +19,14 @@ class EggRecord extends Equatable {
   final String userId;
   final String date; // Format: YYYY-MM-DD
   final int eggsCollected;
-  final int eggsBroken;
   final int eggsConsumed;
   final String? notes;
+  final int? henCount;
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  /// Calculate eggs available for sale
-  int get eggsAvailable => eggsCollected - eggsBroken - eggsConsumed;
+  /// Calculate eggs remaining (collected - consumed)
+  int get eggsRemaining => eggsCollected - eggsConsumed;
 
   /// Create a copy with updated fields
   EggRecord copyWith({
@@ -33,9 +34,9 @@ class EggRecord extends Equatable {
     String? userId,
     String? date,
     int? eggsCollected,
-    int? eggsBroken,
     int? eggsConsumed,
     String? notes,
+    int? henCount,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -44,9 +45,9 @@ class EggRecord extends Equatable {
       userId: userId ?? this.userId,
       date: date ?? this.date,
       eggsCollected: eggsCollected ?? this.eggsCollected,
-      eggsBroken: eggsBroken ?? this.eggsBroken,
       eggsConsumed: eggsConsumed ?? this.eggsConsumed,
       notes: notes ?? this.notes,
+      henCount: henCount ?? this.henCount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -59,9 +60,9 @@ class EggRecord extends Equatable {
       'user_id': userId,
       'date': date,
       'eggs_collected': eggsCollected,
-      'eggs_broken': eggsBroken,
       'eggs_consumed': eggsConsumed,
       'notes': notes,
+      'hen_count': henCount,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -74,9 +75,9 @@ class EggRecord extends Equatable {
       userId: json['user_id'] as String,
       date: json['date'] as String,
       eggsCollected: json['eggs_collected'] as int,
-      eggsBroken: json['eggs_broken'] as int? ?? 0,
       eggsConsumed: json['eggs_consumed'] as int? ?? 0,
       notes: json['notes'] as String?,
+      henCount: json['hen_count'] as int?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -88,9 +89,9 @@ class EggRecord extends Equatable {
         userId,
         date,
         eggsCollected,
-        eggsBroken,
         eggsConsumed,
         notes,
+        henCount,
         createdAt,
         updatedAt,
       ];
