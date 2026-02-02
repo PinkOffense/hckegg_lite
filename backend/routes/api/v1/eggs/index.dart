@@ -23,7 +23,7 @@ Future<Response> onRequest(RequestContext context) async {
 /// GET /api/v1/eggs
 Future<Response> _getEggRecords(RequestContext context) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) {
       Logger.warning('GET /eggs - Missing user ID');
       return Response.json(
@@ -104,7 +104,7 @@ Future<Response> _getEggRecords(RequestContext context) async {
 /// POST /api/v1/eggs
 Future<Response> _createEggRecord(RequestContext context) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) {
       Logger.warning('POST /eggs - Missing user ID');
       return Response.json(

@@ -15,7 +15,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
 
 Future<Response> _getReservation(RequestContext context, String id) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
     final repository = ReservationRepositoryImpl(SupabaseClientManager.client);
@@ -34,7 +34,7 @@ Future<Response> _getReservation(RequestContext context, String id) async {
 
 Future<Response> _updateReservation(RequestContext context, String id) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
     final repository = ReservationRepositoryImpl(SupabaseClientManager.client);
@@ -69,7 +69,7 @@ Future<Response> _updateReservation(RequestContext context, String id) async {
 
 Future<Response> _deleteReservation(RequestContext context, String id) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
     final repository = ReservationRepositoryImpl(SupabaseClientManager.client);

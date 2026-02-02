@@ -42,7 +42,7 @@ Future<Response> _handleStatistics(RequestContext context) async {
   }
 
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) {
       return Response.json(
         statusCode: HttpStatus.unauthorized,
@@ -89,7 +89,7 @@ Future<Response> _handleStatistics(RequestContext context) async {
 /// GET /api/v1/eggs/:id
 Future<Response> _getEggRecord(RequestContext context, String id) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) {
       Logger.warning('GET /eggs/$id - Missing user ID');
       return Response.json(
@@ -137,7 +137,7 @@ Future<Response> _getEggRecord(RequestContext context, String id) async {
 /// PUT /api/v1/eggs/:id
 Future<Response> _updateEggRecord(RequestContext context, String id) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) {
       Logger.warning('PUT /eggs/$id - Missing user ID');
       return Response.json(
@@ -224,7 +224,7 @@ Future<Response> _updateEggRecord(RequestContext context, String id) async {
 /// DELETE /api/v1/eggs/:id
 Future<Response> _deleteEggRecord(RequestContext context, String id) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) {
       Logger.warning('DELETE /eggs/$id - Missing user ID');
       return Response.json(

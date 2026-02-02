@@ -3,9 +3,32 @@ import 'package:dart_frog/dart_frog.dart';
 import 'logger.dart';
 import 'supabase_client.dart';
 
+/// Wrapper class for authenticated user ID
+/// Used with dart_frog's provider system to pass userId from middleware to handlers
+class AuthenticatedUserId {
+  final String value;
+  const AuthenticatedUserId(this.value);
+
+  @override
+  String toString() => value;
+}
+
 /// Authentication utilities for API endpoints
 class AuthUtils {
   AuthUtils._();
+
+  /// Get the authenticated user ID from the request context
+  /// This reads from the provider set by the auth middleware
+  ///
+  /// Returns null if user is not authenticated (middleware should have blocked this)
+  static String? getUserIdFromContext(RequestContext context) {
+    try {
+      final authUser = context.read<AuthenticatedUserId>();
+      return authUser.value;
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Extract and validate user ID from JWT token in Authorization header
   ///
