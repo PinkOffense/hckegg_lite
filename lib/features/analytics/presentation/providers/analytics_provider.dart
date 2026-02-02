@@ -36,14 +36,21 @@ class AnalyticsProvider extends ChangeNotifier {
   HealthSummary get health => dashboard.health;
   List<DashboardAlert> get alerts => dashboard.alerts;
 
-  /// Load complete dashboard analytics
+  /// Load complete dashboard analytics (includes week stats)
   Future<void> loadDashboardAnalytics() async {
     _state = AnalyticsState.loading;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _dashboardAnalytics = await _dataSource.getDashboardAnalytics();
+      // Load both in parallel for faster dashboard rendering
+      final results = await Future.wait([
+        _dataSource.getDashboardAnalytics(),
+        _dataSource.getWeekStats(),
+      ]);
+
+      _dashboardAnalytics = results[0] as DashboardAnalytics;
+      _weekStats = results[1] as WeekStats;
       _state = AnalyticsState.loaded;
     } catch (e) {
       _errorMessage = e.toString();
@@ -53,7 +60,7 @@ class AnalyticsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Load week statistics
+  /// Load week statistics only (rarely needed standalone)
   Future<void> loadWeekStats() async {
     try {
       _weekStats = await _dataSource.getWeekStats();
@@ -66,10 +73,7 @@ class AnalyticsProvider extends ChangeNotifier {
 
   /// Refresh all analytics
   Future<void> refresh() async {
-    await Future.wait([
-      loadDashboardAnalytics(),
-      loadWeekStats(),
-    ]);
+    await loadDashboardAnalytics();
   }
 
   /// Clear all data (used on logout)

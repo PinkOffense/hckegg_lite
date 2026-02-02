@@ -80,40 +80,62 @@ class FeedStockProvider extends ChangeNotifier {
       if (result.isSuccess) {
         _feedStocks = List.from(result.value);
         _invalidateCache();
-        await _loadTotalConsumed();
         _state = FeedStockState.loaded;
+        notifyListeners();
+
+        // Load total consumed in background - don't block UI
+        _loadTotalConsumedInBackground();
       } else {
         _errorMessage = result.failure.message;
         _state = FeedStockState.error;
+        notifyListeners();
       }
     } catch (e) {
       _errorMessage = e.toString();
       _state = FeedStockState.error;
+      notifyListeners();
     }
-
-    notifyListeners();
   }
 
-  /// Load total consumed from movements
-  Future<void> _loadTotalConsumed() async {
-    _totalFeedConsumed = 0.0;
-    for (final stock in _feedStocks) {
+  /// Load total consumed from movements in background (non-blocking)
+  void _loadTotalConsumedInBackground() {
+    // Fire and forget - runs in parallel, updates UI when done
+    _loadTotalConsumedParallel().then((_) {
+      notifyListeners();
+    });
+  }
+
+  /// Load total consumed from movements - parallelized for performance
+  Future<void> _loadTotalConsumedParallel() async {
+    if (_feedStocks.isEmpty) {
+      _totalFeedConsumed = 0.0;
+      return;
+    }
+
+    // Load all movements in parallel instead of sequentially
+    final futures = _feedStocks.map((stock) async {
       try {
         final movementsResult = await _getFeedMovements(
           GetFeedMovementsParams(feedStockId: stock.id),
         );
         if (movementsResult.isSuccess) {
+          double consumed = 0.0;
           for (final movement in movementsResult.value) {
             if (movement.movementType == StockMovementType.consumption ||
                 movement.movementType == StockMovementType.loss) {
-              _totalFeedConsumed += movement.quantityKg;
+              consumed += movement.quantityKg;
             }
           }
+          return consumed;
         }
       } catch (_) {
         // Ignore movement loading errors
       }
-    }
+      return 0.0;
+    });
+
+    final results = await Future.wait(futures);
+    _totalFeedConsumed = results.fold(0.0, (sum, value) => sum + value);
   }
 
   /// Get low stock items
