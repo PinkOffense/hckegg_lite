@@ -85,7 +85,7 @@ void main() {
     late SyncQueue queue;
 
     setUp(() {
-      queue = SyncQueue();
+      queue = SyncQueue.forTesting();
       queue.clear();
     });
 

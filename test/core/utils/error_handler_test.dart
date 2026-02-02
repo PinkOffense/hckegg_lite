@@ -6,9 +6,9 @@ void main() {
     group('getUserFriendlyMessage - English', () {
       const locale = 'en';
 
-      test('returns network error message for socket exceptions', () {
+      test('returns network error message for socket issues', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('SocketException: Connection refused'),
+          'SocketError: Connection refused',
           locale,
         );
         expect(message, contains('internet'));
@@ -16,7 +16,7 @@ void main() {
 
       test('returns network error message for connection errors', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('Connection failed'),
+          'Connection failed',
           locale,
         );
         expect(message, contains('internet'));
@@ -24,7 +24,7 @@ void main() {
 
       test('returns network error message for timeout errors', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('Request timeout'),
+          'Request timeout',
           locale,
         );
         expect(message, contains('internet'));
@@ -32,7 +32,7 @@ void main() {
 
       test('returns auth error for invalid login', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('Invalid login credentials'),
+          'Invalid login credentials',
           locale,
         );
         expect(message, contains('Invalid email or password'));
@@ -40,7 +40,7 @@ void main() {
 
       test('returns auth error for invalid password', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('Invalid password'),
+          'Invalid password provided',
           locale,
         );
         expect(message, contains('Invalid email or password'));
@@ -48,7 +48,7 @@ void main() {
 
       test('returns auth error for user not found', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('User not found'),
+          'User not found',
           locale,
         );
         expect(message, contains('Invalid email or password'));
@@ -56,7 +56,7 @@ void main() {
 
       test('returns email confirmation message', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('Email not confirmed'),
+          'Email not confirmed',
           locale,
         );
         expect(message, contains('confirm your email'));
@@ -64,7 +64,7 @@ void main() {
 
       test('returns already registered message', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('User already registered'),
+          'User already registered',
           locale,
         );
         expect(message, contains('already registered'));
@@ -72,7 +72,7 @@ void main() {
 
       test('returns rate limit message', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('Too many requests'),
+          'Too many requests',
           locale,
         );
         expect(message, contains('Too many attempts'));
@@ -80,7 +80,7 @@ void main() {
 
       test('returns permission error message', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('Permission denied'),
+          'Permission denied',
           locale,
         );
         expect(message, contains('permission'));
@@ -88,7 +88,7 @@ void main() {
 
       test('returns permission error for forbidden', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('403 Forbidden'),
+          '403 Forbidden',
           locale,
         );
         expect(message, contains('permission'));
@@ -96,7 +96,7 @@ void main() {
 
       test('returns server error message for 500 errors', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('500 Internal Server Error'),
+          '500 Internal Server Error',
           locale,
         );
         expect(message, contains('Server error'));
@@ -104,10 +104,26 @@ void main() {
 
       test('returns generic error for unknown errors', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('Some random error'),
+          'Some random error',
           locale,
         );
         expect(message, contains('Something went wrong'));
+      });
+
+      test('sanitizes sensitive database info', () {
+        final message = ErrorHandler.getUserFriendlyMessage(
+          'SQL syntax error near SELECT',
+          locale,
+        );
+        expect(message, contains('error occurred'));
+      });
+
+      test('sanitizes sensitive stack trace info', () {
+        final message = ErrorHandler.getUserFriendlyMessage(
+          'Error at line 42 in file.dart:123',
+          locale,
+        );
+        expect(message, contains('error occurred'));
       });
     });
 
@@ -116,7 +132,7 @@ void main() {
 
       test('returns network error message in Portuguese', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('SocketException: Connection refused'),
+          'SocketError: Connection refused',
           locale,
         );
         expect(message, contains('ligação'));
@@ -124,7 +140,7 @@ void main() {
 
       test('returns auth error in Portuguese', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('Invalid login credentials'),
+          'Invalid login credentials',
           locale,
         );
         expect(message, contains('incorretos'));
@@ -132,7 +148,7 @@ void main() {
 
       test('returns rate limit message in Portuguese', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('Rate limit exceeded'),
+          'Rate limit exceeded',
           locale,
         );
         expect(message, contains('Demasiadas'));
@@ -140,7 +156,7 @@ void main() {
 
       test('returns server error in Portuguese', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('Internal server error'),
+          'Internal server error',
           locale,
         );
         expect(message, contains('servidor'));
@@ -148,10 +164,28 @@ void main() {
 
       test('returns generic error in Portuguese', () {
         final message = ErrorHandler.getUserFriendlyMessage(
-          Exception('Unknown error'),
+          'Unknown error',
           locale,
         );
         expect(message, contains('correu mal'));
+      });
+    });
+
+    group('sanitizeErrorMessage', () {
+      test('returns message if safe', () {
+        final result = ErrorHandler.sanitizeErrorMessage('Simple error');
+        expect(result, 'Simple error');
+      });
+
+      test('sanitizes SQL keywords', () {
+        final result = ErrorHandler.sanitizeErrorMessage('SQL syntax error');
+        expect(result, 'An error occurred');
+      });
+
+      test('sanitizes long messages', () {
+        final longMessage = 'A' * 250;
+        final result = ErrorHandler.sanitizeErrorMessage(longMessage);
+        expect(result, 'An error occurred');
       });
     });
   });

@@ -4,8 +4,6 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
-import '../utils/connectivity_service.dart';
-
 /// Types of sync operations
 enum SyncOperationType { create, update, delete }
 
@@ -48,7 +46,7 @@ class SyncOperation {
       entityType: json['entityType'] as String,
       entityId: json['entityId'] as String,
       operationType: SyncOperationType.values.byName(json['operationType'] as String),
-      data: json['data'] as Map<String, dynamic>,
+      data: Map<String, dynamic>.from(json['data'] as Map),
       createdAt: DateTime.parse(json['createdAt'] as String),
       retryCount: json['retryCount'] as int? ?? 0,
       lastError: json['lastError'] as String?,
@@ -69,16 +67,31 @@ class SyncResult {
 /// Handler for syncing a specific entity type
 typedef SyncHandler = Future<SyncResult> Function(SyncOperation operation);
 
+/// Interface for connectivity checking (for testability)
+abstract class ConnectivityChecker {
+  bool get isOnline;
+  Stream<bool> get onConnectivityChanged;
+}
+
 /// Sync queue for offline-first functionality
 /// Queues operations when offline and syncs when connection is restored
 class SyncQueue extends ChangeNotifier {
-  static final SyncQueue _instance = SyncQueue._internal();
+  /// Singleton instance for production use
+  static final SyncQueue _instance = SyncQueue._internal(null);
+
+  /// Factory constructor returns singleton
   factory SyncQueue() => _instance;
-  SyncQueue._internal();
+
+  /// Create a test instance with custom connectivity checker
+  factory SyncQueue.forTesting({ConnectivityChecker? connectivity}) {
+    return SyncQueue._internal(connectivity);
+  }
+
+  SyncQueue._internal(this._connectivity);
 
   final List<SyncOperation> _queue = [];
   final Map<String, SyncHandler> _handlers = {};
-  final ConnectivityService _connectivity = ConnectivityService();
+  final ConnectivityChecker? _connectivity;
 
   bool _isSyncing = false;
   StreamSubscription<bool>? _connectivitySubscription;
@@ -102,11 +115,13 @@ class SyncQueue extends ChangeNotifier {
 
   /// Initialize the sync queue
   void initialize() {
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((online) {
-      if (online && _queue.isNotEmpty) {
-        processQueue();
-      }
-    });
+    if (_connectivity != null) {
+      _connectivitySubscription = _connectivity!.onConnectivityChanged.listen((online) {
+        if (online && _queue.isNotEmpty) {
+          processQueue();
+        }
+      });
+    }
   }
 
   /// Register a handler for a specific entity type
@@ -174,7 +189,7 @@ class SyncQueue extends ChangeNotifier {
     notifyListeners();
 
     // Try to sync immediately if online
-    if (_connectivity.isOnline) {
+    if (_connectivity?.isOnline ?? false) {
       processQueue();
     }
   }
@@ -188,7 +203,7 @@ class SyncQueue extends ChangeNotifier {
 
     try {
       // Process operations in order
-      while (_queue.isNotEmpty && _connectivity.isOnline) {
+      while (_queue.isNotEmpty && (_connectivity?.isOnline ?? true)) {
         final operation = _queue.first;
         final handler = _handlers[operation.entityType];
 
@@ -275,7 +290,9 @@ class SyncQueue extends ChangeNotifier {
   }
 
   /// Dispose resources
+  @override
   void dispose() {
     _connectivitySubscription?.cancel();
+    super.dispose();
   }
 }
