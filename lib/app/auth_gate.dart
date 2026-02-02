@@ -56,6 +56,12 @@ class _AuthGateState extends State<AuthGate> {
   void _handleAuthStateChange(AuthState data) {
     final wasSignedIn = _signedIn;
     final isSignedIn = data.session != null;
+    final event = data.event;
+
+    // Token refresh is handled automatically - no UI change needed
+    if (event == AuthChangeEvent.tokenRefreshed) {
+      return;
+    }
 
     // Update signed in state
     if (mounted) {

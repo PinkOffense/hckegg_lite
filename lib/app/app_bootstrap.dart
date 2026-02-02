@@ -28,6 +28,10 @@ Future<void> bootstrap() async {
   await Supabase.initialize(
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
+    authOptions: const FlutterAuthClientOptions(
+      // Auto refresh token before it expires
+      autoRefreshToken: true,
+    ),
   );
 
   // Initialize clean architecture service locator

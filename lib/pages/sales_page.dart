@@ -45,11 +45,13 @@ class _SalesPageState extends State<SalesPage> {
               ? allSales
               : saleProvider.search(_searchQuery);
 
-          if (saleProvider.isLoading) {
+          // Only show loading spinner if there's no cached data
+          if (saleProvider.isLoading && allSales.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (saleProvider.error != null) {
+          // Show error only if there's no cached data
+          if (saleProvider.error != null && allSales.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -62,6 +64,12 @@ class _SalesPageState extends State<SalesPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(saleProvider.error!),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () => saleProvider.loadSales(),
+                    icon: const Icon(Icons.refresh),
+                    label: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
+                  ),
                 ],
               ),
             );
