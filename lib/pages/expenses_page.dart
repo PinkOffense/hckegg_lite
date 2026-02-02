@@ -39,7 +39,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
 
     return AppScaffold(
       title: t('expenses'),
-      body: Consumer3<SaleProvider, ExpenseProvider, VetRecordProvider>(
+      body: Consumer3<SaleProvider, ExpenseProvider, VetProvider>(
         builder: (context, saleProvider, expenseProvider, vetProvider, _) {
           final sales = saleProvider.sales;
           final standaloneExpenses = expenseProvider.expenses;

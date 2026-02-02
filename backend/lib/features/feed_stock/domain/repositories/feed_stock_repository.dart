@@ -17,39 +17,3 @@ abstract class FeedStockRepository {
   );
   Future<Result<FeedMovement>> addFeedMovement(FeedMovement movement);
 }
-
-class FeedStockStatistics {
-  const FeedStockStatistics({
-    required this.totalStocks,
-    required this.lowStockCount,
-    required this.totalQuantityKg,
-    required this.byType,
-  });
-
-  final int totalStocks;
-  final int lowStockCount;
-  final double totalQuantityKg;
-  final Map<String, FeedTypeStats> byType;
-
-  Map<String, dynamic> toJson() => {
-        'total_stocks': totalStocks,
-        'low_stock_count': lowStockCount,
-        'total_quantity_kg': totalQuantityKg,
-        'by_type': byType.map((k, v) => MapEntry(k, v.toJson())),
-      };
-}
-
-class FeedTypeStats {
-  const FeedTypeStats({
-    required this.count,
-    required this.quantityKg,
-  });
-
-  final int count;
-  final double quantityKg;
-
-  Map<String, dynamic> toJson() => {
-        'count': count,
-        'quantity_kg': quantityKg,
-      };
-}

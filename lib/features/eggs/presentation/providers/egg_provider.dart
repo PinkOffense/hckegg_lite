@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/core.dart';
 import '../../../../core/date_utils.dart';
-import '../../../../models/egg_sale.dart';
-import '../../../../models/expense.dart';
 import '../../domain/domain.dart';
 
 /// State for the egg feature
@@ -226,59 +224,6 @@ class EggProvider extends ChangeNotifier {
 
   /// Get total eggs collected today
   int get todayEggs => todayRecord?.eggsCollected ?? 0;
-
-  /// Calculate week statistics
-  WeekStats getWeekStats({
-    required List<EggSale> sales,
-    required List<Expense> expenses,
-  }) {
-    final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final endOfWeek = startOfWeek.add(const Duration(days: 6));
-
-    final startStr = AppDateUtils.toIsoDateString(startOfWeek);
-    final endStr = AppDateUtils.toIsoDateString(endOfWeek);
-
-    // Filter week records
-    final weekRecords = _records.where((r) {
-      return r.date.compareTo(startStr) >= 0 && r.date.compareTo(endStr) <= 0;
-    });
-
-    // Calculate egg statistics
-    int collected = 0;
-    int consumed = 0;
-    for (final record in weekRecords) {
-      collected += record.eggsCollected;
-      consumed += record.eggsConsumed;
-    }
-
-    // Calculate sales statistics
-    int sold = 0;
-    double revenue = 0.0;
-    for (final sale in sales) {
-      if (sale.date.compareTo(startStr) >= 0 && sale.date.compareTo(endStr) <= 0) {
-        sold += sale.quantitySold;
-        revenue += sale.totalAmount;
-      }
-    }
-
-    // Calculate expenses
-    double expensesTotal = 0.0;
-    for (final expense in expenses) {
-      if (expense.date.compareTo(startStr) >= 0 && expense.date.compareTo(endStr) <= 0) {
-        expensesTotal += expense.amount;
-      }
-    }
-
-    return WeekStats(
-      collected: collected,
-      consumed: consumed,
-      sold: sold,
-      revenue: revenue,
-      expenses: expensesTotal,
-      netProfit: revenue - expensesTotal,
-    );
-  }
 
   /// Clear all data (used on logout)
   void clearData() {

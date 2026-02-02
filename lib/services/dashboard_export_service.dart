@@ -2,23 +2,16 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import '../core/models/week_stats.dart';
+import '../features/analytics/domain/entities/analytics_data.dart';
 import '../models/daily_egg_record.dart';
-import '../models/feed_stock.dart';
-import '../pages/dashboard_page.dart' show TodayAlertsData, FeedStockAlertItem, ReservationAlertItem, VetAppointmentAlertItem;
-import 'production_analytics_service.dart';
 
 class DashboardExportService {
-  Future<void> exportToPdf({
+  /// Export dashboard to PDF using backend analytics data
+  Future<void> exportToPdfFromAnalytics({
     required String locale,
     required int todayEggs,
-    required WeekStats weekStats,
     required List<DailyEggRecord> recentRecords,
-    required int availableEggs,
-    required int reservedEggs,
-    ProductionPrediction? prediction,
-    ProductionAlert? alert,
-    TodayAlertsData? todayAlerts,
+    required DashboardAnalytics dashboard,
   }) async {
     final pdf = pw.Document();
     final now = DateTime.now();
@@ -33,21 +26,21 @@ class DashboardExportService {
         build: (context) => [
           _buildTodaySection(locale, todayEggs, dateStr),
           pw.SizedBox(height: 20),
-          if (alert != null) ...[
-            _buildAlertSection(locale, alert),
+          if (dashboard.alerts.isNotEmpty) ...[
+            _buildAlertsSection(locale, dashboard.alerts),
             pw.SizedBox(height: 20),
           ],
-          if (prediction != null) ...[
-            _buildPredictionSection(locale, prediction),
+          if (dashboard.production.prediction != null) ...[
+            _buildPredictionSection(locale, dashboard.production.prediction!),
             pw.SizedBox(height: 20),
           ],
-          if (todayAlerts != null && todayAlerts.hasAlerts) ...[
-            _buildTodayAlertsSection(locale, todayAlerts),
-            pw.SizedBox(height: 20),
-          ],
-          _buildWeekStatsSection(locale, weekStats),
+          _buildProductionStatsSection(locale, dashboard.production),
           pw.SizedBox(height: 20),
-          _buildInventorySection(locale, availableEggs, reservedEggs),
+          _buildSalesStatsSection(locale, dashboard.sales),
+          pw.SizedBox(height: 20),
+          _buildExpensesStatsSection(locale, dashboard.expenses),
+          pw.SizedBox(height: 20),
+          _buildFeedStatsSection(locale, dashboard.feed),
           pw.SizedBox(height: 20),
           _buildRecentRecordsSection(locale, recentRecords),
         ],
@@ -60,16 +53,12 @@ class DashboardExportService {
     );
   }
 
-  Future<Uint8List> generatePdfBytes({
+  /// Generate PDF bytes for testing or custom handling
+  Future<Uint8List> generatePdfBytesFromAnalytics({
     required String locale,
     required int todayEggs,
-    required WeekStats weekStats,
     required List<DailyEggRecord> recentRecords,
-    required int availableEggs,
-    required int reservedEggs,
-    ProductionPrediction? prediction,
-    ProductionAlert? alert,
-    TodayAlertsData? todayAlerts,
+    required DashboardAnalytics dashboard,
   }) async {
     final pdf = pw.Document();
     final now = DateTime.now();
@@ -84,21 +73,21 @@ class DashboardExportService {
         build: (context) => [
           _buildTodaySection(locale, todayEggs, dateStr),
           pw.SizedBox(height: 20),
-          if (alert != null) ...[
-            _buildAlertSection(locale, alert),
+          if (dashboard.alerts.isNotEmpty) ...[
+            _buildAlertsSection(locale, dashboard.alerts),
             pw.SizedBox(height: 20),
           ],
-          if (prediction != null) ...[
-            _buildPredictionSection(locale, prediction),
+          if (dashboard.production.prediction != null) ...[
+            _buildPredictionSection(locale, dashboard.production.prediction!),
             pw.SizedBox(height: 20),
           ],
-          if (todayAlerts != null && todayAlerts.hasAlerts) ...[
-            _buildTodayAlertsSection(locale, todayAlerts),
-            pw.SizedBox(height: 20),
-          ],
-          _buildWeekStatsSection(locale, weekStats),
+          _buildProductionStatsSection(locale, dashboard.production),
           pw.SizedBox(height: 20),
-          _buildInventorySection(locale, availableEggs, reservedEggs),
+          _buildSalesStatsSection(locale, dashboard.sales),
+          pw.SizedBox(height: 20),
+          _buildExpensesStatsSection(locale, dashboard.expenses),
+          pw.SizedBox(height: 20),
+          _buildFeedStatsSection(locale, dashboard.feed),
           pw.SizedBox(height: 20),
           _buildRecentRecordsSection(locale, recentRecords),
         ],
@@ -212,12 +201,12 @@ class DashboardExportService {
     );
   }
 
-  pw.Widget _buildWeekStatsSection(String locale, WeekStats weekStats) {
+  pw.Widget _buildProductionStatsSection(String locale, ProductionSummary production) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(
-          locale == 'pt' ? 'Estatísticas da Semana' : 'Week Statistics',
+          locale == 'pt' ? 'Produção' : 'Production',
           style: pw.TextStyle(
             fontSize: 18,
             fontWeight: pw.FontWeight.bold,
@@ -235,28 +224,115 @@ class DashboardExportService {
               ],
             ),
             pw.TableRow(children: [
-              _tableCell(locale == 'pt' ? 'Ovos Recolhidos' : 'Eggs Collected'),
-              _tableCell('${weekStats.collected}'),
+              _tableCell(locale == 'pt' ? 'Total Recolhido' : 'Total Collected'),
+              _tableCell('${production.totalCollected}'),
             ]),
             pw.TableRow(children: [
-              _tableCell(locale == 'pt' ? 'Ovos Vendidos' : 'Eggs Sold'),
-              _tableCell('${weekStats.sold}'),
+              _tableCell(locale == 'pt' ? 'Total Consumido' : 'Total Consumed'),
+              _tableCell('${production.totalConsumed}'),
             ]),
             pw.TableRow(children: [
-              _tableCell(locale == 'pt' ? 'Ovos Consumidos' : 'Eggs Consumed'),
-              _tableCell('${weekStats.consumed}'),
+              _tableCell(locale == 'pt' ? 'Disponíveis' : 'Available'),
+              _tableCell('${production.totalRemaining}'),
             ]),
             pw.TableRow(children: [
-              _tableCell(locale == 'pt' ? 'Receita' : 'Revenue'),
-              _tableCell('€${weekStats.revenue.toStringAsFixed(2)}'),
+              _tableCell(locale == 'pt' ? 'Média Semanal' : 'Week Average'),
+              _tableCell(production.weekAverage.toStringAsFixed(1)),
+            ]),
+          ],
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildSalesStatsSection(String locale, SalesSummary sales) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          locale == 'pt' ? 'Vendas' : 'Sales',
+          style: pw.TextStyle(
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        pw.SizedBox(height: 12),
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.grey300),
+          children: [
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+              children: [
+                _tableCell(locale == 'pt' ? 'Métrica' : 'Metric', isHeader: true),
+                _tableCell(locale == 'pt' ? 'Valor' : 'Value', isHeader: true),
+              ],
+            ),
+            pw.TableRow(children: [
+              _tableCell(locale == 'pt' ? 'Quantidade Vendida' : 'Quantity Sold'),
+              _tableCell('${sales.totalQuantity}'),
             ]),
             pw.TableRow(children: [
-              _tableCell(locale == 'pt' ? 'Despesas' : 'Expenses'),
-              _tableCell('€${weekStats.expenses.toStringAsFixed(2)}'),
+              _tableCell(locale == 'pt' ? 'Receita Total' : 'Total Revenue'),
+              _tableCell('€${sales.totalRevenue.toStringAsFixed(2)}'),
+            ]),
+            pw.TableRow(children: [
+              _tableCell(locale == 'pt' ? 'Preço Médio/Ovo' : 'Avg Price/Egg'),
+              _tableCell('€${sales.averagePricePerEgg.toStringAsFixed(2)}'),
+            ]),
+            pw.TableRow(children: [
+              _tableCell(locale == 'pt' ? 'Pago' : 'Paid'),
+              _tableCell('€${sales.paidAmount.toStringAsFixed(2)}'),
+            ]),
+            pw.TableRow(children: [
+              _tableCell(locale == 'pt' ? 'Pendente' : 'Pending'),
+              _tableCell('€${sales.pendingAmount.toStringAsFixed(2)}'),
+            ]),
+          ],
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildExpensesStatsSection(String locale, ExpensesSummary expenses) {
+    final netProfit = expenses.netProfit;
+    final hasProfit = netProfit >= 0;
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          locale == 'pt' ? 'Despesas e Lucro' : 'Expenses & Profit',
+          style: pw.TextStyle(
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        pw.SizedBox(height: 12),
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.grey300),
+          children: [
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+              children: [
+                _tableCell(locale == 'pt' ? 'Métrica' : 'Metric', isHeader: true),
+                _tableCell(locale == 'pt' ? 'Valor' : 'Value', isHeader: true),
+              ],
+            ),
+            pw.TableRow(children: [
+              _tableCell(locale == 'pt' ? 'Total Despesas' : 'Total Expenses'),
+              _tableCell('€${expenses.totalExpenses.toStringAsFixed(2)}'),
+            ]),
+            pw.TableRow(children: [
+              _tableCell(locale == 'pt' ? 'Semana' : 'This Week'),
+              _tableCell('€${expenses.weekExpenses.toStringAsFixed(2)}'),
+            ]),
+            pw.TableRow(children: [
+              _tableCell(locale == 'pt' ? 'Mês' : 'This Month'),
+              _tableCell('€${expenses.monthExpenses.toStringAsFixed(2)}'),
             ]),
             pw.TableRow(
               decoration: pw.BoxDecoration(
-                color: weekStats.hasProfit ? PdfColors.green50 : PdfColors.red50,
+                color: hasProfit ? PdfColors.green50 : PdfColors.red50,
               ),
               children: [
                 _tableCell(
@@ -264,9 +340,9 @@ class DashboardExportService {
                   isBold: true,
                 ),
                 _tableCell(
-                  '€${weekStats.netProfit.toStringAsFixed(2)}',
+                  '€${netProfit.toStringAsFixed(2)}',
                   isBold: true,
-                  color: weekStats.hasProfit ? PdfColors.green700 : PdfColors.red700,
+                  color: hasProfit ? PdfColors.green700 : PdfColors.red700,
                 ),
               ],
             ),
@@ -276,12 +352,12 @@ class DashboardExportService {
     );
   }
 
-  pw.Widget _buildInventorySection(String locale, int availableEggs, int reservedEggs) {
+  pw.Widget _buildFeedStatsSection(String locale, FeedSummary feed) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(
-          locale == 'pt' ? 'Inventário' : 'Inventory',
+          locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
           style: pw.TextStyle(
             fontSize: 18,
             fontWeight: pw.FontWeight.bold,
@@ -294,23 +370,23 @@ class DashboardExportService {
               child: pw.Container(
                 padding: const pw.EdgeInsets.all(12),
                 decoration: pw.BoxDecoration(
-                  color: PdfColors.purple50,
+                  color: PdfColors.orange50,
                   borderRadius: pw.BorderRadius.circular(8),
-                  border: pw.Border.all(color: PdfColors.purple200),
+                  border: pw.Border.all(color: PdfColors.orange200),
                 ),
                 child: pw.Column(
                   children: [
                     pw.Text(
-                      '$availableEggs',
+                      '${feed.totalStockKg.toStringAsFixed(1)} kg',
                       style: pw.TextStyle(
-                        fontSize: 24,
+                        fontSize: 20,
                         fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.purple700,
+                        color: PdfColors.orange700,
                       ),
                     ),
                     pw.Text(
-                      locale == 'pt' ? 'Disponíveis' : 'Available',
-                      style: const pw.TextStyle(fontSize: 12),
+                      locale == 'pt' ? 'Stock Total' : 'Total Stock',
+                      style: const pw.TextStyle(fontSize: 10),
                     ),
                   ],
                 ),
@@ -321,23 +397,25 @@ class DashboardExportService {
               child: pw.Container(
                 padding: const pw.EdgeInsets.all(12),
                 decoration: pw.BoxDecoration(
-                  color: PdfColors.blue50,
+                  color: feed.lowStockCount > 0 ? PdfColors.red50 : PdfColors.green50,
                   borderRadius: pw.BorderRadius.circular(8),
-                  border: pw.Border.all(color: PdfColors.blue200),
+                  border: pw.Border.all(
+                    color: feed.lowStockCount > 0 ? PdfColors.red200 : PdfColors.green200,
+                  ),
                 ),
                 child: pw.Column(
                   children: [
                     pw.Text(
-                      '$reservedEggs',
+                      '${feed.estimatedDaysRemaining}',
                       style: pw.TextStyle(
-                        fontSize: 24,
+                        fontSize: 20,
                         fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.blue700,
+                        color: feed.lowStockCount > 0 ? PdfColors.red700 : PdfColors.green700,
                       ),
                     ),
                     pw.Text(
-                      locale == 'pt' ? 'Reservados' : 'Reserved',
-                      style: const pw.TextStyle(fontSize: 12),
+                      locale == 'pt' ? 'Dias Restantes' : 'Days Left',
+                      style: const pw.TextStyle(fontSize: 10),
                     ),
                   ],
                 ),
@@ -383,30 +461,28 @@ class DashboardExportService {
     );
   }
 
-  pw.Widget _tableCell(String text, {bool isHeader = false, bool isBold = false, PdfColor? color}) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(8),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontSize: isHeader ? 12 : 11,
-          fontWeight: (isHeader || isBold) ? pw.FontWeight.bold : null,
-          color: color ?? PdfColors.black,
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(String dateStr, String locale) {
-    final date = DateTime.parse(dateStr);
-    if (locale == 'pt') {
-      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-    } else {
-      return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}';
-    }
-  }
-
   pw.Widget _buildPredictionSection(String locale, ProductionPrediction prediction) {
+    String trendArrow;
+    switch (prediction.trend) {
+      case 'up':
+        trendArrow = '↑';
+        break;
+      case 'down':
+        trendArrow = '↓';
+        break;
+      default:
+        trendArrow = '→';
+    }
+
+    String confidenceLabel;
+    if (prediction.confidence >= 0.8) {
+      confidenceLabel = locale == 'pt' ? 'Alta' : 'High';
+    } else if (prediction.confidence >= 0.5) {
+      confidenceLabel = locale == 'pt' ? 'Média' : 'Medium';
+    } else {
+      confidenceLabel = locale == 'pt' ? 'Baixa' : 'Low';
+    }
+
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
       decoration: pw.BoxDecoration(
@@ -423,8 +499,8 @@ class DashboardExportService {
               borderRadius: pw.BorderRadius.circular(8),
             ),
             child: pw.Text(
-              '📈',
-              style: const pw.TextStyle(fontSize: 24),
+              trendArrow,
+              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
             ),
           ),
           pw.SizedBox(width: 16),
@@ -452,8 +528,8 @@ class DashboardExportService {
                 pw.SizedBox(height: 4),
                 pw.Text(
                   locale == 'pt'
-                      ? 'Intervalo: ${prediction.minRange}-${prediction.maxRange} • Confiança: ${prediction.confidence.displayName(locale)}'
-                      : 'Range: ${prediction.minRange}-${prediction.maxRange} • Confidence: ${prediction.confidence.displayName(locale)}',
+                      ? 'Intervalo: ${prediction.minEggs}-${prediction.maxEggs} • Confiança: $confidenceLabel'
+                      : 'Range: ${prediction.minEggs}-${prediction.maxEggs} • Confidence: $confidenceLabel',
                   style: const pw.TextStyle(
                     fontSize: 10,
                     color: PdfColors.grey600,
@@ -467,85 +543,7 @@ class DashboardExportService {
     );
   }
 
-  pw.Widget _buildAlertSection(String locale, ProductionAlert alert) {
-    PdfColor alertColor;
-    String alertEmoji;
-
-    switch (alert.severity) {
-      case AlertSeverity.high:
-        alertColor = PdfColors.red;
-        alertEmoji = '🔴';
-        break;
-      case AlertSeverity.medium:
-        alertColor = PdfColors.orange;
-        alertEmoji = '🟠';
-        break;
-      case AlertSeverity.low:
-        alertColor = PdfColors.amber;
-        alertEmoji = '🟡';
-        break;
-    }
-
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColor.fromInt(alertColor.toInt()).shade(0.1),
-        borderRadius: pw.BorderRadius.circular(8),
-        border: pw.Border.all(color: alertColor),
-      ),
-      child: pw.Row(
-        children: [
-          pw.Container(
-            padding: const pw.EdgeInsets.all(8),
-            decoration: pw.BoxDecoration(
-              color: PdfColor.fromInt(alertColor.toInt()).shade(0.2),
-              borderRadius: pw.BorderRadius.circular(8),
-            ),
-            child: pw.Text(
-              alertEmoji,
-              style: const pw.TextStyle(fontSize: 24),
-            ),
-          ),
-          pw.SizedBox(width: 16),
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  locale == 'pt' ? 'Alerta de Produção' : 'Production Alert',
-                  style: pw.TextStyle(
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                    color: alertColor,
-                  ),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  locale == 'pt' ? alert.messagePt : alert.message,
-                  style: pw.TextStyle(
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  locale == 'pt'
-                      ? 'Hoje: ${alert.todayValue} ovos • Média: ${alert.averageValue} ovos'
-                      : 'Today: ${alert.todayValue} eggs • Average: ${alert.averageValue} eggs',
-                  style: const pw.TextStyle(
-                    fontSize: 10,
-                    color: PdfColors.grey600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  pw.Widget _buildTodayAlertsSection(String locale, TodayAlertsData alerts) {
+  pw.Widget _buildAlertsSection(String locale, List<DashboardAlert> alerts) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
       decoration: pw.BoxDecoration(
@@ -565,8 +563,12 @@ class DashboardExportService {
                   borderRadius: pw.BorderRadius.circular(8),
                 ),
                 child: pw.Text(
-                  '🔔',
-                  style: const pw.TextStyle(fontSize: 20),
+                  '!',
+                  style: pw.TextStyle(
+                    fontSize: 20,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.indigo700,
+                  ),
                 ),
               ),
               pw.SizedBox(width: 12),
@@ -583,8 +585,8 @@ class DashboardExportService {
                   ),
                   pw.Text(
                     locale == 'pt'
-                        ? '${alerts.totalAlerts} ${alerts.totalAlerts == 1 ? 'item' : 'itens'} a verificar'
-                        : '${alerts.totalAlerts} ${alerts.totalAlerts == 1 ? 'item' : 'items'} to check',
+                        ? '${alerts.length} ${alerts.length == 1 ? 'item' : 'itens'} a verificar'
+                        : '${alerts.length} ${alerts.length == 1 ? 'item' : 'items'} to check',
                     style: const pw.TextStyle(
                       fontSize: 10,
                       color: PdfColors.grey600,
@@ -594,92 +596,82 @@ class DashboardExportService {
               ),
             ],
           ),
-          pw.SizedBox(height: 16),
-
-          // Feed Stock Alerts
-          if (alerts.feedAlerts.isNotEmpty) ...[
-            _buildAlertSubsection(
-              locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
-              PdfColors.orange,
-              alerts.feedAlerts.map((a) => locale == 'pt'
-                  ? '${a.feedType.displayName('pt')}: ${a.currentKg.toStringAsFixed(1)}kg (~${a.estimatedDaysRemaining} dias)${a.isLowStock ? " ⚠️" : ""}'
-                  : '${a.feedType.displayName('en')}: ${a.currentKg.toStringAsFixed(1)}kg (~${a.estimatedDaysRemaining} days)${a.isLowStock ? " ⚠️" : ""}'
-              ).toList(),
+          pw.SizedBox(height: 12),
+          ...alerts.map((alert) => pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 8),
+            child: pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Container(
+                  width: 8,
+                  height: 8,
+                  margin: const pw.EdgeInsets.only(top: 4),
+                  decoration: pw.BoxDecoration(
+                    color: _getSeverityColor(alert.severity),
+                    shape: pw.BoxShape.circle,
+                  ),
+                ),
+                pw.SizedBox(width: 8),
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        alert.title,
+                        style: pw.TextStyle(
+                          fontSize: 11,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.Text(
+                        alert.message,
+                        style: const pw.TextStyle(
+                          fontSize: 10,
+                          color: PdfColors.grey600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            pw.SizedBox(height: 12),
-          ],
-
-          // Reservation Alerts
-          if (alerts.reservationAlerts.isNotEmpty) ...[
-            _buildAlertSubsection(
-              locale == 'pt' ? 'Reservas Pendentes' : 'Pending Reservations',
-              PdfColors.blue,
-              alerts.reservationAlerts.map((a) => locale == 'pt'
-                  ? '${a.customerName}: ${a.quantity} ovos ${a.isToday ? "(HOJE)" : "(amanhã)"}'
-                  : '${a.customerName}: ${a.quantity} eggs ${a.isToday ? "(TODAY)" : "(tomorrow)"}'
-              ).toList(),
-            ),
-            pw.SizedBox(height: 12),
-          ],
-
-          // Vet Appointment Alerts
-          if (alerts.vetAlerts.isNotEmpty) ...[
-            _buildAlertSubsection(
-              locale == 'pt' ? 'Consultas Veterinárias' : 'Vet Appointments',
-              PdfColors.red,
-              alerts.vetAlerts.map((a) => locale == 'pt'
-                  ? '${a.description} (${a.hensAffected} galinhas)'
-                  : '${a.description} (${a.hensAffected} hens)'
-              ).toList(),
-            ),
-          ],
+          )),
         ],
       ),
     );
   }
 
-  pw.Widget _buildAlertSubsection(String title, PdfColor color, List<String> items) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Row(
-          children: [
-            pw.Container(
-              width: 8,
-              height: 8,
-              decoration: pw.BoxDecoration(
-                color: color,
-                shape: pw.BoxShape.circle,
-              ),
-            ),
-            pw.SizedBox(width: 8),
-            pw.Text(
-              title,
-              style: pw.TextStyle(
-                fontSize: 12,
-                fontWeight: pw.FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
+  PdfColor _getSeverityColor(String severity) {
+    switch (severity) {
+      case 'high':
+        return PdfColors.red;
+      case 'medium':
+        return PdfColors.orange;
+      default:
+        return PdfColors.amber;
+    }
+  }
+
+  pw.Widget _tableCell(String text, {bool isHeader = false, bool isBold = false, PdfColor? color}) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(8),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(
+          fontSize: isHeader ? 12 : 11,
+          fontWeight: (isHeader || isBold) ? pw.FontWeight.bold : null,
+          color: color ?? PdfColors.black,
         ),
-        pw.SizedBox(height: 4),
-        ...items.map((item) => pw.Padding(
-          padding: const pw.EdgeInsets.only(left: 16, top: 2),
-          child: pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text('• ', style: const pw.TextStyle(fontSize: 10)),
-              pw.Expanded(
-                child: pw.Text(
-                  item,
-                  style: const pw.TextStyle(fontSize: 10),
-                ),
-              ),
-            ],
-          ),
-        )),
-      ],
+      ),
     );
+  }
+
+  String _formatDate(String dateStr, String locale) {
+    final date = DateTime.parse(dateStr);
+    if (locale == 'pt') {
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    } else {
+      return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}';
+    }
   }
 }
