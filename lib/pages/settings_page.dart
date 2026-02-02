@@ -53,40 +53,188 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _pickAndUploadImage(String locale) async {
     final picker = ImagePicker();
+    final theme = Theme.of(context);
 
-    // Show options
-    final source = await showModalBottomSheet<ImageSource?>(
+    // Show enhanced photo options bottom sheet
+    final result = await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: Text(locale == 'pt' ? 'Tirar Foto' : 'Take Photo'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: Text(locale == 'pt' ? 'Escolher da Galeria' : 'Choose from Gallery'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-            if (_profile?.avatarUrl != null)
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: Text(
-                  locale == 'pt' ? 'Remover Foto' : 'Remove Photo',
-                  style: const TextStyle(color: Colors.red),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _removePhoto(locale);
-                },
               ),
-          ],
+
+              // Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.account_circle,
+                      color: theme.colorScheme.primary,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            locale == 'pt' ? 'Foto de Perfil' : 'Profile Photo',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            locale == 'pt'
+                                ? 'Escolha uma foto para o seu perfil'
+                                : 'Choose a photo for your profile',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Selfie option (front camera)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.face,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                title: Text(locale == 'pt' ? 'Tirar Selfie' : 'Take Selfie'),
+                subtitle: Text(
+                  locale == 'pt'
+                      ? 'Usar câmera frontal'
+                      : 'Use front camera',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pop(context, {
+                  'source': ImageSource.camera,
+                  'camera': CameraDevice.front,
+                }),
+              ),
+
+              // Regular photo option (rear camera)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.camera_alt,
+                    color: theme.colorScheme.secondary,
+                  ),
+                ),
+                title: Text(locale == 'pt' ? 'Tirar Foto' : 'Take Photo'),
+                subtitle: Text(
+                  locale == 'pt'
+                      ? 'Usar câmera traseira'
+                      : 'Use rear camera',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pop(context, {
+                  'source': ImageSource.camera,
+                  'camera': CameraDevice.rear,
+                }),
+              ),
+
+              // Gallery option
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.photo_library,
+                    color: theme.colorScheme.tertiary,
+                  ),
+                ),
+                title: Text(locale == 'pt' ? 'Escolher da Galeria' : 'Choose from Gallery'),
+                subtitle: Text(
+                  locale == 'pt'
+                      ? 'Selecionar uma foto existente'
+                      : 'Select an existing photo',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pop(context, {
+                  'source': ImageSource.gallery,
+                }),
+              ),
+
+              // Remove photo option
+              if (_profile?.avatarUrl != null) ...[
+                const Divider(height: 24),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.delete_outline,
+                      color: Colors.red.shade600,
+                    ),
+                  ),
+                  title: Text(
+                    locale == 'pt' ? 'Remover Foto' : 'Remove Photo',
+                    style: TextStyle(color: Colors.red.shade600),
+                  ),
+                  subtitle: Text(
+                    locale == 'pt'
+                        ? 'Voltar ao avatar padrão'
+                        : 'Revert to default avatar',
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removePhoto(locale);
+                  },
+                ),
+              ],
+
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
+
+    if (result == null) return;
+
+    final source = result['source'] as ImageSource?;
+    final camera = result['camera'] as CameraDevice? ?? CameraDevice.front;
 
     if (source == null) return;
 
@@ -95,7 +243,8 @@ class _SettingsPageState extends State<SettingsPage> {
         source: source,
         maxWidth: 512,
         maxHeight: 512,
-        imageQuality: 80,
+        imageQuality: 85,
+        preferredCameraDevice: camera,
       );
 
       if (image == null) return;

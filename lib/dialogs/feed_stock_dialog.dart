@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import '../core/utils/validators.dart';
 import '../models/feed_stock.dart';
 import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
+import '../services/ocr_service.dart';
 import 'base_dialog.dart';
 
 class FeedStockDialog extends StatefulWidget {
@@ -32,8 +32,13 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
   bool _isProcessingOcr = false;
   String? _ocrError;
   String? _extractedText;
-  Uint8List? _capturedImageBytes;
+  List<Uint8List> _capturedImages = [];
   bool _showOcrPanel = false;
+  OcrConfidence _ocrConfidence = OcrConfidence.none;
+  String _selectedQuality = 'standard'; // 'quick', 'standard', 'high'
+
+  // OCR service instance
+  final _ocrService = OcrService();
 
   // Check if running on mobile (not web)
   bool get _canUseNativeOcr => !kIsWeb;
@@ -65,103 +70,60 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
   }
 
   Future<void> _scanFeedBag(String locale) async {
-    final picker = ImagePicker();
-
-    // Show options: camera or gallery
-    final source = await showModalBottomSheet<ImageSource>(
+    // Show enhanced options bottom sheet
+    final result = await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Text(
-                locale == 'pt' ? 'Digitalizar Saco de Ração' : 'Scan Feed Bag',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                locale == 'pt'
-                    ? 'Tire uma foto ou escolha uma imagem do saco'
-                    : 'Take a photo or choose an image of the bag',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.camera_alt,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                title: Text(locale == 'pt' ? 'Tirar Foto' : 'Take Photo'),
-                subtitle: Text(
-                  locale == 'pt'
-                      ? 'Usar a câmera do dispositivo'
-                      : 'Use device camera',
-                ),
-                onTap: () => Navigator.pop(context, ImageSource.camera),
-              ),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.photo_library,
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-                ),
-                title: Text(locale == 'pt' ? 'Escolher da Galeria' : 'Choose from Gallery'),
-                subtitle: Text(
-                  locale == 'pt'
-                      ? 'Selecionar uma imagem existente'
-                      : 'Select an existing image',
-                ),
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
+      builder: (context) => _PhotoOptionsSheet(
+        locale: locale,
+        selectedQuality: _selectedQuality,
+        hasExistingImages: _capturedImages.isNotEmpty,
       ),
     );
 
-    if (source == null) return;
+    if (result == null) return;
+
+    final source = result['source'] as ImageSource?;
+    final quality = result['quality'] as String? ?? _selectedQuality;
+    final isMultiple = result['multiple'] as bool? ?? false;
+    final clearExisting = result['clearExisting'] as bool? ?? false;
+
+    _selectedQuality = quality;
+
+    if (clearExisting) {
+      setState(() {
+        _capturedImages = [];
+        _extractedText = null;
+        _ocrError = null;
+      });
+    }
+
+    // Get quality config
+    final config = _getQualityConfig(quality, source ?? ImageSource.camera);
 
     try {
-      final XFile? image = await picker.pickImage(
-        source: source,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        imageQuality: 85,
-      );
+      List<XFile> images = [];
 
-      if (image == null) return;
+      if (isMultiple && source == ImageSource.gallery) {
+        // Pick multiple images from gallery
+        images = await _ocrService.pickMultipleImages(
+          maxImages: 5,
+          maxWidth: config.maxWidth,
+          maxHeight: config.maxHeight,
+          imageQuality: config.imageQuality,
+        );
+      } else if (source != null) {
+        // Pick single image
+        final image = await _ocrService.pickImage(config);
+        if (image != null) {
+          images = [image];
+        }
+      }
+
+      if (images.isEmpty) return;
 
       setState(() {
         _isProcessingOcr = true;
@@ -170,23 +132,48 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
       });
 
       // Read image bytes for preview
-      final bytes = await image.readAsBytes();
-      setState(() {
-        _capturedImageBytes = bytes;
-      });
+      for (final image in images) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _capturedImages.add(bytes);
+        });
+      }
 
       // Process OCR based on platform
-      String extractedText = '';
-
       if (_canUseNativeOcr) {
-        // Use ML Kit on mobile
-        final inputImage = InputImage.fromFilePath(image.path);
-        final textRecognizer = TextRecognizer();
-        final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-        await textRecognizer.close();
-        extractedText = recognizedText.text;
+        final imagePaths = images.map((img) => img.path).toList();
+        final ocrResult = await _ocrService.processMultipleImages(imagePaths);
+
+        if (!ocrResult.hasText) {
+          setState(() {
+            _isProcessingOcr = false;
+            _extractedText = null;
+            _ocrConfidence = OcrConfidence.none;
+            _ocrError = locale == 'pt'
+                ? 'Não foi possível ler texto na imagem. Tente novamente com melhor iluminação ou use qualidade mais alta.'
+                : 'Could not read text from image. Try again with better lighting or use higher quality.';
+          });
+          return;
+        }
+
+        setState(() {
+          _extractedText = ocrResult.rawText;
+          _ocrConfidence = ocrResult.confidence;
+        });
+
+        // Apply extracted data to form fields
+        _applyExtractedData(ocrResult.extractedData, locale);
+
+        setState(() {
+          _isProcessingOcr = false;
+        });
+
+        // Show success message with confidence
+        if (mounted) {
+          _showOcrSuccessMessage(locale, ocrResult.confidence);
+        }
       } else {
-        // On web, we can't use ML Kit - show manual entry option
+        // On web, we can't use ML Kit
         setState(() {
           _isProcessingOcr = false;
           _extractedText = null;
@@ -194,55 +181,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
               ? 'OCR automático não disponível na web. Por favor, insira os dados manualmente ou use a app móvel.'
               : 'Automatic OCR not available on web. Please enter data manually or use the mobile app.';
         });
-        return;
       }
-
-      if (extractedText.isEmpty) {
-        setState(() {
-          _isProcessingOcr = false;
-          _extractedText = null;
-          _ocrError = locale == 'pt'
-              ? 'Não foi possível ler texto na imagem. Tente novamente com melhor iluminação.'
-              : 'Could not read text from image. Try again with better lighting.';
-        });
-        return;
-      }
-
-      setState(() {
-        _extractedText = extractedText;
-      });
-
-      // Parse the extracted text
-      _parseOcrText(extractedText, locale);
-
-      setState(() {
-        _isProcessingOcr = false;
-      });
-
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(locale == 'pt'
-                      ? 'Dados extraídos! Verifique e ajuste se necessário.'
-                      : 'Data extracted! Please verify and adjust if needed.'),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-
     } catch (e) {
       setState(() {
         _isProcessingOcr = false;
@@ -251,6 +190,161 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
             : 'Error processing image. Please try again.';
       });
     }
+  }
+
+  ImageCaptureConfig _getQualityConfig(String quality, ImageSource source) {
+    switch (quality) {
+      case 'quick':
+        return ImageCaptureConfig(
+          source: source,
+          maxWidth: 1280,
+          maxHeight: 1280,
+          imageQuality: 80,
+        );
+      case 'high':
+        return ImageCaptureConfig(
+          source: source,
+          maxWidth: 2560,
+          maxHeight: 2560,
+          imageQuality: 95,
+        );
+      default: // standard
+        return ImageCaptureConfig(
+          source: source,
+          maxWidth: 1920,
+          maxHeight: 1920,
+          imageQuality: 90,
+        );
+    }
+  }
+
+  void _applyExtractedData(Map<String, dynamic> data, String locale) {
+    // Apply brand
+    final brand = data['brand'] as String?;
+    if (brand != null && brand.isNotEmpty && _brandController.text.isEmpty) {
+      _brandController.text = brand;
+    }
+
+    // Apply feed type
+    final feedType = data['feedType'] as String?;
+    if (feedType != null) {
+      final type = _parseFeedType(feedType);
+      if (type != null) {
+        setState(() => _type = type);
+      }
+    }
+
+    // Apply weight
+    final weight = data['weightKg'] as double?;
+    if (weight != null && _quantityController.text.isEmpty) {
+      _quantityController.text = weight.toString();
+    }
+
+    // Apply price
+    final pricePerKg = data['pricePerKg'] as double?;
+    final priceTotal = data['priceTotal'] as double?;
+    if (_priceController.text.isEmpty) {
+      if (pricePerKg != null) {
+        _priceController.text = pricePerKg.toStringAsFixed(2);
+      } else if (priceTotal != null && weight != null && weight > 0) {
+        final calculatedPricePerKg = priceTotal / weight;
+        _priceController.text = calculatedPricePerKg.toStringAsFixed(2);
+      }
+    }
+
+    // Apply notes (lot number, expiry)
+    final lotNumber = data['lotNumber'] as String?;
+    final expiryDate = data['expiryDate'] as String?;
+    final proteinContent = data['proteinContent'] as String?;
+
+    if (_notesController.text.isEmpty) {
+      final notesLines = <String>[];
+      if (lotNumber != null) {
+        notesLines.add('${locale == 'pt' ? 'Lote' : 'Lot'}: $lotNumber');
+      }
+      if (expiryDate != null) {
+        notesLines.add('${locale == 'pt' ? 'Validade' : 'Expiry'}: $expiryDate');
+      }
+      if (proteinContent != null) {
+        notesLines.add('${locale == 'pt' ? 'Proteína' : 'Protein'}: $proteinContent');
+      }
+      if (notesLines.isNotEmpty) {
+        _notesController.text = notesLines.join('\n');
+      }
+    }
+  }
+
+  FeedType? _parseFeedType(String typeStr) {
+    switch (typeStr.toLowerCase()) {
+      case 'layer':
+        return FeedType.layer;
+      case 'grower':
+        return FeedType.grower;
+      case 'starter':
+        return FeedType.starter;
+      case 'scratch':
+        return FeedType.scratch;
+      case 'supplement':
+        return FeedType.supplement;
+      default:
+        return null;
+    }
+  }
+
+  void _showOcrSuccessMessage(String locale, OcrConfidence confidence) {
+    final confidenceText = switch (confidence) {
+      OcrConfidence.high => locale == 'pt' ? 'Alta confiança' : 'High confidence',
+      OcrConfidence.medium => locale == 'pt' ? 'Confiança média' : 'Medium confidence',
+      OcrConfidence.low => locale == 'pt' ? 'Baixa confiança' : 'Low confidence',
+      OcrConfidence.none => locale == 'pt' ? 'Sem dados' : 'No data',
+    };
+
+    final color = switch (confidence) {
+      OcrConfidence.high => Colors.green.shade600,
+      OcrConfidence.medium => Colors.orange.shade600,
+      OcrConfidence.low => Colors.amber.shade700,
+      OcrConfidence.none => Colors.red.shade600,
+    };
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              confidence == OcrConfidence.high
+                  ? Icons.check_circle
+                  : Icons.info_outline,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    locale == 'pt'
+                        ? 'Dados extraídos! Verifique e ajuste.'
+                        : 'Data extracted! Please verify and adjust.',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  Text(
+                    confidenceText,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 4),
+      ),
+    );
   }
 
   void _parseOcrText(String text, String locale) {
@@ -439,9 +533,10 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
 
   void _clearOcrData() {
     setState(() {
-      _capturedImageBytes = null;
+      _capturedImages = [];
       _extractedText = null;
       _ocrError = null;
+      _ocrConfidence = OcrConfidence.none;
       _showOcrPanel = false;
     });
   }
@@ -593,7 +688,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
               ),
 
             // Image Preview Panel
-            if (_showOcrPanel && (_capturedImageBytes != null || _ocrError != null))
+            if (_showOcrPanel && (_capturedImages.isNotEmpty || _ocrError != null))
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
@@ -602,7 +697,9 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                   border: Border.all(
                     color: _ocrError != null
                         ? theme.colorScheme.error.withValues(alpha: 0.5)
-                        : theme.colorScheme.primary.withValues(alpha: 0.3),
+                        : _ocrConfidence == OcrConfidence.high
+                            ? Colors.green.withValues(alpha: 0.5)
+                            : theme.colorScheme.primary.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
@@ -614,24 +711,56 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                       child: Row(
                         children: [
                           Icon(
-                            _ocrError != null ? Icons.error_outline : Icons.image,
+                            _ocrError != null
+                                ? Icons.error_outline
+                                : _ocrConfidence == OcrConfidence.high
+                                    ? Icons.check_circle
+                                    : Icons.image,
                             size: 18,
                             color: _ocrError != null
                                 ? theme.colorScheme.error
-                                : theme.colorScheme.primary,
+                                : _ocrConfidence == OcrConfidence.high
+                                    ? Colors.green.shade600
+                                    : theme.colorScheme.primary,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                              _ocrError != null
-                                  ? (locale == 'pt' ? 'Erro na Digitalização' : 'Scan Error')
-                                  : (locale == 'pt' ? 'Imagem Capturada' : 'Captured Image'),
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: _ocrError != null
-                                    ? theme.colorScheme.error
-                                    : theme.colorScheme.primary,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _ocrError != null
+                                      ? (locale == 'pt' ? 'Erro na Digitalização' : 'Scan Error')
+                                      : _capturedImages.length > 1
+                                          ? (locale == 'pt'
+                                              ? '${_capturedImages.length} Imagens Capturadas'
+                                              : '${_capturedImages.length} Images Captured')
+                                          : (locale == 'pt' ? 'Imagem Capturada' : 'Captured Image'),
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: _ocrError != null
+                                        ? theme.colorScheme.error
+                                        : _ocrConfidence == OcrConfidence.high
+                                            ? Colors.green.shade600
+                                            : theme.colorScheme.primary,
+                                  ),
+                                ),
+                                if (_extractedText != null && _ocrError == null)
+                                  Text(
+                                    _ocrConfidence == OcrConfidence.high
+                                        ? (locale == 'pt' ? 'Alta confiança' : 'High confidence')
+                                        : _ocrConfidence == OcrConfidence.medium
+                                            ? (locale == 'pt' ? 'Confiança média' : 'Medium confidence')
+                                            : (locale == 'pt' ? 'Baixa confiança' : 'Low confidence'),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: _ocrConfidence == OcrConfidence.high
+                                          ? Colors.green.shade600
+                                          : _ocrConfidence == OcrConfidence.medium
+                                              ? Colors.orange.shade600
+                                              : Colors.amber.shade700,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                           IconButton(
@@ -649,77 +778,115 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                     if (_ocrError != null)
                       Padding(
                         padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                        child: Text(
-                          _ocrError!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.error,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _ocrError!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: () => _scanFeedBag(locale),
+                              icon: const Icon(Icons.refresh, size: 16),
+                              label: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
-                    // Image preview
-                    if (_capturedImageBytes != null && _ocrError == null)
+                    // Image preview - supports multiple images
+                    if (_capturedImages.isNotEmpty && _ocrError == null)
                       Padding(
                         padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                        child: Row(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Thumbnail
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.memory(
-                                _capturedImageBytes!,
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            // Extracted info
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (_extractedText != null) ...[
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.check_circle,
-                                          size: 14,
-                                          color: Colors.green.shade600,
+                            // Image thumbnails
+                            SizedBox(
+                              height: 80,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _capturedImages.length,
+                                itemBuilder: (context, index) => Padding(
+                                  padding: EdgeInsets.only(
+                                    right: index < _capturedImages.length - 1 ? 8 : 0,
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.memory(
+                                          _capturedImages[index],
+                                          width: 80,
+                                          height: 80,
+                                          fit: BoxFit.cover,
                                         ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          locale == 'pt'
-                                              ? 'Texto extraído com sucesso'
-                                              : 'Text extracted successfully',
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            color: Colors.green.shade600,
-                                            fontWeight: FontWeight.w500,
+                                      ),
+                                      // Image number badge
+                                      if (_capturedImages.length > 1)
+                                        Positioned(
+                                          top: 4,
+                                          left: 4,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black54,
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              '${index + 1}',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    TextButton.icon(
-                                      onPressed: () => _showExtractedText(locale),
-                                      icon: const Icon(Icons.edit_note, size: 16),
-                                      label: Text(
-                                        locale == 'pt' ? 'Editar texto' : 'Edit text',
-                                      ),
-                                      style: TextButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
+                            const SizedBox(height: 8),
+                            // Action buttons
+                            if (_extractedText != null)
+                              Wrap(
+                                spacing: 8,
+                                children: [
+                                  TextButton.icon(
+                                    onPressed: () => _showExtractedText(locale),
+                                    icon: const Icon(Icons.edit_note, size: 16),
+                                    label: Text(locale == 'pt' ? 'Ver/Editar texto' : 'View/Edit text'),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                                  TextButton.icon(
+                                    onPressed: () => _scanFeedBag(locale),
+                                    icon: const Icon(Icons.add_a_photo, size: 16),
+                                    label: Text(locale == 'pt' ? 'Adicionar foto' : 'Add photo'),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                       ),
@@ -982,6 +1149,435 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
           Navigator.pop(context);
         }
       },
+    );
+  }
+}
+
+/// Enhanced photo options bottom sheet with quality selection and multiple photo support
+class _PhotoOptionsSheet extends StatefulWidget {
+  final String locale;
+  final String selectedQuality;
+  final bool hasExistingImages;
+
+  const _PhotoOptionsSheet({
+    required this.locale,
+    required this.selectedQuality,
+    required this.hasExistingImages,
+  });
+
+  @override
+  State<_PhotoOptionsSheet> createState() => _PhotoOptionsSheetState();
+}
+
+class _PhotoOptionsSheetState extends State<_PhotoOptionsSheet> {
+  late String _quality;
+  bool _showAdvanced = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _quality = widget.selectedQuality;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final locale = widget.locale;
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.document_scanner,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            locale == 'pt' ? 'Digitalizar Saco de Ração' : 'Scan Feed Bag',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            locale == 'pt'
+                                ? 'Tire uma foto para extrair informações automaticamente'
+                                : 'Take a photo to automatically extract information',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Main options
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.camera_alt,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                title: Text(locale == 'pt' ? 'Tirar Foto' : 'Take Photo'),
+                subtitle: Text(
+                  locale == 'pt'
+                      ? 'Usar a câmera do dispositivo'
+                      : 'Use device camera',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pop(context, {
+                  'source': ImageSource.camera,
+                  'quality': _quality,
+                  'multiple': false,
+                  'clearExisting': false,
+                }),
+              ),
+
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.photo_library,
+                    color: theme.colorScheme.secondary,
+                  ),
+                ),
+                title: Text(locale == 'pt' ? 'Escolher da Galeria' : 'Choose from Gallery'),
+                subtitle: Text(
+                  locale == 'pt'
+                      ? 'Selecionar uma imagem existente'
+                      : 'Select an existing image',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pop(context, {
+                  'source': ImageSource.gallery,
+                  'quality': _quality,
+                  'multiple': false,
+                  'clearExisting': false,
+                }),
+              ),
+
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.photo_library_outlined,
+                    color: theme.colorScheme.tertiary,
+                  ),
+                ),
+                title: Text(locale == 'pt' ? 'Múltiplas Fotos' : 'Multiple Photos'),
+                subtitle: Text(
+                  locale == 'pt'
+                      ? 'Selecionar até 5 imagens da galeria'
+                      : 'Select up to 5 images from gallery',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pop(context, {
+                  'source': ImageSource.gallery,
+                  'quality': _quality,
+                  'multiple': true,
+                  'clearExisting': !widget.hasExistingImages,
+                }),
+              ),
+
+              const Divider(height: 24),
+
+              // Advanced options toggle
+              ListTile(
+                leading: Icon(
+                  _showAdvanced ? Icons.expand_less : Icons.expand_more,
+                  color: theme.colorScheme.primary,
+                ),
+                title: Text(
+                  locale == 'pt' ? 'Opções Avançadas' : 'Advanced Options',
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                onTap: () => setState(() => _showAdvanced = !_showAdvanced),
+              ),
+
+              // Advanced options panel
+              if (_showAdvanced) ...[
+                // Quality selection
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        locale == 'pt' ? 'Qualidade da Imagem' : 'Image Quality',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _QualityOption(
+                              label: locale == 'pt' ? 'Rápido' : 'Quick',
+                              subtitle: '1280px',
+                              icon: Icons.bolt,
+                              isSelected: _quality == 'quick',
+                              onTap: () => setState(() => _quality = 'quick'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _QualityOption(
+                              label: locale == 'pt' ? 'Normal' : 'Standard',
+                              subtitle: '1920px',
+                              icon: Icons.check_circle_outline,
+                              isSelected: _quality == 'standard',
+                              onTap: () => setState(() => _quality = 'standard'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _QualityOption(
+                              label: locale == 'pt' ? 'Alta' : 'High',
+                              subtitle: '2560px',
+                              icon: Icons.hd,
+                              isSelected: _quality == 'high',
+                              onTap: () => setState(() => _quality = 'high'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        locale == 'pt'
+                            ? 'Qualidade alta melhora a precisão do OCR mas demora mais'
+                            : 'Higher quality improves OCR accuracy but takes longer',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Tips section
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.lightbulb_outline,
+                            size: 18,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            locale == 'pt' ? 'Dicas para melhor OCR' : 'Tips for better OCR',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      _TipItem(
+                        icon: Icons.wb_sunny_outlined,
+                        text: locale == 'pt'
+                            ? 'Use boa iluminação natural'
+                            : 'Use good natural lighting',
+                      ),
+                      _TipItem(
+                        icon: Icons.crop_free,
+                        text: locale == 'pt'
+                            ? 'Enquadre bem a etiqueta do saco'
+                            : 'Frame the bag label properly',
+                      ),
+                      _TipItem(
+                        icon: Icons.blur_off,
+                        text: locale == 'pt'
+                            ? 'Evite fotos desfocadas ou tremidas'
+                            : 'Avoid blurry or shaky photos',
+                      ),
+                      _TipItem(
+                        icon: Icons.collections,
+                        text: locale == 'pt'
+                            ? 'Tire múltiplas fotos para melhor extração'
+                            : 'Take multiple photos for better extraction',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Clear existing images option
+              if (widget.hasExistingImages) ...[
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    color: theme.colorScheme.error,
+                  ),
+                  title: Text(
+                    locale == 'pt' ? 'Limpar Imagens Existentes' : 'Clear Existing Images',
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                  onTap: () => Navigator.pop(context, {
+                    'clearExisting': true,
+                  }),
+                ),
+              ],
+
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QualityOption extends StatelessWidget {
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _QualityOption({
+    required this.label,
+    required this.subtitle,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primaryContainer
+              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? theme.colorScheme.primary
+                : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 10,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TipItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _TipItem({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 14, color: Colors.grey.shade600),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
