@@ -179,6 +179,7 @@ class _HenHealthPageState extends State<HenHealthPage> {
                   itemBuilder: (context, index) {
                     final record = filteredRecords[index];
                     return _VetRecordCard(
+                      key: ValueKey(record.id),
                       record: record,
                       locale: locale,
                       onTap: () => _editRecord(context, record),
@@ -297,6 +298,7 @@ class _VetRecordCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const _VetRecordCard({
+    super.key,
     required this.record,
     required this.locale,
     required this.onTap,

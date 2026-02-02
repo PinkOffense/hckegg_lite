@@ -60,6 +60,7 @@ class AnalyticsProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
+      notifyListeners();
     }
   }
 

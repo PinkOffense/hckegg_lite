@@ -93,6 +93,7 @@ class _EggListPageState extends State<EggListPage> {
                           itemBuilder: (context, index) {
                             final record = records[index];
                             return _RecordCard(
+                              key: ValueKey(record.date),
                               record: record,
                               locale: locale,
                               onTap: () => showDialog(
@@ -189,6 +190,7 @@ class _RecordCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const _RecordCard({
+    super.key,
     required this.record,
     required this.locale,
     required this.onTap,

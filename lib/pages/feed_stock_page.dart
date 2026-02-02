@@ -140,6 +140,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
                 itemBuilder: (context, index) {
                   final stock = stocks[index];
                   return _StockCard(
+                    key: ValueKey(stock.id),
                     stock: stock,
                     locale: locale,
                     onConsume: () => _showConsumeDialog(context, locale, stock),
@@ -392,6 +393,7 @@ class _StockCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const _StockCard({
+    super.key,
     required this.stock,
     required this.locale,
     required this.onConsume,
