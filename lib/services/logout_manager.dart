@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../state/providers/providers.dart';
 import '../features/eggs/presentation/providers/egg_provider.dart';
+import '../features/analytics/presentation/providers/analytics_provider.dart';
+import '../core/di/service_locator.dart';
 
 /// Centralized logout manager that handles the complete sign-out process.
 ///
@@ -48,6 +50,14 @@ class LogoutManager {
     try {
       context.read<FeedStockProvider>().clearData();
     } catch (_) {}
+    try {
+      context.read<AnalyticsProvider>().clearData();
+    } catch (_) {}
+
+    // Clear API cache to ensure fresh data on next login
+    try {
+      ServiceLocator.instance.apiClient.clearCache();
+    } catch (_) {}
   }
 
   /// Signs out from Google if on mobile/desktop platforms.
@@ -68,12 +78,9 @@ class LogoutManager {
   }
 
   /// Signs out from Supabase authentication.
-  ///
-  /// Uses local scope for faster sign-out (only this device).
-  /// Falls back to global scope if local fails.
   Future<void> _signOutFromSupabase() async {
-    // Use local scope for faster sign-out (doesn't need server round-trip)
-    await _client.auth.signOut(scope: SignOutScope.local);
+    // Use default scope for reliable sign-out with proper auth state change
+    await _client.auth.signOut();
   }
 
   /// Performs the complete sign-out process.
@@ -98,12 +105,7 @@ class LogoutManager {
     try {
       await _signOutFromSupabase();
     } catch (e) {
-      // If local scope fails, try without scope as fallback
-      try {
-        await _client.auth.signOut();
-      } catch (fallbackError) {
-        throw LogoutException('Failed to sign out: $fallbackError');
-      }
+      throw LogoutException('Failed to sign out: $e');
     }
   }
 
@@ -116,11 +118,7 @@ class LogoutManager {
     try {
       await _signOutFromSupabase();
     } catch (e) {
-      try {
-        await _client.auth.signOut();
-      } catch (fallbackError) {
-        throw LogoutException('Failed to sign out: $fallbackError');
-      }
+      throw LogoutException('Failed to sign out: $e');
     }
   }
 }

@@ -80,25 +80,24 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _loadData() async {
     if (_dataLoaded || !mounted) return;
+    _dataLoaded = true; // Mark as loaded immediately to prevent duplicate calls
 
-    try {
-      // Load data from all domain-specific providers in parallel
-      await Future.wait([
-        context.read<EggProvider>().loadRecords(),
-        context.read<ExpenseProvider>().loadExpenses(),
-        context.read<VetRecordProvider>().loadVetRecords(),
-        context.read<SaleProvider>().loadSales(),
-        context.read<ReservationProvider>().loadReservations(),
-        context.read<FeedStockProvider>().loadFeedStocks(),
-        context.read<AnalyticsProvider>().loadDashboardAnalytics(),
-      ]);
+    // Load data in background - don't block UI
+    // Each provider manages its own loading/error state
+    // Dashboard will show skeleton while loading
+    _loadProvidersInBackground();
+  }
 
-      _dataLoaded = true;
-    } catch (e) {
-      // Data loading failed, but continue to dashboard
-      // Individual providers will handle their own error states
-      _dataLoaded = true;
-    }
+  void _loadProvidersInBackground() {
+    // Fire and forget - don't await
+    // Providers notify listeners when done, triggering UI updates
+    context.read<EggProvider>().loadRecords();
+    context.read<ExpenseProvider>().loadExpenses();
+    context.read<VetRecordProvider>().loadVetRecords();
+    context.read<SaleProvider>().loadSales();
+    context.read<ReservationProvider>().loadReservations();
+    context.read<FeedStockProvider>().loadFeedStocks();
+    context.read<AnalyticsProvider>().loadDashboardAnalytics();
   }
 
   @override
