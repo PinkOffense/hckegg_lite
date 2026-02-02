@@ -12,6 +12,7 @@ export 'errors/result.dart';
 export 'usecases/usecase.dart';
 
 // Utils
+export 'utils/auth_utils.dart';
 export 'utils/supabase_client.dart';
 export 'utils/validators.dart';
 export 'utils/logger.dart';

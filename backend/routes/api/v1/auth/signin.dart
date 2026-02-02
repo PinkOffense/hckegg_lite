@@ -23,13 +23,15 @@ Future<Response> _signin(RequestContext context) async {
     final email = body['email'] as String?;
     final password = body['password'] as String?;
 
-    // Validate input
-    if (email == null || email.isEmpty) {
+    // Validate email format
+    if (!Validators.isValidEmail(email)) {
       return Response.json(
         statusCode: HttpStatus.badRequest,
-        body: {'error': 'Email is required'},
+        body: {'error': 'Valid email is required'},
       );
     }
+
+    // Validate password not empty
     if (password == null || password.isEmpty) {
       return Response.json(
         statusCode: HttpStatus.badRequest,
@@ -37,7 +39,8 @@ Future<Response> _signin(RequestContext context) async {
       );
     }
 
-    Logger.info('POST /auth/signin - Attempting signin for $email');
+    // Log with masked email for privacy
+    Logger.info('POST /auth/signin - Attempting signin for ${AuthUtils.maskEmail(email!)}');
 
     final client = SupabaseClientManager.client;
     final response = await client.auth.signInWithPassword(
@@ -46,14 +49,14 @@ Future<Response> _signin(RequestContext context) async {
     );
 
     if (response.user == null || response.session == null) {
-      Logger.warning('POST /auth/signin - Signin failed for $email');
+      Logger.warning('POST /auth/signin - Signin failed');
       return Response.json(
         statusCode: HttpStatus.unauthorized,
         body: {'error': 'Invalid credentials'},
       );
     }
 
-    Logger.info('POST /auth/signin - User signed in: ${response.user!.id}');
+    Logger.info('POST /auth/signin - User signed in: ${AuthUtils.maskUserId(response.user!.id)}');
 
     return Response.json(
       body: {
@@ -71,11 +74,12 @@ Future<Response> _signin(RequestContext context) async {
         },
       },
     );
-  } on AuthException catch (e) {
-    Logger.error('POST /auth/signin - AuthException', e.message);
+  } on AuthException catch (_) {
+    // Don't log email or specific error - security best practice
+    Logger.warning('POST /auth/signin - Authentication failed');
     return Response.json(
       statusCode: HttpStatus.unauthorized,
-      body: {'error': e.message},
+      body: {'error': 'Invalid credentials'},
     );
   } catch (e, stackTrace) {
     Logger.error('POST /auth/signin - Exception', e, stackTrace);

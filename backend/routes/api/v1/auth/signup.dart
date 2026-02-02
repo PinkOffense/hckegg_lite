@@ -24,44 +24,49 @@ Future<Response> _signup(RequestContext context) async {
     final password = body['password'] as String?;
     final name = body['name'] as String?;
 
-    // Validate input
-    if (email == null || email.isEmpty) {
+    // Validate email
+    if (!Validators.isValidEmail(email)) {
       return Response.json(
         statusCode: HttpStatus.badRequest,
-        body: {'error': 'Email is required'},
-      );
-    }
-    if (password == null || password.isEmpty) {
-      return Response.json(
-        statusCode: HttpStatus.badRequest,
-        body: {'error': 'Password is required'},
-      );
-    }
-    if (password.length < 6) {
-      return Response.json(
-        statusCode: HttpStatus.badRequest,
-        body: {'error': 'Password must be at least 6 characters'},
+        body: {'error': 'Valid email is required'},
       );
     }
 
-    Logger.info('POST /auth/signup - Attempting signup for $email');
+    // Validate password (minimum 8 characters)
+    if (!Validators.isValidPassword(password)) {
+      return Response.json(
+        statusCode: HttpStatus.badRequest,
+        body: {'error': 'Password must be at least 8 characters'},
+      );
+    }
+
+    // Validate display name if provided
+    if (name != null && !Validators.isValidDisplayName(name)) {
+      return Response.json(
+        statusCode: HttpStatus.badRequest,
+        body: {'error': 'Invalid display name'},
+      );
+    }
+
+    // Log with masked email for privacy
+    Logger.info('POST /auth/signup - Attempting signup for ${AuthUtils.maskEmail(email!)}');
 
     final client = SupabaseClientManager.client;
     final response = await client.auth.signUp(
       email: email,
-      password: password,
+      password: password!,
       data: name != null ? {'name': name} : null,
     );
 
     if (response.user == null) {
-      Logger.warning('POST /auth/signup - Signup failed for $email');
+      Logger.warning('POST /auth/signup - Signup failed');
       return Response.json(
         statusCode: HttpStatus.badRequest,
         body: {'error': 'Signup failed'},
       );
     }
 
-    Logger.info('POST /auth/signup - User created: ${response.user!.id}');
+    Logger.info('POST /auth/signup - User created: ${AuthUtils.maskUserId(response.user!.id)}');
 
     return Response.json(
       statusCode: HttpStatus.created,
@@ -84,10 +89,13 @@ Future<Response> _signup(RequestContext context) async {
       },
     );
   } on AuthException catch (e) {
-    Logger.error('POST /auth/signup - AuthException', e.message);
+    Logger.warning('POST /auth/signup - Auth error');
+    // Return generic error to avoid leaking information
+    final isEmailTaken = e.message.toLowerCase().contains('already registered') ||
+        e.message.toLowerCase().contains('already exists');
     return Response.json(
       statusCode: HttpStatus.badRequest,
-      body: {'error': e.message},
+      body: {'error': isEmailTaken ? 'Email already registered' : 'Signup failed'},
     );
   } catch (e, stackTrace) {
     Logger.error('POST /auth/signup - Exception', e, stackTrace);

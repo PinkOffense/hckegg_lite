@@ -15,25 +15,6 @@ Future<Response> onRequest(RequestContext context) async {
   };
 }
 
-/// Extract user ID from JWT token
-Future<String?> _getUserIdFromToken(RequestContext context) async {
-  final authHeader = context.request.headers['authorization'];
-  if (authHeader == null || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-
-  final token = authHeader.substring(7);
-
-  try {
-    final client = SupabaseClientManager.client;
-    final user = await client.auth.getUser(token);
-    return user.user?.id;
-  } catch (e) {
-    Logger.warning('Failed to get user from token: $e');
-    return null;
-  }
-}
-
 /// Tables to delete user data from (order matters for foreign keys)
 const _tablesToDelete = [
   ('feed_movements', 'user_id'),
@@ -49,7 +30,7 @@ const _tablesToDelete = [
 /// POST /api/v1/auth/delete-account
 Future<Response> _deleteAccount(RequestContext context) async {
   try {
-    final userId = await _getUserIdFromToken(context);
+    final userId = await AuthUtils.getUserIdFromRequest(context);
     if (userId == null) {
       return Response.json(
         statusCode: HttpStatus.unauthorized,
@@ -57,9 +38,11 @@ Future<Response> _deleteAccount(RequestContext context) async {
       );
     }
 
-    Logger.info('POST /auth/delete-account - Starting deletion for user $userId');
+    final maskedUserId = AuthUtils.maskUserId(userId);
+    Logger.info('POST /auth/delete-account - Starting deletion for user $maskedUserId');
 
     final client = SupabaseClientManager.client;
+    final failedTables = <String>[];
 
     // Step 1: Delete all user data from tables
     for (final (tableName, userIdColumn) in _tablesToDelete) {
@@ -67,26 +50,44 @@ Future<Response> _deleteAccount(RequestContext context) async {
         await client.from(tableName).delete().eq(userIdColumn, userId);
         Logger.info('POST /auth/delete-account - Deleted from $tableName');
       } catch (e) {
-        Logger.warning('POST /auth/delete-account - Failed to delete from $tableName: $e');
-        // Continue with other tables
+        Logger.warning('POST /auth/delete-account - Failed to delete from $tableName');
+        failedTables.add(tableName);
+        // Continue with other tables - partial deletion is better than none
       }
     }
 
     // Step 2: Attempt to delete auth user via RPC
+    // This may fail for OAuth users, which is acceptable
+    var authDeleted = false;
     try {
       await client.rpc('delete_user_account');
+      authDeleted = true;
       Logger.info('POST /auth/delete-account - Auth user deleted via RPC');
     } catch (e) {
-      Logger.warning('POST /auth/delete-account - RPC delete failed (expected for OAuth): $e');
-      // Continue anyway - data is already deleted
+      // Expected for OAuth users - they need to disconnect manually
+      Logger.info('POST /auth/delete-account - Auth deletion skipped (OAuth user or RPC unavailable)');
     }
 
-    Logger.info('POST /auth/delete-account - Account deletion completed for user $userId');
+    Logger.info('POST /auth/delete-account - Account deletion completed for user $maskedUserId');
+
+    // Return partial success if some tables failed
+    if (failedTables.isNotEmpty) {
+      return Response.json(
+        body: {
+          'success': true,
+          'partial': true,
+          'message': 'Account deleted with some warnings',
+          'warnings': ['Some data could not be deleted: ${failedTables.join(", ")}'],
+          'auth_deleted': authDeleted,
+        },
+      );
+    }
 
     return Response.json(
       body: {
         'success': true,
         'message': 'Account deleted successfully',
+        'auth_deleted': authDeleted,
       },
     );
   } catch (e, stackTrace) {
