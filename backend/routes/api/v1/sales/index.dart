@@ -15,7 +15,7 @@ Future<Response> onRequest(RequestContext context) async {
 
 Future<Response> _getSales(RequestContext context) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) {
       return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
     }
@@ -35,7 +35,7 @@ Future<Response> _getSales(RequestContext context) async {
 
 Future<Response> _createSale(RequestContext context) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) {
       return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
     }

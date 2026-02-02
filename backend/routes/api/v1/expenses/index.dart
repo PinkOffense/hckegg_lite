@@ -14,7 +14,7 @@ Future<Response> onRequest(RequestContext context) async {
 
 Future<Response> _getExpenses(RequestContext context) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
     final repository = ExpenseRepositoryImpl(SupabaseClientManager.client);
@@ -31,7 +31,7 @@ Future<Response> _getExpenses(RequestContext context) async {
 
 Future<Response> _createExpense(RequestContext context) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
     final body = await context.request.json() as Map<String, dynamic>;

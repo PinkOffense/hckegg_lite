@@ -14,7 +14,7 @@ Future<Response> onRequest(RequestContext context) async {
 
 Future<Response> _getVetRecords(RequestContext context) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
     final repository = VetRepositoryImpl(SupabaseClientManager.client);
@@ -31,7 +31,7 @@ Future<Response> _getVetRecords(RequestContext context) async {
 
 Future<Response> _createVetRecord(RequestContext context) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
     final body = await context.request.json() as Map<String, dynamic>;

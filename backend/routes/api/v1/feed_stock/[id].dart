@@ -15,7 +15,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
 
 Future<Response> _getFeedStock(RequestContext context, String id) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
     final repository = FeedStockRepositoryImpl(SupabaseClientManager.client);
@@ -34,7 +34,7 @@ Future<Response> _getFeedStock(RequestContext context, String id) async {
 
 Future<Response> _updateFeedStock(RequestContext context, String id) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
     final repository = FeedStockRepositoryImpl(SupabaseClientManager.client);
@@ -68,7 +68,7 @@ Future<Response> _updateFeedStock(RequestContext context, String id) async {
 
 Future<Response> _deleteFeedStock(RequestContext context, String id) async {
   try {
-    final userId = context.request.headers['x-user-id'];
+    final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
     final repository = FeedStockRepositoryImpl(SupabaseClientManager.client);

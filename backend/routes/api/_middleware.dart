@@ -45,17 +45,9 @@ Middleware authMiddleware() {
         final userId = response.user!.id;
         Logger.auth('Token validation', userId: userId, success: true);
 
-        // Add user ID to request headers for downstream handlers
-        final updatedRequest = context.request.copyWith(
-          headers: {
-            ...context.request.headers,
-            'x-user-id': userId,
-          },
-        );
-
-        // Create new context with updated request
-        final updatedContext = context.provide<String>(
-          () => userId,
+        // Provide authenticated user ID to downstream handlers via provider
+        final updatedContext = context.provide<AuthenticatedUserId>(
+          () => AuthenticatedUserId(userId),
         );
 
         return handler(updatedContext);
