@@ -159,6 +159,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
         maxWidth: 1920,
         maxHeight: 1920,
         imageQuality: 85,
+        requestFullMetadata: false,
       );
 
       if (image == null) return;

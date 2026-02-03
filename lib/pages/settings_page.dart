@@ -96,6 +96,7 @@ class _SettingsPageState extends State<SettingsPage> {
         maxWidth: 512,
         maxHeight: 512,
         imageQuality: 80,
+        requestFullMetadata: false,
       );
 
       if (image == null) return;
