@@ -47,6 +47,12 @@ dependencies:
   image_picker: ^1.1.2
   google_mlkit_text_recognition: ^0.13.0
 
+  # URL-based routing for web
+  go_router: ^14.6.0
+
+  # Persistent preferences (theme, locale)
+  shared_preferences: ^2.3.0
+
   # PDF generation and printing/sharing
   pdf: ^3.11.0
   printing: ^5.13.1

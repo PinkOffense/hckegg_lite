@@ -2,98 +2,39 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../pages/login_page.dart';
-import '../pages/dashboard_page.dart';
 import '../state/providers/providers.dart';
 import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../features/analytics/presentation/providers/analytics_provider.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 
-/// Authentication gate that handles routing between login and dashboard.
-///
-/// Listens to Supabase auth state changes and:
-/// - Loads user data on login with proper loading screen
-/// - Clears data flags on logout (actual clearing done by LogoutManager)
-/// - Automatically navigates between LoginPage and DashboardPage
-class AuthGate extends StatefulWidget {
-  const AuthGate({super.key});
+/// Shell widget that wraps authenticated routes.
+/// Handles initial data loading with a loading screen, skip button, and timeout.
+/// Used by GoRouter's ShellRoute to wrap all authenticated pages.
+class DataLoaderShell extends StatefulWidget {
+  final Widget child;
+  const DataLoaderShell({super.key, required this.child});
 
   @override
-  State<AuthGate> createState() => _AuthGateState();
+  State<DataLoaderShell> createState() => _DataLoaderShellState();
 }
 
-class _AuthGateState extends State<AuthGate> {
-  late final StreamSubscription<AuthState> _sub;
-  bool _signedIn = false;
-  bool _ready = false;
+class _DataLoaderShellState extends State<DataLoaderShell> {
   bool _dataLoading = false;
   bool _dataLoaded = false;
-  String? _loadingMessage;
   bool _showSkip = false;
   Timer? _skipTimer;
+  String? _loadingMessage;
 
-  /// Max time to wait for initial data before showing dashboard anyway
   static const _loadTimeout = Duration(seconds: 10);
 
   @override
   void initState() {
     super.initState();
-    _initializeAuth();
-  }
-
-  void _initializeAuth() {
-    final client = Supabase.instance.client;
-
-    // Check current auth state
-    _signedIn = client.auth.currentUser != null;
-    _ready = true;
-
-    // Load data if already authenticated (deferred to after frame to ensure providers are ready)
-    if (_signedIn) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _loadData();
-      });
-    }
-
-    // Listen for auth state changes
-    _sub = client.auth.onAuthStateChange.listen(_handleAuthStateChange);
-  }
-
-  void _handleAuthStateChange(AuthState data) {
-    final wasSignedIn = _signedIn;
-    final isSignedIn = data.session != null;
-    final event = data.event;
-
-    // Token refresh is handled automatically - no UI change needed
-    if (event == AuthChangeEvent.tokenRefreshed) {
-      return;
-    }
-
-    // Update signed in state
-    if (mounted) {
-      setState(() {
-        _signedIn = isSignedIn;
-      });
-    }
-
-    // Handle login: load user data (deferred to ensure providers are ready)
-    if (!wasSignedIn && isSignedIn) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _loadData();
-      });
-    }
-
-    // Handle logout: reset data loaded flag
-    // Note: Actual provider clearing is done by LogoutManager before sign out
-    if (wasSignedIn && !isSignedIn) {
-      setState(() {
-        _dataLoaded = false;
-        _dataLoading = false;
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadData();
+    });
   }
 
   Future<void> _loadData() async {
@@ -114,30 +55,23 @@ class _AuthGateState extends State<AuthGate> {
     });
 
     try {
-      _updateLoadingMessage('Loading your data...');
+      setState(() => _loadingMessage = 'Loading your data...');
 
-      // Load primary data with a timeout to prevent infinite loading
-      // If the backend is cold (Render.com), this prevents hanging
+      // Load primary data with timeout to prevent infinite loading
       await Future.wait([
         context.read<EggProvider>().loadRecords(),
         context.read<AnalyticsProvider>().loadDashboardAnalytics(),
         context.read<SaleProvider>().loadSales(),
       ]).timeout(_loadTimeout);
 
-      _proceedToDashboard();
+      _proceed();
     } catch (e) {
-      // Timeout or error: show dashboard anyway (it handles error/empty states)
-      _proceedToDashboard();
+      // Timeout or error: show content anyway (pages handle error/empty states)
+      _proceed();
     }
   }
 
-  /// Skip loading and go straight to dashboard
-  void _skipLoading() {
-    _proceedToDashboard();
-  }
-
-  /// Mark loading as complete and proceed to dashboard
-  void _proceedToDashboard() {
+  void _proceed() {
     _skipTimer?.cancel();
     if (mounted && !_dataLoaded) {
       setState(() {
@@ -145,63 +79,38 @@ class _AuthGateState extends State<AuthGate> {
         _dataLoading = false;
         _showSkip = false;
       });
-      // Load remaining data in background
-      _loadSecondaryDataInBackground();
+      _loadSecondaryData();
     }
   }
 
-  void _updateLoadingMessage(String message) {
-    if (mounted) {
-      setState(() {
-        _loadingMessage = message;
-      });
-    }
-  }
-
-  void _loadSecondaryDataInBackground() {
+  void _loadSecondaryData() {
     if (!mounted) return;
-    // Load secondary data with error handling - failures are non-fatal
     Future.wait([
       context.read<ExpenseProvider>().loadExpenses(),
       context.read<ReservationProvider>().loadReservations(),
       context.read<VetRecordProvider>().loadVetRecords(),
       context.read<FeedStockProvider>().loadFeedStocks(),
     ]).catchError((_) {
-      // Secondary data failures are non-blocking; pages handle their own error states
+      // Secondary data failures are non-blocking
     });
   }
 
   @override
   void dispose() {
     _skipTimer?.cancel();
-    _sub.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_ready) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    // Not signed in - show login
-    if (!_signedIn) {
-      return const LoginPage();
-    }
-
-    // Signed in but still loading primary data - show loading screen
     if (_dataLoading && !_dataLoaded) {
       return _LoadingScreen(
         message: _loadingMessage,
         showSkip: _showSkip,
-        onSkip: _skipLoading,
+        onSkip: _proceed,
       );
     }
-
-    // Data loaded (or loading failed) - show dashboard
-    return const DashboardPage();
+    return widget.child;
   }
 }
 
@@ -239,7 +148,6 @@ class _LoadingScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // App icon/logo area
               Container(
                 width: 100,
                 height: 100,
@@ -254,8 +162,6 @@ class _LoadingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-
-              // App title
               Text(
                 t('app_title'),
                 style: theme.textTheme.headlineMedium?.copyWith(
@@ -264,8 +170,6 @@ class _LoadingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 48),
-
-              // Loading indicator
               SizedBox(
                 width: 48,
                 height: 48,
@@ -275,8 +179,6 @@ class _LoadingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Loading message
               Text(
                 message ?? (locale == 'pt' ? 'A carregar...' : 'Loading...'),
                 style: theme.textTheme.bodyLarge?.copyWith(
@@ -284,8 +186,6 @@ class _LoadingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-
-              // Hint about first load
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Text(
@@ -298,8 +198,6 @@ class _LoadingScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
-
-              // Skip button - appears after a delay
               const SizedBox(height: 32),
               AnimatedOpacity(
                 opacity: showSkip ? 1.0 : 0.0,

@@ -12,7 +12,6 @@ import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../widgets/offline_indicator.dart';
 
-import 'auth_gate.dart';
 import 'app_theme.dart';
 import 'app_router.dart';
 
@@ -39,7 +38,7 @@ class HckEggApp extends StatelessWidget {
       ],
       child: Consumer2<LocaleProvider, ThemeProvider>(
         builder: (context, localeProvider, themeProvider, _) {
-          return MaterialApp(
+          return MaterialApp.router(
             debugShowCheckedModeBanner: false,
             title: Translations.title(localeProvider.code),
 
@@ -48,9 +47,14 @@ class HckEggApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.themeMode,
 
-            // Proper route configuration
-            onGenerateRoute: AppRouter.generateRoute,
-            initialRoute: '/',
+            // URL-based routing via go_router
+            routerConfig: AppRouter.router,
+
+            // Wrap all routes with offline indicator
+            builder: (context, child) => OfflineIndicator(
+              locale: localeProvider.code,
+              child: child!,
+            ),
 
             locale: Locale(localeProvider.code),
             supportedLocales: const [
@@ -77,11 +81,6 @@ class HckEggApp extends StatelessWidget {
                 },
               ),
             },
-
-            home: OfflineIndicator(
-              locale: localeProvider.code,
-              child: const AuthGate(),
-            ),
           );
         },
       ),

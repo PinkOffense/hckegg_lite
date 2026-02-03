@@ -8,10 +8,13 @@ import '../widgets/empty_state.dart';
 import '../widgets/gradient_fab.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/delete_confirmation_dialog.dart';
+import '../widgets/skeleton_loading.dart';
+import '../widgets/scroll_to_top.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/egg_sale.dart';
 import '../dialogs/sale_dialog.dart';
+import '../services/csv_export_service.dart';
 
 class SalesPage extends StatefulWidget {
   const SalesPage({super.key});
@@ -22,11 +25,13 @@ class SalesPage extends StatefulWidget {
 
 class _SalesPageState extends State<SalesPage> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   String _searchQuery = '';
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -38,6 +43,21 @@ class _SalesPageState extends State<SalesPage> {
 
     return AppScaffold(
       title: locale == 'pt' ? 'Vendas de Ovos' : 'Egg Sales',
+      additionalActions: [
+        IconButton(
+          tooltip: locale == 'pt' ? 'Exportar CSV' : 'Export CSV',
+          icon: const Icon(Icons.download),
+          onPressed: () {
+            final sales = context.read<SaleProvider>().sales;
+            if (sales.isEmpty) return;
+            CsvExportService.exportSales(
+              sales: sales,
+              context: context,
+              locale: locale,
+            );
+          },
+        ),
+      ],
       body: Consumer<SaleProvider>(
         builder: (context, saleProvider, _) {
           final allSales = saleProvider.sales;
@@ -45,9 +65,9 @@ class _SalesPageState extends State<SalesPage> {
               ? allSales
               : saleProvider.search(_searchQuery);
 
-          // Only show loading spinner if there's no cached data
+          // Only show loading skeleton if there's no cached data
           if (saleProvider.isLoading && allSales.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return const SkeletonListView(itemCount: 4, itemHeight: 120);
           }
 
           // Show error only if there's no cached data
@@ -83,7 +103,10 @@ class _SalesPageState extends State<SalesPage> {
               ? 0.0
               : allSales.fold<double>(0.0, (sum, s) => sum + s.pricePerEgg) / allSales.length;
 
-          return SingleChildScrollView(
+          return Stack(
+            children: [
+            SingleChildScrollView(
+            controller: _scrollController,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -232,6 +255,9 @@ class _SalesPageState extends State<SalesPage> {
                 ),
               ],
             ),
+          ),
+          ScrollToTopButton(scrollController: _scrollController),
+          ],
           );
         },
       ),

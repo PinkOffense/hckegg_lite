@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../l10n/locale_provider.dart';
 import '../state/theme_provider.dart';
@@ -115,7 +116,7 @@ class AppScaffold extends StatelessWidget {
             color: hasAppointmentsToday ? Colors.red : null,
           ),
         ),
-        onPressed: () => Navigator.pushNamed(context, '/vet-calendar'),
+        onPressed: () => context.push('/vet-calendar'),
       ),
       PopupMenuButton<String>(
         tooltip: locale == 'pt' ? 'Mais opções' : 'More options',
@@ -132,7 +133,7 @@ class AppScaffold extends StatelessWidget {
               themeProvider.toggleTheme();
               break;
             case 'profile':
-              Navigator.pushNamed(context, '/settings');
+              context.push('/settings');
               break;
           }
         },
@@ -230,7 +231,7 @@ class AppScaffold extends StatelessWidget {
             color: hasAppointmentsToday ? Colors.red : null,
           ),
         ),
-        onPressed: () => Navigator.pushNamed(context, '/vet-calendar'),
+        onPressed: () => context.push('/vet-calendar'),
       ),
       PopupMenuButton<String>(
         tooltip: locale == 'pt' ? 'Idioma' : 'Language',
@@ -280,7 +281,7 @@ class AppScaffold extends StatelessWidget {
       IconButton(
         tooltip: locale == 'pt' ? 'Perfil' : 'Profile',
         icon: const Icon(Icons.account_circle),
-        onPressed: () => Navigator.pushNamed(context, '/settings'),
+        onPressed: () => context.push('/settings'),
       ),
     ];
   }

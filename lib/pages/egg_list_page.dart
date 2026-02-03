@@ -7,10 +7,13 @@ import '../widgets/empty_state.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/gradient_fab.dart';
 import '../widgets/delete_confirmation_dialog.dart';
+import '../widgets/skeleton_loading.dart';
+import '../widgets/scroll_to_top.dart';
 import '../dialogs/daily_record_dialog.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../models/daily_egg_record.dart';
+import '../services/csv_export_service.dart';
 
 class EggListPage extends StatefulWidget {
   const EggListPage({super.key});
@@ -21,11 +24,13 @@ class EggListPage extends StatefulWidget {
 
 class _EggListPageState extends State<EggListPage> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   String _searchQuery = '';
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -37,6 +42,21 @@ class _EggListPageState extends State<EggListPage> {
 
     return AppScaffold(
       title: locale == 'pt' ? 'Registos Diários' : 'Daily Records',
+      additionalActions: [
+        IconButton(
+          tooltip: locale == 'pt' ? 'Exportar CSV' : 'Export CSV',
+          icon: const Icon(Icons.download),
+          onPressed: () {
+            final records = context.read<EggProvider>().records;
+            if (records.isEmpty) return;
+            CsvExportService.exportEggRecords(
+              records: records,
+              context: context,
+              locale: locale,
+            );
+          },
+        ),
+      ],
       body: Consumer<EggProvider>(
         builder: (context, eggProvider, _) {
           final allRecords = eggProvider.records;
@@ -46,7 +66,7 @@ class _EggListPageState extends State<EggListPage> {
 
           // Only show loading if no cached data
           if (eggProvider.isLoading && allRecords.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return const SkeletonListView(itemCount: 5, itemHeight: 100);
           }
 
           // Show error only if no cached data
@@ -113,26 +133,32 @@ class _EggListPageState extends State<EggListPage> {
                           setState(() => _searchQuery = '');
                         },
                       )
-                    : RefreshIndicator(
-                        onRefresh: () => eggProvider.loadRecords(),
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: records.length,
-                          itemBuilder: (context, index) {
-                            final record = records[index];
-                            return _RecordCard(
-                              key: ValueKey(record.date),
-                              record: record,
-                              locale: locale,
-                              onTap: () => showDialog(
-                                context: context,
-                                builder: (_) => DailyRecordDialog(existingRecord: record),
-                              ),
-                              onDelete: () => _confirmDelete(context, locale, eggProvider, record),
-                            );
-                          },
-                        ),
+                    : Stack(
+                        children: [
+                          RefreshIndicator(
+                            onRefresh: () => eggProvider.loadRecords(),
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: records.length,
+                              itemBuilder: (context, index) {
+                                final record = records[index];
+                                return _RecordCard(
+                                  key: ValueKey(record.date),
+                                  record: record,
+                                  locale: locale,
+                                  onTap: () => showDialog(
+                                    context: context,
+                                    builder: (_) => DailyRecordDialog(existingRecord: record),
+                                  ),
+                                  onDelete: () => _confirmDelete(context, locale, eggProvider, record),
+                                );
+                              },
+                            ),
+                          ),
+                          ScrollToTopButton(scrollController: _scrollController),
+                        ],
                       ),
               ),
 

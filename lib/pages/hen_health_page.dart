@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/vet_record.dart';
 import '../state/providers/providers.dart';
@@ -140,11 +141,7 @@ class _HenHealthPageState extends State<HenHealthPage> {
                       color: Colors.orange,
                     ),
                     GestureDetector(
-                      onTap: () => Navigator.pushNamed(
-                        context,
-                        '/vet-calendar',
-                        arguments: {'fromHenHealth': true},
-                      ),
+                      onTap: () => context.push('/vet-calendar'),
                       child: _HealthStat(
                         icon: Icons.event,
                         label: locale == 'pt' ? 'Ações Agendadas' : 'Upcoming Actions',
