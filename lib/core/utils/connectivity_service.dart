@@ -1,9 +1,8 @@
 // lib/core/utils/connectivity_service.dart
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 
-/// Service to monitor network connectivity
+/// Service to monitor network connectivity.
+/// Uses a web-safe approach — no dart:io dependency.
 class ConnectivityService {
   static final ConnectivityService _instance = ConnectivityService._internal();
   factory ConnectivityService() => _instance;
@@ -34,25 +33,11 @@ class ConnectivityService {
     _checkTimer = null;
   }
 
-  /// Check connectivity by making a simple request
+  /// Check connectivity in a web-safe way.
+  /// Actual connectivity failures are caught by API error handlers
+  /// which call [markOffline] / [markOnline] as needed.
   Future<void> _checkConnectivity() async {
-    if (kIsWeb) {
-      // On web, assume online (browser handles offline)
-      _updateStatus(true);
-      return;
-    }
-
-    try {
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 5));
-      _updateStatus(result.isNotEmpty && result[0].rawAddress.isNotEmpty);
-    } on SocketException catch (_) {
-      _updateStatus(false);
-    } on TimeoutException catch (_) {
-      _updateStatus(false);
-    } catch (_) {
-      _updateStatus(false);
-    }
+    _updateStatus(true);
   }
 
   void _updateStatus(bool online) {

@@ -1,13 +1,14 @@
 {
-    "name": "hckegg_lite",
-    "short_name": "hckegg_lite",
+    "name": "HCKEgg Aviculture 360",
+    "short_name": "HCKEgg 360",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#FFF0F5",
+    "theme_color": "#FF69B4",
+    "description": "Professional poultry management platform. Track egg production, sales, expenses, feed stock, and veterinary records.",
+    "orientation": "any",
     "prefer_related_applications": false,
+    "categories": ["business", "productivity"],
     "icons": [
         {
             "src": "icons/Icon-192.png",

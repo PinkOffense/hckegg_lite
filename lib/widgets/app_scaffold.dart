@@ -5,6 +5,10 @@ import '../state/theme_provider.dart';
 import '../features/health/presentation/providers/vet_provider.dart';
 import 'app_drawer.dart';
 
+/// Responsive breakpoints
+const double _tabletBreakpoint = 768;
+const double _desktopBreakpoint = 1200;
+
 class AppScaffold extends StatelessWidget {
   final String title;
   final Widget body;
@@ -24,18 +28,66 @@ class AppScaffold extends StatelessWidget {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
     final themeProvider = Provider.of<ThemeProvider>(context);
     final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 600;
+    final isDesktop = screenWidth >= _desktopBreakpoint;
+    final isTablet = screenWidth >= _tabletBreakpoint && screenWidth < _desktopBreakpoint;
 
+    // Desktop: permanent sidebar + constrained content
+    if (isDesktop) {
+      return Row(
+        children: [
+          SizedBox(
+            width: 280,
+            child: Material(
+              elevation: 2,
+              child: AppDrawer(embedded: true),
+            ),
+          ),
+          Expanded(
+            child: Scaffold(
+              appBar: AppBar(
+                title: Text(title, style: const TextStyle(fontSize: 20)),
+                elevation: 0,
+                automaticallyImplyLeading: false,
+                actions: _buildDesktopActions(context, locale, themeProvider),
+              ),
+              body: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: body,
+                ),
+              ),
+              floatingActionButton: fab,
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Tablet: drawer + constrained content
+    if (isTablet) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(title, style: const TextStyle(fontSize: 18)),
+          elevation: 0,
+          actions: _buildDesktopActions(context, locale, themeProvider),
+        ),
+        drawer: const AppDrawer(),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: body,
+          ),
+        ),
+        floatingActionButton: fab,
+      );
+    }
+
+    // Mobile
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          title,
-          style: TextStyle(fontSize: isSmallScreen ? 16 : 20),
-        ),
+        title: Text(title, style: const TextStyle(fontSize: 16)),
         elevation: 0,
-        actions: isSmallScreen
-            ? _buildMobileActions(context, locale, themeProvider)
-            : _buildDesktopActions(context, locale, themeProvider),
+        actions: _buildMobileActions(context, locale, themeProvider),
       ),
       drawer: const AppDrawer(),
       body: body,
