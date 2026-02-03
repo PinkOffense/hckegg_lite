@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/locale_provider.dart';
@@ -44,7 +45,7 @@ class _AppDrawerState extends State<AppDrawer> {
     final user = Supabase.instance.client.auth.currentUser;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final currentRoute = ModalRoute.of(context)?.settings.name ?? '/';
+    final currentRoute = GoRouterState.of(context).matchedLocation;
 
     // Get display name and avatar
     final displayName = _profile?.displayName ?? user?.email?.split('@').first ?? 'User';
@@ -64,7 +65,7 @@ class _AppDrawerState extends State<AppDrawer> {
               child: GestureDetector(
               onTap: () {
                 if (!widget.embedded) Navigator.pop(context);
-                Navigator.pushNamed(context, '/settings');
+                context.go('/settings');
               },
               child: Container(
                 width: double.infinity,
@@ -329,7 +330,7 @@ class _AppDrawerState extends State<AppDrawer> {
           onTap: onTap ?? () {
             if (!widget.embedded) Navigator.pop(context);
             if (route != null) {
-              Navigator.pushReplacementNamed(context, route);
+              context.go(route);
             }
           },
           borderRadius: BorderRadius.circular(12),

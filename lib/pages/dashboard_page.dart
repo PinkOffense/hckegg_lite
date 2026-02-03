@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/constants/date_constants.dart';
 import '../state/providers/providers.dart';
@@ -484,7 +485,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.pushNamed(context, '/eggs'),
+                        onPressed: () => context.go('/eggs'),
                         child: Text(locale == 'pt' ? 'Ver Todos' : 'View All'),
                       ),
                     ],

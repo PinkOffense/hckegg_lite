@@ -243,10 +243,8 @@ class _SettingsPageState extends State<SettingsPage> {
       final logoutManager = LogoutManager.instance();
       await logoutManager.signOut(context);
 
-      // Pop all routes to return to AuthGate (which will show LoginPage)
-      if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
+      // GoRouter redirect will automatically navigate to /login
+      // when auth state changes after signOut
     } catch (e) {
       // Show error if sign-out failed
       if (mounted) {

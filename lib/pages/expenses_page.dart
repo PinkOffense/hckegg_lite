@@ -14,6 +14,8 @@ import '../l10n/translations.dart';
 import '../models/expense.dart';
 import '../dialogs/expense_dialog.dart';
 import '../widgets/skeleton_loading.dart';
+import '../widgets/scroll_to_top.dart';
+import '../services/csv_export_service.dart';
 
 class ExpensesPage extends StatefulWidget {
   const ExpensesPage({super.key});
@@ -24,11 +26,13 @@ class ExpensesPage extends StatefulWidget {
 
 class _ExpensesPageState extends State<ExpensesPage> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   String _searchQuery = '';
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -40,6 +44,21 @@ class _ExpensesPageState extends State<ExpensesPage> {
 
     return AppScaffold(
       title: t('expenses'),
+      additionalActions: [
+        IconButton(
+          tooltip: locale == 'pt' ? 'Exportar CSV' : 'Export CSV',
+          icon: const Icon(Icons.download),
+          onPressed: () {
+            final expenses = context.read<ExpenseProvider>().expenses;
+            if (expenses.isEmpty) return;
+            CsvExportService.exportExpenses(
+              expenses: expenses,
+              context: context,
+              locale: locale,
+            );
+          },
+        ),
+      ],
       body: Consumer3<SaleProvider, ExpenseProvider, VetProvider>(
         builder: (context, saleProvider, expenseProvider, vetProvider, _) {
           // Show loading state while data is being fetched
@@ -97,7 +116,10 @@ class _ExpensesPageState extends State<ExpensesPage> {
           final sortedStandaloneExpenses = List<Expense>.from(standaloneExpenses)
             ..sort((a, b) => b.date.compareTo(a.date));
 
-          return SingleChildScrollView(
+          return Stack(
+            children: [
+            SingleChildScrollView(
+                controller: _scrollController,
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,6 +407,9 @@ class _ExpensesPageState extends State<ExpensesPage> {
                     ),
                   ],
                 ),
+          ),
+          ScrollToTopButton(scrollController: _scrollController),
+          ],
           );
         },
       ),
