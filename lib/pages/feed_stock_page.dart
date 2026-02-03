@@ -181,19 +181,19 @@ class _FeedStockPageState extends State<FeedStockPage> {
   void _showDeleteDialog(BuildContext context, String locale, FeedStock stock) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(Translations.of(locale, 'delete_question')),
         content: Text(
           '${Translations.of(locale, 'delete')} "${stock.type.displayName(locale)}"?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(Translations.of(locale, 'cancel')),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               await context.read<FeedStockProvider>().deleteFeedStock(stock.id);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
