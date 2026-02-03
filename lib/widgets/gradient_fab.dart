@@ -44,32 +44,36 @@ class GradientFAB extends StatelessWidget {
     return Semantics(
       button: true,
       label: tooltip,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [_accentPink, _warmPink],
-          ),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: _accentPink.withValues(alpha: 0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [_accentPink, _warmPink],
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onPressed,
-            customBorder: const CircleBorder(),
-            child: tooltip != null && tooltip!.isNotEmpty
-                ? Tooltip(message: tooltip!, child: iconWidget)
-                : iconWidget,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: _accentPink.withValues(alpha: 0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              customBorder: const CircleBorder(),
+              hoverColor: Colors.white.withValues(alpha: 0.15),
+              child: tooltip != null && tooltip!.isNotEmpty
+                  ? Tooltip(message: tooltip!, child: iconWidget)
+                  : iconWidget,
+            ),
           ),
         ),
       ),
@@ -80,28 +84,31 @@ class GradientFAB extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [_accentPink, _warmPink],
-          ),
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: _accentPink.withValues(alpha: 0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [_accentPink, _warmPink],
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onPressed,
             borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: _accentPink.withValues(alpha: 0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              borderRadius: BorderRadius.circular(28),
+              hoverColor: Colors.white.withValues(alpha: 0.15),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -121,6 +128,7 @@ class GradientFAB extends StatelessWidget {
               ),
             ),
           ),
+        ),
         ),
       ),
     );

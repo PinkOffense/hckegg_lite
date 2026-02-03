@@ -1,5 +1,6 @@
 // lib/app/app_widget.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -64,6 +65,19 @@ class HckEggApp extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
 
+            // Keyboard shortcuts for web/desktop
+            shortcuts: {
+              LogicalKeySet(LogicalKeyboardKey.escape): const _DismissIntent(),
+            },
+            actions: {
+              _DismissIntent: CallbackAction<_DismissIntent>(
+                onInvoke: (_) {
+                  // Let the framework handle Escape (closes dialogs, popups)
+                  return null;
+                },
+              ),
+            },
+
             home: OfflineIndicator(
               locale: localeProvider.code,
               child: const AuthGate(),
@@ -73,4 +87,8 @@ class HckEggApp extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DismissIntent extends Intent {
+  const _DismissIntent();
 }

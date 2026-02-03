@@ -7,7 +7,10 @@ import '../services/profile_service.dart';
 import 'animated_chickens.dart';
 
 class AppDrawer extends StatefulWidget {
-  const AppDrawer({super.key});
+  /// When true, renders as a permanent sidebar (no Drawer wrapper, no Navigator.pop on tap)
+  final bool embedded;
+
+  const AppDrawer({super.key, this.embedded = false});
 
   @override
   State<AppDrawer> createState() => _AppDrawerState();
@@ -52,14 +55,15 @@ class _AppDrawerState extends State<AppDrawer> {
     const accentPink = Color(0xFFFF69B4);
     const warmPink = Color(0xFFFFB6C1);
 
-    return Drawer(
-      child: SafeArea(
+    final content = SafeArea(
         child: Column(
           children: [
             // User Profile Section with gradient
-            GestureDetector(
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
               onTap: () {
-                Navigator.pop(context);
+                if (!widget.embedded) Navigator.pop(context);
                 Navigator.pushNamed(context, '/settings');
               },
               child: Container(
@@ -149,6 +153,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   ],
                 ),
               ),
+            ),
             ),
 
             // Scrollable menu items
@@ -295,8 +300,11 @@ class _AppDrawerState extends State<AppDrawer> {
             ),
           ],
         ),
-      ),
-    );
+      );
+
+    // When embedded as permanent sidebar, don't wrap in Drawer
+    if (widget.embedded) return content;
+    return Drawer(child: content);
   }
 
   Widget _buildMenuItem({
@@ -319,12 +327,13 @@ class _AppDrawerState extends State<AppDrawer> {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap ?? () {
-            Navigator.pop(context);
+            if (!widget.embedded) Navigator.pop(context);
             if (route != null) {
               Navigator.pushReplacementNamed(context, route);
             }
           },
           borderRadius: BorderRadius.circular(12),
+          hoverColor: color.withValues(alpha: 0.08),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

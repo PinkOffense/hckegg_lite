@@ -58,36 +58,44 @@ class _SettingsPageState extends State<SettingsPage> {
     // On web, camera is not available — use file picker directly
     ImageSource? source;
     if (kIsWeb) {
-      // On web, show options without camera
-      source = await showModalBottomSheet<ImageSource?>(
+      // On web, use a centered dialog instead of bottom sheet
+      source = await showDialog<ImageSource?>(
         context: context,
-        builder: (context) => SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: Text(locale == 'pt' ? 'Escolher Ficheiro' : 'Choose File'),
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
+        builder: (context) => SimpleDialog(
+          title: Text(locale == 'pt' ? 'Foto de Perfil' : 'Profile Photo'),
+          children: [
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, ImageSource.gallery),
+              child: Row(
+                children: [
+                  const Icon(Icons.photo_library),
+                  const SizedBox(width: 12),
+                  Text(locale == 'pt' ? 'Escolher Ficheiro' : 'Choose File'),
+                ],
               ),
-              if (_profile?.avatarUrl != null)
-                ListTile(
-                  leading: const Icon(Icons.delete, color: Colors.red),
-                  title: Text(
-                    locale == 'pt' ? 'Remover Foto' : 'Remove Photo',
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _removePhoto(locale);
-                  },
+            ),
+            if (_profile?.avatarUrl != null)
+              SimpleDialogOption(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _removePhoto(locale);
+                },
+                child: Row(
+                  children: [
+                    const Icon(Icons.delete, color: Colors.red),
+                    const SizedBox(width: 12),
+                    Text(
+                      locale == 'pt' ? 'Remover Foto' : 'Remove Photo',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ],
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       );
     } else {
-      // On mobile, show camera + gallery options
+      // On mobile, show camera + gallery bottom sheet
       source = await showModalBottomSheet<ImageSource?>(
         context: context,
         builder: (context) => SafeArea(
@@ -551,7 +559,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     // Avatar with edit button
                     Stack(
                       children: [
-                        GestureDetector(
+                        MouseRegion(
+                          cursor: _isUploading ? SystemMouseCursors.basic : SystemMouseCursors.click,
+                          child: GestureDetector(
                           onTap: _isUploading ? null : () => _pickAndUploadImage(locale),
                           child: CircleAvatar(
                             radius: isSmallScreen ? 50 : 60,
@@ -575,6 +585,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                     : null,
                           ),
                         ),
+                        ),
                         Positioned(
                           bottom: 0,
                           right: 0,
@@ -589,10 +600,13 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                             child: IconButton(
                               icon: Icon(
-                                Icons.camera_alt,
+                                kIsWeb ? Icons.upload : Icons.camera_alt,
                                 color: theme.colorScheme.onPrimary,
                                 size: isSmallScreen ? 18 : 20,
                               ),
+                              tooltip: kIsWeb
+                                  ? (locale == 'pt' ? 'Carregar foto' : 'Upload photo')
+                                  : (locale == 'pt' ? 'Alterar foto' : 'Change photo'),
                               onPressed: _isUploading ? null : () => _pickAndUploadImage(locale),
                               constraints: BoxConstraints(
                                 minWidth: isSmallScreen ? 32 : 36,
