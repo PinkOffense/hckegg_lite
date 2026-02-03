@@ -177,8 +177,9 @@ class _DashboardPageState extends State<DashboardPage>
               final dashboard = analyticsProvider.dashboard;
               final weekStatsData = analyticsProvider.weekStats;
 
-            // Get reservation provider for reserved count
-            final reservationProvider = context.watch<ReservationProvider>();
+            // Get reservation provider for reserved count (read, not watch -
+            // to avoid rebuilding entire dashboard when reservations change)
+            final reservationProvider = context.read<ReservationProvider>();
 
             if (records.isEmpty) {
               return ChickenEmptyState(

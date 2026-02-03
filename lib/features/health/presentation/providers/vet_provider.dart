@@ -44,16 +44,61 @@ class VetProvider extends ChangeNotifier {
   bool get isLoading => _state == VetState.loading;
   bool get hasError => _state == VetState.error;
 
-  // Statistics
+  // --- Cached computed values ---
+  List<VetRecord>? _sortedRecordsCache;
+  List<VetRecord>? _todayAppointmentsCache;
+  String? _todayAppointmentsCacheDate;
+  int? _totalDeathsCache;
+  double? _totalVetCostsCache;
+  int? _totalHensAffectedCache;
+  int? _upcomingActionsCache;
+
+  void _invalidateCache() {
+    _sortedRecordsCache = null;
+    _todayAppointmentsCache = null;
+    _todayAppointmentsCacheDate = null;
+    _totalDeathsCache = null;
+    _totalVetCostsCache = null;
+    _totalHensAffectedCache = null;
+    _upcomingActionsCache = null;
+  }
+
+  // Statistics (cached)
   int get totalVetRecords => _records.length;
 
-  int get totalDeaths => _records
-      .where((r) => r.type == VetRecordType.death)
-      .fold<int>(0, (sum, r) => sum + r.hensAffected);
+  int get totalDeaths {
+    _totalDeathsCache ??= _records
+        .where((r) => r.type == VetRecordType.death)
+        .fold<int>(0, (sum, r) => sum + r.hensAffected);
+    return _totalDeathsCache!;
+  }
 
-  double get totalVetCosts => _records.fold<double>(0.0, (sum, r) => sum + (r.cost ?? 0.0));
+  double get totalVetCosts {
+    _totalVetCostsCache ??= _records.fold<double>(0.0, (sum, r) => sum + (r.cost ?? 0.0));
+    return _totalVetCostsCache!;
+  }
 
-  int get totalHensAffected => _records.fold<int>(0, (sum, r) => sum + r.hensAffected);
+  int get totalHensAffected {
+    _totalHensAffectedCache ??= _records.fold<int>(0, (sum, r) => sum + r.hensAffected);
+    return _totalHensAffectedCache!;
+  }
+
+  int get upcomingActionsCount {
+    if (_upcomingActionsCache == null) {
+      final now = DateTime.now();
+      _upcomingActionsCache = _records
+          .where((r) => r.nextActionDate != null)
+          .where((r) {
+            try {
+              return DateTime.parse(r.nextActionDate!).isAfter(now);
+            } catch (_) {
+              return false;
+            }
+          })
+          .length;
+    }
+    return _upcomingActionsCache!;
+  }
 
   String _toIsoDateString(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
@@ -70,6 +115,7 @@ class VetProvider extends ChangeNotifier {
     result.fold(
       onSuccess: (data) {
         _records = data;
+        _invalidateCache();
         _state = VetState.loaded;
       },
       onFailure: (failure) {
@@ -84,17 +130,24 @@ class VetProvider extends ChangeNotifier {
   /// Backward compatibility alias
   Future<void> loadVetRecords() => loadRecords();
 
-  /// Get today's appointments
+  /// Get today's appointments (cached per date)
   List<VetRecord> getTodayAppointments() {
     final todayStr = _toIsoDateString(DateTime.now());
-    return _records.where((r) => r.nextActionDate == todayStr).toList();
+    if (_todayAppointmentsCache != null && _todayAppointmentsCacheDate == todayStr) {
+      return _todayAppointmentsCache!;
+    }
+    _todayAppointmentsCacheDate = todayStr;
+    _todayAppointmentsCache = _records.where((r) => r.nextActionDate == todayStr).toList();
+    return _todayAppointmentsCache!;
   }
 
-  /// Get all vet records sorted by date
+  /// Get all vet records sorted by date (cached)
   List<VetRecord> getVetRecords() {
-    final sorted = List<VetRecord>.from(_records);
-    sorted.sort((a, b) => b.date.compareTo(a.date));
-    return sorted;
+    if (_sortedRecordsCache == null) {
+      _sortedRecordsCache = List<VetRecord>.from(_records);
+      _sortedRecordsCache!.sort((a, b) => b.date.compareTo(a.date));
+    }
+    return _sortedRecordsCache!;
   }
 
   /// Get records by type
@@ -108,8 +161,12 @@ class VetProvider extends ChangeNotifier {
     return _records
         .where((r) => r.nextActionDate != null)
         .where((r) {
-          final nextDate = DateTime.parse(r.nextActionDate!);
-          return nextDate.isAfter(now);
+          try {
+            final nextDate = DateTime.parse(r.nextActionDate!);
+            return nextDate.isAfter(now);
+          } catch (_) {
+            return false;
+          }
         })
         .toList()
       ..sort((a, b) => a.nextActionDate!.compareTo(b.nextActionDate!));
@@ -169,6 +226,7 @@ class VetProvider extends ChangeNotifier {
           _records.insert(0, savedRecord);
         }
         _records.sort((a, b) => b.date.compareTo(a.date));
+        _invalidateCache();
         _state = VetState.loaded;
         _errorMessage = null;
       },
@@ -197,6 +255,7 @@ class VetProvider extends ChangeNotifier {
     result.fold(
       onSuccess: (_) {
         _records.removeWhere((r) => r.id == id);
+        _invalidateCache();
         _state = VetState.loaded;
       },
       onFailure: (failure) {
@@ -224,6 +283,7 @@ class VetProvider extends ChangeNotifier {
   void clearData() {
     _records = [];
     _errorMessage = null;
+    _invalidateCache();
     _state = VetState.initial;
     notifyListeners();
   }

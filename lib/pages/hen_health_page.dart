@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -21,11 +22,20 @@ class HenHealthPage extends StatefulWidget {
 class _HenHealthPageState extends State<HenHealthPage> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  Timer? _debounce;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _searchQuery = value);
+    });
   }
 
   @override
@@ -37,20 +47,11 @@ class _HenHealthPageState extends State<HenHealthPage> {
 
     final allRecords = vetProvider.getVetRecords();
 
-    // Calculate statistics
-    final totalRecords = allRecords.length;
-    final totalDeaths = allRecords
-        .where((r) => r.type == VetRecordType.death)
-        .fold(0, (sum, r) => sum + r.hensAffected);
-    final totalHensAffected = allRecords.fold(0, (sum, r) => sum + r.hensAffected);
-    final totalVetCosts = allRecords.fold(0.0, (sum, r) => sum + (r.cost ?? 0.0));
-    final upcomingActions = allRecords
-        .where((r) => r.nextActionDate != null)
-        .where((r) {
-          final nextDate = DateTime.parse(r.nextActionDate!);
-          return nextDate.isAfter(DateTime.now());
-        })
-        .length;
+    // Use cached statistics from provider
+    final totalRecords = vetProvider.totalVetRecords;
+    final totalDeaths = vetProvider.totalDeaths;
+    final totalVetCosts = vetProvider.totalVetCosts;
+    final upcomingActions = vetProvider.upcomingActionsCount;
 
     // Loading state
     if (vetProvider.isLoading && allRecords.isEmpty) {
@@ -163,9 +164,7 @@ class _HenHealthPageState extends State<HenHealthPage> {
               hintText: t('search_records'),
               hasContent: _searchQuery.isNotEmpty,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              onChanged: (value) {
-                setState(() => _searchQuery = value);
-              },
+              onChanged: _onSearchChanged,
             ),
 
           const SizedBox(height: 8),
