@@ -52,7 +52,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
     // Loading state
     if (reservationProvider.isLoading && allReservations.isEmpty) {
       return AppScaffold(
-        title: locale == 'pt' ? 'Reservas de Ovos' : 'Egg Reservations',
+        title: t('egg_reservations'),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -60,7 +60,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
     // Error state
     if (reservationProvider.hasError && allReservations.isEmpty) {
       return AppScaffold(
-        title: locale == 'pt' ? 'Reservas de Ovos' : 'Egg Reservations',
+        title: t('egg_reservations'),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -68,14 +68,14 @@ class _ReservationsPageState extends State<ReservationsPage> {
               Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
               const SizedBox(height: 16),
               Text(
-                locale == 'pt' ? 'Erro ao carregar reservas' : 'Error loading reservations',
+                t('error_loading_reservations'),
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: () => reservationProvider.loadReservations(),
                 icon: const Icon(Icons.refresh),
-                label: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
+                label: Text(t('try_again')),
               ),
             ],
           ),
@@ -84,7 +84,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
     }
 
     return AppScaffold(
-      title: locale == 'pt' ? 'Reservas de Ovos' : 'Egg Reservations',
+      title: t('egg_reservations'),
       fab: GradientFAB(
         extended: true,
         icon: Icons.add,
@@ -98,12 +98,8 @@ class _ReservationsPageState extends State<ReservationsPage> {
       ),
       body: allReservations.isEmpty
           ? ChickenEmptyState(
-              title: locale == 'pt'
-                  ? 'Nenhuma reserva encontrada'
-                  : 'No reservations found',
-              message: locale == 'pt'
-                  ? 'Gira reservas de ovos para os seus clientes'
-                  : 'Manage egg reservations for your customers',
+              title: t('no_reservations'),
+              message: t('manage_reservations'),
               actionLabel: t('add_reservation'),
               onAction: () {
                 showDialog(
@@ -118,9 +114,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
                 // Search Bar
                 AppSearchBar(
                   controller: _searchController,
-                  hintText: locale == 'pt'
-                      ? 'Pesquisar por cliente, telefone...'
-                      : 'Search by customer, phone...',
+                  hintText: t('search_reservations'),
                   hasContent: _searchQuery.isNotEmpty,
                   onChanged: (value) {
                     setState(() => _searchQuery = value);
@@ -150,7 +144,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
                         // Search results indicator
                         if (_searchQuery.isNotEmpty) ...[
                           Text(
-                            '${reservations.length} ${locale == 'pt' ? 'resultado(s)' : 'result(s)'}',
+                            '${reservations.length} ${t('results')}',
                             style: theme.textTheme.bodySmall,
                           ),
                           const SizedBox(height: 16),
@@ -163,7 +157,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
                               Icon(Icons.upcoming, color: theme.colorScheme.primary),
                               const SizedBox(width: 8),
                               Text(
-                                locale == 'pt' ? 'Reservas Ativas' : 'Active Reservations',
+                                t('active_reservations'),
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -182,7 +176,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
                               Icon(Icons.history, color: Colors.orange.shade700),
                               const SizedBox(width: 8),
                               Text(
-                                locale == 'pt' ? 'Reservas Atrasadas' : 'Overdue Reservations',
+                                t('overdue_reservations'),
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.orange.shade700,
@@ -269,14 +263,14 @@ class _ReservationCard extends StatelessWidget {
                       children: [
                         Text(
                           reservation.customerName ??
-                              (locale == 'pt' ? 'Cliente Anônimo' : 'Anonymous Customer'),
+                              Translations.of(locale, 'anonymous_customer'),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${reservation.quantity} ${locale == 'pt' ? 'ovos' : 'eggs'}',
+                          '${reservation.quantity} ${Translations.of(locale, 'eggs')}',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.grey.shade700,
                           ),
@@ -286,7 +280,7 @@ class _ReservationCard extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.shopping_cart),
-                    tooltip: locale == 'pt' ? 'Converter em Venda' : 'Convert to Sale',
+                    tooltip: Translations.of(locale, 'convert_to_sale'),
                     onPressed: () => _convertToSale(context),
                   ),
                 ],
@@ -297,7 +291,7 @@ class _ReservationCard extends StatelessWidget {
                   Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
                   const SizedBox(width: 8),
                   Text(
-                    '${locale == 'pt' ? 'Reservado' : 'Reserved'}: ${_formatDate(reservation.date)}',
+                    '${Translations.of(locale, 'reserved')}: ${_formatDate(reservation.date)}',
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
@@ -313,7 +307,7 @@ class _ReservationCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '${locale == 'pt' ? 'Levantamento' : 'Pickup'}: ${_formatDate(reservation.pickupDate!)}',
+                      '${Translations.of(locale, 'pickup')}: ${_formatDate(reservation.pickupDate!)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: isOverdue ? Colors.orange.shade700 : null,
                         fontWeight: isOverdue ? FontWeight.bold : null,
@@ -368,15 +362,13 @@ class _ReservationCard extends StatelessWidget {
     final paymentStatus = await showDialog<PaymentStatus>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(locale == 'pt' ? 'Converter em Venda' : 'Convert to Sale'),
+        title: Text(Translations.of(locale, 'convert_to_sale')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              locale == 'pt'
-                  ? 'O cliente levantou os ovos. Como foi o pagamento?'
-                  : 'Customer picked up the eggs. How was the payment?',
+              Translations.of(locale, 'convert_dialog_message'),
             ),
             const SizedBox(height: 16),
             // Only show Pending and Advance options
@@ -384,9 +376,7 @@ class _ReservationCard extends StatelessWidget {
               leading: const Icon(Icons.hourglass_empty, color: Colors.orange),
               title: Text(PaymentStatus.pending.displayName),
               subtitle: Text(
-                locale == 'pt'
-                    ? 'Cliente levou mas não pagou'
-                    : 'Customer took but didn\'t pay',
+                Translations.of(locale, 'payment_pending_desc'),
               ),
               onTap: () => Navigator.pop(context, PaymentStatus.pending),
             ),
@@ -394,9 +384,7 @@ class _ReservationCard extends StatelessWidget {
               leading: const Icon(Icons.account_balance_wallet, color: Colors.blue),
               title: Text(PaymentStatus.advance.displayName),
               subtitle: Text(
-                locale == 'pt'
-                    ? 'Cliente já tinha pago adiantado'
-                    : 'Customer already paid in advance',
+                Translations.of(locale, 'payment_advance_desc'),
               ),
               onTap: () => Navigator.pop(context, PaymentStatus.advance),
             ),
@@ -405,7 +393,7 @@ class _ReservationCard extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+            child: Text(Translations.of(locale, 'cancel')),
           ),
         ],
       ),
@@ -427,9 +415,7 @@ class _ReservationCard extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              locale == 'pt'
-                  ? 'Reserva convertida em venda com sucesso!'
-                  : 'Reservation converted to sale successfully!',
+              Translations.of(locale, 'reservation_converted'),
             ),
             backgroundColor: Colors.green,
           ),
