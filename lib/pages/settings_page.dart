@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -54,39 +55,72 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _pickAndUploadImage(String locale) async {
     final picker = ImagePicker();
 
-    // Show options
-    final source = await showModalBottomSheet<ImageSource?>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: Text(locale == 'pt' ? 'Tirar Foto' : 'Take Photo'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: Text(locale == 'pt' ? 'Escolher da Galeria' : 'Choose from Gallery'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-            if (_profile?.avatarUrl != null)
+    // On web, camera is not available — use file picker directly
+    ImageSource? source;
+    if (kIsWeb) {
+      // On web, show options without camera
+      source = await showModalBottomSheet<ImageSource?>(
+        context: context,
+        builder: (context) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: Text(
-                  locale == 'pt' ? 'Remover Foto' : 'Remove Photo',
-                  style: const TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _removePhoto(locale);
-                },
+                leading: const Icon(Icons.photo_library),
+                title: Text(locale == 'pt' ? 'Escolher Ficheiro' : 'Choose File'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
-          ],
+              if (_profile?.avatarUrl != null)
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: Text(
+                    locale == 'pt' ? 'Remover Foto' : 'Remove Photo',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removePhoto(locale);
+                  },
+                ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      // On mobile, show camera + gallery options
+      source = await showModalBottomSheet<ImageSource?>(
+        context: context,
+        builder: (context) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: Text(locale == 'pt' ? 'Tirar Foto' : 'Take Photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: Text(locale == 'pt' ? 'Escolher da Galeria' : 'Choose from Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              if (_profile?.avatarUrl != null)
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: Text(
+                    locale == 'pt' ? 'Remover Foto' : 'Remove Photo',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removePhoto(locale);
+                  },
+                ),
+            ],
+          ),
+        ),
+      );
+    }
 
     if (source == null) return;
 
