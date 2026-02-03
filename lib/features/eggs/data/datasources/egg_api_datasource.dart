@@ -12,18 +12,18 @@ class EggApiDataSourceImpl implements EggRemoteDataSource {
 
   List<dynamic> _extractList(Map<String, dynamic> response) {
     final data = response['data'];
-    if (data == null) {
-      throw const ServerFailure(message: 'Invalid response: missing data', code: 'INVALID_RESPONSE');
+    if (data == null || data is! List) {
+      throw const ServerFailure(message: 'Invalid response: expected data array', code: 'INVALID_RESPONSE');
     }
-    return data as List;
+    return data;
   }
 
   Map<String, dynamic> _extractMap(Map<String, dynamic> response) {
     final data = response['data'];
-    if (data == null) {
-      throw const ServerFailure(message: 'Invalid response: missing data', code: 'INVALID_RESPONSE');
+    if (data == null || data is! Map<String, dynamic>) {
+      throw const ServerFailure(message: 'Invalid response: expected data object', code: 'INVALID_RESPONSE');
     }
-    return data as Map<String, dynamic>;
+    return data;
   }
 
   @override

@@ -130,7 +130,7 @@ class EggProvider extends ChangeNotifier {
 
       if (result.isSuccess) {
         final savedRecord = result.value;
-        final index = _records.indexWhere((r) => r.id == savedRecord.id || r.date == savedRecord.date);
+        final index = _records.indexWhere((r) => r.id == savedRecord.id);
         _records = List.from(_records);
         if (index >= 0) {
           _records[index] = savedRecord;

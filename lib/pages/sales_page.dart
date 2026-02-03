@@ -63,7 +63,7 @@ class _SalesPageState extends State<SalesPage> {
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  Text(saleProvider.error!),
+                  Text(saleProvider.error ?? ''),
                   const SizedBox(height: 16),
                   FilledButton.icon(
                     onPressed: () => saleProvider.loadSales(),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -22,8 +24,8 @@ class ApiClient {
   /// In-memory cache for GET requests
   final Map<String, _CacheEntry> _cache = {};
 
-  /// Flag to prevent infinite refresh loops
-  bool _isRefreshing = false;
+  /// Completer to coalesce concurrent refresh attempts into one
+  Completer<bool>? _refreshCompleter;
 
   /// Default cache TTL (5 minutes)
   static const Duration defaultCacheTtl = Duration(minutes: 5);
@@ -63,7 +65,7 @@ class ApiClient {
         },
         onError: (error, handler) async {
           // Handle 401 Unauthorized - attempt token refresh and retry
-          if (error.response?.statusCode == 401 && !_isRefreshing) {
+          if (error.response?.statusCode == 401) {
             final refreshed = await _refreshToken();
             if (refreshed) {
               // Retry the original request with new token
@@ -96,18 +98,25 @@ class ApiClient {
     }
   }
 
-  /// Attempt to refresh the Supabase token
+  /// Attempt to refresh the Supabase token.
+  /// Coalesces concurrent calls so only one refresh happens at a time.
   Future<bool> _refreshToken() async {
-    if (_isRefreshing) return false;
+    // If already refreshing, wait for the existing attempt
+    if (_refreshCompleter != null) {
+      return _refreshCompleter!.future;
+    }
 
-    _isRefreshing = true;
+    _refreshCompleter = Completer<bool>();
     try {
       final response = await Supabase.instance.client.auth.refreshSession();
-      return response.session != null;
+      final success = response.session != null;
+      _refreshCompleter!.complete(success);
+      return success;
     } catch (_) {
+      _refreshCompleter!.complete(false);
       return false;
     } finally {
-      _isRefreshing = false;
+      _refreshCompleter = null;
     }
   }
 

@@ -159,13 +159,16 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   void _loadSecondaryDataInBackground() {
-    // These are needed for other pages - load in background
-    if (mounted) {
-      context.read<ExpenseProvider>().loadExpenses();
-      context.read<ReservationProvider>().loadReservations();
-      context.read<VetRecordProvider>().loadVetRecords();
-      context.read<FeedStockProvider>().loadFeedStocks();
-    }
+    if (!mounted) return;
+    // Load secondary data with error handling - failures are non-fatal
+    Future.wait([
+      context.read<ExpenseProvider>().loadExpenses(),
+      context.read<ReservationProvider>().loadReservations(),
+      context.read<VetRecordProvider>().loadVetRecords(),
+      context.read<FeedStockProvider>().loadFeedStocks(),
+    ]).catchError((_) {
+      // Secondary data failures are non-blocking; pages handle their own error states
+    });
   }
 
   @override

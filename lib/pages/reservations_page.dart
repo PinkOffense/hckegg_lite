@@ -39,13 +39,14 @@ class _ReservationsPageState extends State<ReservationsPage> {
     final reservations = _searchQuery.isEmpty
         ? allReservations
         : reservationProvider.search(_searchQuery);
+    final today = DateUtils.dateOnly(DateTime.now());
     final upcomingReservations = reservations.where((r) {
       if (r.pickupDate == null) return true;
-      return DateTime.parse(r.pickupDate!).isAfter(DateTime.now().subtract(const Duration(days: 1)));
+      return !DateUtils.dateOnly(DateTime.parse(r.pickupDate!)).isBefore(today);
     }).toList();
     final pastReservations = reservations.where((r) {
       if (r.pickupDate == null) return false;
-      return DateTime.parse(r.pickupDate!).isBefore(DateTime.now());
+      return DateUtils.dateOnly(DateTime.parse(r.pickupDate!)).isBefore(today);
     }).toList();
 
     // Loading state

@@ -99,10 +99,11 @@ class SyncQueue extends ChangeNotifier {
   /// Maximum retry attempts before giving up on an operation
   static const int maxRetries = 5;
 
-  /// Delay between retries (exponential backoff)
-  static Duration retryDelay(int attempt) => Duration(
-        seconds: (2 << attempt).clamp(1, 60),
-      );
+  /// Delay between retries (exponential backoff, safe from overflow)
+  static Duration retryDelay(int attempt) {
+    final clamped = attempt.clamp(0, 5);
+    return Duration(seconds: (1 << (clamped + 1)).clamp(2, 60));
+  }
 
   /// Current queue
   List<SyncOperation> get queue => List.unmodifiable(_queue);
