@@ -85,14 +85,24 @@ class _DataLoaderShellState extends State<DataLoaderShell> {
 
   void _loadSecondaryData() {
     if (!mounted) return;
-    Future.wait([
-      context.read<ExpenseProvider>().loadExpenses(),
-      context.read<ReservationProvider>().loadReservations(),
-      context.read<VetRecordProvider>().loadVetRecords(),
-      context.read<FeedStockProvider>().loadFeedStocks(),
-    ]).catchError((_) {
-      // Secondary data failures are non-blocking
-    });
+    // Load secondary providers individually so one failure doesn't block others
+    _loadWithRetry(() => context.read<ExpenseProvider>().loadExpenses());
+    _loadWithRetry(() => context.read<ReservationProvider>().loadReservations());
+    _loadWithRetry(() => context.read<VetRecordProvider>().loadVetRecords());
+    _loadWithRetry(() => context.read<FeedStockProvider>().loadFeedStocks());
+  }
+
+  /// Load with a single retry after 2 seconds on failure
+  Future<void> _loadWithRetry(Future<void> Function() loader) async {
+    try {
+      await loader();
+    } catch (_) {
+      // Retry once after a short delay
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) {
+        try { await loader(); } catch (_) { /* Non-blocking */ }
+      }
+    }
   }
 
   @override
