@@ -333,23 +333,26 @@ class _SalesStat extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        Icon(icon, size: 32, color: color),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
+    return Semantics(
+      label: '$label: $value',
+      child: Column(
+        children: [
+          Icon(icon, size: 32, color: color, semanticLabel: label),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-        ),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall,
-          textAlign: TextAlign.center,
-        ),
-      ],
+          Text(
+            label,
+            style: theme.textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -502,22 +505,25 @@ class _InfoChip extends StatelessWidget {
     final theme = Theme.of(context);
     final color = highlight ? Colors.green : theme.textTheme.bodyMedium?.color;
 
-    return Column(
-      children: [
-        Icon(icon, size: 20, color: color),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
+    return Semantics(
+      label: '$label: $value',
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: color, semanticLabel: label),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-        ),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
-        ),
-      ],
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -9,6 +9,7 @@ import '../core/utils/validators.dart';
 import '../models/feed_stock.dart';
 import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
+import '../services/ocr_service.dart' as web_ocr;
 import 'base_dialog.dart';
 
 class FeedStockDialog extends StatefulWidget {
@@ -34,9 +35,6 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
   String? _extractedText;
   Uint8List? _capturedImageBytes;
   bool _showOcrPanel = false;
-
-  // Check if running on mobile (not web)
-  bool get _canUseNativeOcr => !kIsWeb;
 
   @override
   void initState() {
@@ -185,7 +183,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
       // Process OCR based on platform
       String extractedText = '';
 
-      if (_canUseNativeOcr) {
+      if (!kIsWeb) {
         // Use ML Kit on mobile
         final inputImage = InputImage.fromFilePath(image.path);
         final textRecognizer = TextRecognizer();
@@ -193,15 +191,8 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
         await textRecognizer.close();
         extractedText = recognizedText.text;
       } else {
-        // On web, we can't use ML Kit - show manual entry option
-        setState(() {
-          _isProcessingOcr = false;
-          _extractedText = null;
-          _ocrError = locale == 'pt'
-              ? 'OCR automático não disponível na web. Por favor, insira os dados manualmente ou use a app móvel.'
-              : 'Automatic OCR not available on web. Please enter data manually or use the mobile app.';
-        });
-        return;
+        // On web, use Tesseract.js for OCR
+        extractedText = await web_ocr.recognizeTextFromBytes(bytes);
       }
 
       if (extractedText.isEmpty) {
@@ -577,7 +568,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    if (!_canUseNativeOcr)
+                    if (kIsWeb)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Row(
@@ -591,8 +582,8 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                             const SizedBox(width: 4),
                             Text(
                               locale == 'pt'
-                                  ? 'OCR completo disponível na app móvel'
-                                  : 'Full OCR available on mobile app',
+                                  ? 'OCR via Tesseract.js — pode demorar alguns segundos'
+                                  : 'OCR via Tesseract.js — may take a few seconds',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.primary,
                                 fontStyle: FontStyle.italic,

@@ -144,6 +144,11 @@ class _LoginPageState extends State<LoginPage>
   bool _hasSpecialChar(String password) =>
       password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
 
+  String _t(String key, {Map<String, String>? params}) {
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    return Translations.of(locale, key, params: params);
+  }
+
   bool _validateForm() {
     setState(() {
       _emailError = null;
@@ -158,26 +163,26 @@ class _LoginPageState extends State<LoginPage>
 
     // Email validation
     if (email.isEmpty) {
-      setState(() => _emailError = 'Please enter your email');
+      setState(() => _emailError = _t('enter_email'));
       isValid = false;
     } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-      setState(() => _emailError = 'Please enter a valid email');
+      setState(() => _emailError = _t('enter_valid_email'));
       isValid = false;
     }
 
     // Password validation
     if (pass.isEmpty) {
-      setState(() => _passError = 'Please enter your password');
+      setState(() => _passError = _t('enter_password'));
       isValid = false;
     } else if (_isSignup) {
       if (pass.length < 8) {
-        setState(() => _passError = 'Password must be at least 8 characters');
+        setState(() => _passError = _t('password_min_length'));
         isValid = false;
       } else if (!_hasUppercase(pass) || !_hasLowercase(pass)) {
-        setState(() => _passError = 'Password must contain upper and lowercase letters');
+        setState(() => _passError = _t('password_upper_lower'));
         isValid = false;
       } else if (!_hasNumber(pass)) {
-        setState(() => _passError = 'Password must contain at least one number');
+        setState(() => _passError = _t('password_needs_number'));
         isValid = false;
       }
     }
@@ -185,16 +190,16 @@ class _LoginPageState extends State<LoginPage>
     // Confirm password validation (signup only)
     if (_isSignup) {
       if (confirmPass.isEmpty) {
-        setState(() => _confirmPassError = 'Please confirm your password');
+        setState(() => _confirmPassError = _t('confirm_your_password'));
         isValid = false;
       } else if (confirmPass != pass) {
-        setState(() => _confirmPassError = 'Passwords do not match');
+        setState(() => _confirmPassError = _t('passwords_no_match'));
         isValid = false;
       }
 
       // Terms validation
       if (!_acceptedTerms) {
-        _showMessage('Please accept the Terms of Service', isError: true);
+        _showMessage(_t('accept_terms_required'), isError: true);
         isValid = false;
       }
     }
@@ -232,7 +237,7 @@ class _LoginPageState extends State<LoginPage>
     if (!_isSignup && _isLockedOut()) {
       final remaining = _getRemainingLockoutSeconds();
       _showMessage(
-        'Too many failed attempts. Please wait $remaining seconds.',
+        _t('too_many_attempts', params: {'seconds': '$remaining'}),
         isError: true,
       );
       return;
@@ -257,11 +262,9 @@ class _LoginPageState extends State<LoginPage>
       if (_isSignup) {
         final res = await auth.signUp(email, pass);
         if (res.session != null) {
-          _showMessage('Account created successfully!');
+          _showMessage(_t('account_created'));
         } else {
-          _showMessage(
-            'Account created! Please check your email to verify.',
-          );
+          _showMessage(_t('account_created_verify'));
         }
       } else {
         final res = await auth.signIn(email, pass);
@@ -271,13 +274,13 @@ class _LoginPageState extends State<LoginPage>
             _applyLockout();
             final seconds = _getRemainingLockoutSeconds();
             _showMessage(
-              'Too many failed attempts. Locked for $seconds seconds.',
+              _t('locked_for_seconds', params: {'seconds': '$seconds'}),
               isError: true,
             );
           } else {
             final remaining = _maxAttempts - _failedAttempts;
             _showMessage(
-              'Login failed. $remaining attempts remaining.',
+              _t('login_failed_remaining', params: {'remaining': '$remaining'}),
               isError: true,
             );
           }
@@ -285,7 +288,7 @@ class _LoginPageState extends State<LoginPage>
           // Reset on successful login
           _failedAttempts = 0;
           _lockoutUntil = null;
-          _showMessage('Welcome back!');
+          _showMessage(_t('welcome_back_msg'));
         }
       }
     } on AuthException catch (e) {
@@ -297,7 +300,7 @@ class _LoginPageState extends State<LoginPage>
       }
       _showMessage(e.message, isError: true);
     } catch (e) {
-      _showMessage('An error occurred. Please try again.', isError: true);
+      _showMessage(_t('generic_error'), isError: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -314,7 +317,7 @@ class _LoginPageState extends State<LoginPage>
       // Para mobile, o login é imediato
       // Para web, será redirecionado automaticamente
       if (!kIsWeb) {
-        _showMessage('Welcome!');
+        _showMessage(_t('welcome_msg'));
       }
     } on AuthException catch (e) {
       // Ignorar mensagem de redirect no web
@@ -322,7 +325,7 @@ class _LoginPageState extends State<LoginPage>
         _showMessage(e.message, isError: true);
       }
     } catch (e) {
-      _showMessage('Google sign-in failed. Please try again.', isError: true);
+      _showMessage(_t('google_signin_failed'), isError: true);
     } finally {
       if (mounted) setState(() => _googleLoading = false);
     }
@@ -347,22 +350,14 @@ class _LoginPageState extends State<LoginPage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Terms of Service'),
-        content: const SingleChildScrollView(
-          child: Text(
-            'By creating an account, you agree to:\n\n'
-            '1. Use this application responsibly\n'
-            '2. Keep your login credentials secure\n'
-            '3. Not share your account with others\n'
-            '4. Respect the privacy of other users\n'
-            '5. Report any security issues immediately\n\n'
-            'Your data will be stored securely and used only for the purpose of managing your poultry records.',
-          ),
+        title: Text(_t('terms_title')),
+        content: SingleChildScrollView(
+          child: Text(_t('terms_content')),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(_t('close')),
           ),
         ],
       ),
@@ -373,24 +368,14 @@ class _LoginPageState extends State<LoginPage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Privacy Policy'),
-        content: const SingleChildScrollView(
-          child: Text(
-            'Your privacy is important to us.\n\n'
-            'We collect:\n'
-            '• Email address (for authentication)\n'
-            '• Poultry management data you enter\n\n'
-            'We do NOT:\n'
-            '• Sell your data to third parties\n'
-            '• Share your data without consent\n'
-            '• Use your data for advertising\n\n'
-            'Your data is stored securely using Supabase infrastructure with encryption at rest and in transit.',
-          ),
+        title: Text(_t('privacy_title')),
+        content: SingleChildScrollView(
+          child: Text(_t('privacy_content')),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(_t('close')),
           ),
         ],
       ),
@@ -509,7 +494,7 @@ class _LoginPageState extends State<LoginPage>
     } catch (e) {
       if (mounted) {
         setState(() => _resetLoading = false);
-        _showMessage('An error occurred. Please try again.', isError: true);
+        _showMessage(_t('generic_error'), isError: true);
       }
     }
   }
@@ -727,9 +712,9 @@ class _LoginPageState extends State<LoginPage>
                                       // Password strength indicator (signup only)
                                       if (_isSignup && password.isNotEmpty) ...[
                                         const SizedBox(height: 12),
-                                        _PasswordStrengthIndicator(strength: strength),
+                                        _PasswordStrengthIndicator(strength: strength, locale: locale),
                                         const SizedBox(height: 16),
-                                        _PasswordRequirements(password: password),
+                                        _PasswordRequirements(password: password, locale: locale),
                                       ],
 
                                       // Confirm password field (signup only)
@@ -964,12 +949,14 @@ enum _PasswordStrength { none, weak, medium, strong, veryStrong }
 // Password strength indicator widget
 class _PasswordStrengthIndicator extends StatelessWidget {
   final _PasswordStrength strength;
+  final String locale;
 
-  const _PasswordStrengthIndicator({required this.strength});
+  const _PasswordStrengthIndicator({required this.strength, required this.locale});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final t = (String k) => Translations.of(locale, k);
 
     Color getColor() {
       switch (strength) {
@@ -991,13 +978,13 @@ class _PasswordStrengthIndicator extends StatelessWidget {
         case _PasswordStrength.none:
           return '';
         case _PasswordStrength.weak:
-          return 'Weak';
+          return t('pw_weak');
         case _PasswordStrength.medium:
-          return 'Medium';
+          return t('pw_medium');
         case _PasswordStrength.strong:
-          return 'Strong';
+          return t('pw_strong');
         case _PasswordStrength.veryStrong:
-          return 'Very Strong';
+          return t('pw_very_strong');
       }
     }
 
@@ -1055,12 +1042,14 @@ class _PasswordStrengthIndicator extends StatelessWidget {
 // Password requirements checklist widget
 class _PasswordRequirements extends StatelessWidget {
   final String password;
+  final String locale;
 
-  const _PasswordRequirements({required this.password});
+  const _PasswordRequirements({required this.password, required this.locale});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final t = (String k) => Translations.of(locale, k);
 
     Widget buildRequirement(String text, bool isMet) {
       return Padding(
@@ -1097,7 +1086,7 @@ class _PasswordRequirements extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Password requirements:',
+            t('pw_requirements'),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -1105,11 +1094,11 @@ class _PasswordRequirements extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          buildRequirement('At least 8 characters', password.length >= 8),
-          buildRequirement('One uppercase letter (A-Z)', password.contains(RegExp(r'[A-Z]'))),
-          buildRequirement('One lowercase letter (a-z)', password.contains(RegExp(r'[a-z]'))),
-          buildRequirement('One number (0-9)', password.contains(RegExp(r'[0-9]'))),
-          buildRequirement('One special character (!@#\$%^&*)', password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))),
+          buildRequirement(t('pw_req_length'), password.length >= 8),
+          buildRequirement(t('pw_req_upper'), password.contains(RegExp(r'[A-Z]'))),
+          buildRequirement(t('pw_req_lower'), password.contains(RegExp(r'[a-z]'))),
+          buildRequirement(t('pw_req_number'), password.contains(RegExp(r'[0-9]'))),
+          buildRequirement(t('pw_req_special'), password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))),
         ],
       ),
     );

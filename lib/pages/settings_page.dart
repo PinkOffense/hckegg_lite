@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/confirmation_dialog.dart';
 import '../l10n/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/auth_service.dart';
 import '../services/logout_manager.dart';
 import '../services/profile_service.dart';
@@ -62,7 +63,7 @@ class _SettingsPageState extends State<SettingsPage> {
       source = await showDialog<ImageSource?>(
         context: context,
         builder: (context) => SimpleDialog(
-          title: Text(locale == 'pt' ? 'Foto de Perfil' : 'Profile Photo'),
+          title: Text(Translations.of(locale, 'profile_photo')),
           children: [
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, ImageSource.gallery),
@@ -70,7 +71,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   const Icon(Icons.photo_library),
                   const SizedBox(width: 12),
-                  Text(locale == 'pt' ? 'Escolher Ficheiro' : 'Choose File'),
+                  Text(Translations.of(locale, 'choose_file')),
                 ],
               ),
             ),
@@ -85,7 +86,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     const Icon(Icons.delete, color: Colors.red),
                     const SizedBox(width: 12),
                     Text(
-                      locale == 'pt' ? 'Remover Foto' : 'Remove Photo',
+                      Translations.of(locale, 'remove_photo'),
                       style: const TextStyle(color: Colors.red),
                     ),
                   ],
@@ -104,19 +105,19 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt),
-                title: Text(locale == 'pt' ? 'Tirar Foto' : 'Take Photo'),
+                title: Text(Translations.of(locale, 'take_photo')),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library),
-                title: Text(locale == 'pt' ? 'Escolher da Galeria' : 'Choose from Gallery'),
+                title: Text(Translations.of(locale, 'choose_from_gallery')),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
               if (_profile?.avatarUrl != null)
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
                   title: Text(
-                    locale == 'pt' ? 'Remover Foto' : 'Remove Photo',
+                    Translations.of(locale, 'remove_photo'),
                     style: const TextStyle(color: Colors.red),
                   ),
                   onTap: () {
@@ -171,7 +172,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
         NotificationService.showSuccess(
           context,
-          locale == 'pt' ? 'Foto atualizada com sucesso!' : 'Photo updated successfully!',
+          Translations.of(locale, 'photo_updated'),
         );
       }
     } catch (e) {
@@ -182,7 +183,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ErrorFormatter.getUserFriendlyMessage(
             e,
             locale: locale,
-            fallbackMessage: locale == 'pt' ? 'Erro ao carregar foto' : 'Error uploading photo',
+            fallbackMessage: Translations.of(locale, 'error_uploading_photo'),
           ),
         );
       }
@@ -212,7 +213,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
         NotificationService.showSuccess(
           context,
-          locale == 'pt' ? 'Foto removida com sucesso!' : 'Photo removed successfully!',
+          Translations.of(locale, 'photo_removed'),
         );
       }
     } catch (e) {
@@ -223,7 +224,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ErrorFormatter.getUserFriendlyMessage(
             e,
             locale: locale,
-            fallbackMessage: locale == 'pt' ? 'Erro ao remover foto' : 'Error removing photo',
+            fallbackMessage: Translations.of(locale, 'error_removing_photo'),
           ),
         );
       }
@@ -251,9 +252,7 @@ class _SettingsPageState extends State<SettingsPage> {
         setState(() => _isLoggingOut = false);
         NotificationService.showError(
           context,
-          locale == 'pt'
-              ? 'Erro ao terminar sessão. Tente novamente.'
-              : 'Error signing out. Please try again.',
+          Translations.of(locale, 'error_signing_out'),
         );
       }
     }
@@ -261,16 +260,20 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _handleDeleteAccount(String locale) async {
     // Show confirmation dialog using reusable widget
-    final itemsToDelete = locale == 'pt'
-        ? ['Registos de ovos', 'Vendas e reservas', 'Despesas', 'Registos veterinários', 'Stock de ração', 'Perfil e conta']
-        : ['Egg records', 'Sales and reservations', 'Expenses', 'Vet records', 'Feed stock', 'Profile and account'];
+    final t = (String k) => Translations.of(locale, k);
+    final itemsToDelete = [
+      t('delete_item_egg_records'),
+      t('delete_item_sales'),
+      t('delete_item_expenses'),
+      t('delete_item_vet'),
+      t('delete_item_feed'),
+      t('delete_item_profile'),
+    ];
 
     final shouldDelete = await DeleteConfirmationDialog.show(
       context,
-      title: locale == 'pt' ? 'Eliminar Conta?' : 'Delete Account?',
-      content: locale == 'pt'
-          ? 'Esta acção é IRREVERSÍVEL. Todos os seus dados serão eliminados permanentemente:'
-          : 'This action is IRREVERSIBLE. All your data will be permanently deleted:',
+      title: t('delete_account_title'),
+      content: t('delete_account_warning'),
       locale: locale,
       itemsToDelete: itemsToDelete,
     );
@@ -317,12 +320,12 @@ class _SettingsPageState extends State<SettingsPage> {
     final newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(locale == 'pt' ? 'Editar Nome' : 'Edit Name'),
+        title: Text(Translations.of(locale, 'edit_name')),
         content: TextField(
           controller: controller,
           decoration: InputDecoration(
-            labelText: locale == 'pt' ? 'Nome de exibição' : 'Display name',
-            hintText: locale == 'pt' ? 'Como quer ser chamado?' : 'What should we call you?',
+            labelText: Translations.of(locale, 'display_name'),
+            hintText: Translations.of(locale, 'what_to_call_you'),
           ),
           autofocus: true,
           textCapitalization: TextCapitalization.words,
@@ -330,11 +333,11 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+            child: Text(Translations.of(locale, 'cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(locale == 'pt' ? 'Guardar' : 'Save'),
+            child: Text(Translations.of(locale, 'save')),
           ),
         ],
       ),
@@ -349,14 +352,14 @@ class _SettingsPageState extends State<SettingsPage> {
           setState(() => _profile = updated);
           NotificationService.showSuccess(
             context,
-            locale == 'pt' ? 'Nome atualizado!' : 'Name updated!',
+            Translations.of(locale, 'name_updated'),
           );
         }
       } catch (e) {
         if (mounted) {
           NotificationService.showError(
             context,
-            locale == 'pt' ? 'Erro ao atualizar nome' : 'Error updating name',
+            Translations.of(locale, 'error_updating_name'),
           );
         }
       }
@@ -390,7 +393,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           title: Text(
-            locale == 'pt' ? 'Alterar Password' : 'Change Password',
+            Translations.of(locale, 'change_password'),
             textAlign: TextAlign.center,
           ),
           content: Form(
@@ -402,7 +405,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   controller: newPasswordController,
                   obscureText: obscureNew,
                   decoration: InputDecoration(
-                    labelText: locale == 'pt' ? 'Nova password' : 'New password',
+                    labelText: Translations.of(locale, 'new_password'),
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(obscureNew ? Icons.visibility : Icons.visibility_off),
@@ -443,7 +446,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   controller: confirmPasswordController,
                   obscureText: obscureConfirm,
                   decoration: InputDecoration(
-                    labelText: locale == 'pt' ? 'Confirmar password' : 'Confirm password',
+                    labelText: Translations.of(locale, 'confirm_new_password'),
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(obscureConfirm ? Icons.visibility : Icons.visibility_off),
@@ -477,7 +480,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                     ),
                     onPressed: () => Navigator.pop(context, false),
-                    child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+                    child: Text(Translations.of(locale, 'cancel')),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -494,7 +497,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         Navigator.pop(context, true);
                       }
                     },
-                    child: Text(locale == 'pt' ? 'Alterar' : 'Change'),
+                    child: Text(Translations.of(locale, 'change')),
                   ),
                 ),
               ],
@@ -515,7 +518,7 @@ class _SettingsPageState extends State<SettingsPage> {
         setState(() => _isChangingPassword = false);
         NotificationService.showSuccess(
           context,
-          locale == 'pt' ? 'Password alterada com sucesso!' : 'Password changed successfully!',
+          Translations.of(locale, 'password_changed'),
         );
       }
     } catch (e) {
@@ -526,7 +529,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ErrorFormatter.getUserFriendlyMessage(
             e,
             locale: locale,
-            fallbackMessage: locale == 'pt' ? 'Erro ao alterar password' : 'Error changing password',
+            fallbackMessage: Translations.of(locale, 'error_changing_password'),
           ),
         );
       }
@@ -543,7 +546,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final isSmallScreen = screenWidth < 600;
 
     return AppScaffold(
-      title: locale == 'pt' ? 'Perfil' : 'Profile',
+      title: Translations.of(locale, 'profile'),
       body: Padding(
         padding: EdgeInsets.all(isSmallScreen ? 12.0 : 16.0),
         child: ListView(
@@ -671,7 +674,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
             // Settings section
             Text(
-              locale == 'pt' ? 'Definições' : 'Settings',
+              Translations.of(locale, 'settings'),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -682,7 +685,7 @@ class _SettingsPageState extends State<SettingsPage> {
             Card(
               child: ListTile(
                 leading: const Icon(Icons.photo_camera),
-                title: Text(locale == 'pt' ? 'Alterar foto de perfil' : 'Change profile photo'),
+                title: Text(Translations.of(locale, 'change_profile_photo')),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: _isUploading ? null : () => _pickAndUploadImage(locale),
               ),
@@ -692,7 +695,7 @@ class _SettingsPageState extends State<SettingsPage> {
             Card(
               child: ListTile(
                 leading: const Icon(Icons.person),
-                title: Text(locale == 'pt' ? 'Editar nome' : 'Edit display name'),
+                title: Text(Translations.of(locale, 'edit_display_name')),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _editDisplayName(locale),
               ),
@@ -702,7 +705,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
             // Account section
             Text(
-              locale == 'pt' ? 'Conta' : 'Account',
+              Translations.of(locale, 'account'),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -720,10 +723,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.lock_outline),
-                  title: Text(locale == 'pt' ? 'Alterar Password' : 'Change Password'),
-                  subtitle: Text(locale == 'pt'
-                      ? 'Mudar a sua password de acesso'
-                      : 'Change your login password'),
+                  title: Text(Translations.of(locale, 'change_password')),
+                  subtitle: Text(Translations.of(locale, 'change_your_password')),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _isChangingPassword ? null : () => _handleChangePassword(locale),
                 ),
@@ -738,15 +739,13 @@ class _SettingsPageState extends State<SettingsPage> {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                   title: Text(
-                    locale == 'pt' ? 'Password gerida pelo Google' : 'Password managed by Google',
+                    Translations.of(locale, 'password_managed_google'),
                     style: TextStyle(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                   subtitle: Text(
-                    locale == 'pt'
-                        ? 'A sua conta usa o Google para autenticação. Gere a sua password em account.google.com'
-                        : 'Your account uses Google for authentication. Manage your password at account.google.com',
+                    Translations.of(locale, 'password_managed_google_desc'),
                     style: TextStyle(
                       color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                       fontSize: 12,
@@ -770,16 +769,14 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                 title: Text(
                   _isLoggingOut
-                      ? (locale == 'pt' ? 'A sair...' : 'Signing out...')
-                      : (locale == 'pt' ? 'Terminar Sessão' : 'Sign Out'),
+                      ? Translations.of(locale, 'signing_out')
+                      : Translations.of(locale, 'logout'),
                   style: TextStyle(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                subtitle: Text(locale == 'pt'
-                    ? 'Sair da sua conta neste dispositivo'
-                    : 'Sign out of your account on this device'),
+                subtitle: Text(Translations.of(locale, 'sign_out_desc')),
                 trailing: _isLoggingOut
                     ? null
                     : Icon(
@@ -816,8 +813,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                 title: Text(
                   _isDeletingAccount
-                      ? (locale == 'pt' ? 'A eliminar...' : 'Deleting...')
-                      : (locale == 'pt' ? 'Eliminar Conta' : 'Delete Account'),
+                      ? Translations.of(locale, 'deleting')
+                      : Translations.of(locale, 'delete_account'),
                   style: TextStyle(
                     color: Theme.of(context).brightness == Brightness.light
                         ? Colors.red.shade700
@@ -825,9 +822,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                subtitle: Text(locale == 'pt'
-                    ? 'Eliminar permanentemente a sua conta e dados'
-                    : 'Permanently delete your account and data'),
+                subtitle: Text(Translations.of(locale, 'delete_account_desc')),
                 trailing: _isDeletingAccount
                     ? null
                     : Icon(
