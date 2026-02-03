@@ -20,7 +20,13 @@ class SaleRemoteDataSourceImpl implements SaleRemoteDataSource {
 
   SaleRemoteDataSourceImpl(this._client);
 
-  String get _userId => _client.auth.currentUser!.id;
+  String get _userId {
+    final user = _client.auth.currentUser;
+    if (user == null) {
+      throw StateError('No authenticated user. Please sign in again.');
+    }
+    return user.id;
+  }
 
   @override
   Future<List<EggSaleModel>> getSales() async {

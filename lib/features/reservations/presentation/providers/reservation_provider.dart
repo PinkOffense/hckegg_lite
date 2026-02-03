@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../../core/core.dart';
 import '../../../../models/egg_reservation.dart';
@@ -179,7 +180,7 @@ class ReservationProvider extends ChangeNotifier {
     notifyListeners();
 
     final sale = EggSale(
-      id: reservation.id,
+      id: const Uuid().v4(),
       date: _toIsoDateString(DateTime.now()),
       quantitySold: reservation.quantity,
       pricePerEgg: reservation.pricePerEgg ?? 0.50,

@@ -80,13 +80,11 @@ class _DashboardPageState extends State<DashboardPage>
       feedStockProvider.loadFeedStocks(),
       vetProvider.loadRecords(),
       analyticsProvider.loadDashboardAnalytics(),
-    ]);
+    ]).timeout(const Duration(seconds: 15), onTimeout: () => []);
   }
 
-  // Cache today's date string (computed once per page lifecycle)
-  late final String _todayString = _computeTodayString();
-
-  String _computeTodayString() {
+  // Compute today's date fresh each time (handles midnight rollover)
+  String get _todayString {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }

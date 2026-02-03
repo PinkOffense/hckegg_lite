@@ -8,6 +8,21 @@ enum FeedStockState { initial, loading, loaded, error }
 
 /// Provider for feed stock following clean architecture
 class FeedStockProvider extends ChangeNotifier {
+  bool _isDisposed = false;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
+    }
+  }
+
   final GetFeedStocks _getFeedStocks;
   final GetLowStockItems _getLowStockItems;
   final CreateFeedStock _createFeedStock;
