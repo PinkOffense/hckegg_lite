@@ -11,7 +11,10 @@ class AppDrawer extends StatefulWidget {
   /// When true, renders as a permanent sidebar (no Drawer wrapper, no Navigator.pop on tap)
   final bool embedded;
 
-  const AppDrawer({super.key, this.embedded = false});
+  /// When true, renders only icons in a narrow rail
+  final bool collapsed;
+
+  const AppDrawer({super.key, this.embedded = false, this.collapsed = false});
 
   @override
   State<AppDrawer> createState() => _AppDrawerState();
@@ -55,6 +58,11 @@ class _AppDrawerState extends State<AppDrawer> {
     // Theme colors
     const accentPink = Color(0xFFFF69B4);
     const warmPink = Color(0xFFFFB6C1);
+
+    // Collapsed mini-rail mode
+    if (widget.collapsed) {
+      return _buildCollapsedRail(context, theme, isDark, currentRoute, initial, avatarUrl, accentPink, warmPink);
+    }
 
     final content = SafeArea(
         child: Column(
@@ -318,6 +326,118 @@ class _AppDrawerState extends State<AppDrawer> {
     return Drawer(child: content);
   }
 
+  /// Collapsed mini-rail: narrow bar with emoji icons + avatar at top
+  Widget _buildCollapsedRail(
+    BuildContext context,
+    ThemeData theme,
+    bool isDark,
+    String currentRoute,
+    String initial,
+    String? avatarUrl,
+    Color accentPink,
+    Color warmPink,
+  ) {
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    final t = (String k) => Translations.of(locale, k);
+
+    final items = [
+      _RailItem('🏠', '/', const Color(0xFF6C63FF), t('dashboard')),
+      _RailItem('🥚', '/eggs', const Color(0xFFFFB347), t('egg_records')),
+      _RailItem('🐔', '/health', const Color(0xFFFF5722), t('hen_health')),
+      _RailItem('🌾', '/feed-stock', const Color(0xFF8BC34A), t('feed_stock')),
+      _RailItem('💰', '/sales', const Color(0xFF4CAF50), t('sales')),
+      _RailItem('💳', '/payments', const Color(0xFF2196F3), t('payments')),
+      _RailItem('📊', '/expenses', const Color(0xFFE91E63), t('expenses')),
+      _RailItem('📅', '/reservations', const Color(0xFF9C27B0), t('reservations')),
+    ];
+
+    return SafeArea(
+      child: Column(
+        children: [
+          // Avatar at top
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => context.go('/settings'),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [const Color(0xFF2D2D44), const Color(0xFF1A1A2E)]
+                        : [warmPink.withValues(alpha: 0.3), accentPink.withValues(alpha: 0.1)],
+                  ),
+                ),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(colors: [Color(0xFFFF69B4), Color(0xFFFFB6C1)]),
+                    ),
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: theme.colorScheme.surface,
+                      backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      child: avatarUrl == null
+                          ? Text(initial, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: accentPink))
+                          : null,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Rail items
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              children: items.map((item) {
+                final isSelected = currentRoute == item.route;
+                return Tooltip(
+                  message: item.label,
+                  preferBelow: false,
+                  waitDuration: const Duration(milliseconds: 400),
+                  child: InkWell(
+                    onTap: () => context.go(item.route),
+                    child: Container(
+                      height: 48,
+                      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? item.color.withValues(alpha: isDark ? 0.25 : 0.15)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: isSelected
+                            ? Border.all(color: item.color.withValues(alpha: 0.4), width: 1.5)
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(item.emoji, style: const TextStyle(fontSize: 20)),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          // Bottom branding icon
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: const MiniChickenIcon(size: 20),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(BuildContext context, String title) {
     final theme = Theme.of(context);
     return Padding(
@@ -418,4 +538,13 @@ class _AppDrawerState extends State<AppDrawer> {
       ),
     );
   }
+}
+
+/// Simple data class for collapsed rail items
+class _RailItem {
+  final String emoji;
+  final String route;
+  final Color color;
+  final String label;
+  const _RailItem(this.emoji, this.route, this.color, this.label);
 }

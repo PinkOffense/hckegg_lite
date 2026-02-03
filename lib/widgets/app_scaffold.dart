@@ -11,8 +11,9 @@ import 'app_drawer.dart';
 const double _tabletBreakpoint = 768;
 const double _desktopBreakpoint = 1200;
 
-/// Sidebar width constant
-const double _sidebarWidth = 280;
+/// Sidebar widths
+const double _sidebarExpandedWidth = 280;
+const double _sidebarCollapsedWidth = 64;
 
 class AppScaffold extends StatelessWidget {
   final String title;
@@ -40,33 +41,34 @@ class AppScaffold extends StatelessWidget {
     final isDesktop = screenWidth >= _desktopBreakpoint;
     final isTablet = screenWidth >= _tabletBreakpoint && screenWidth < _desktopBreakpoint;
 
-    // Desktop: collapsible sidebar + constrained content
+    // Desktop: collapsible sidebar (full ↔ mini-rail) + constrained content
     if (isDesktop) {
       return ValueListenableBuilder<bool>(
         valueListenable: sidebarExpanded,
         builder: (context, expanded, _) {
           return Row(
             children: [
-              // Animated collapsible sidebar
+              // Animated sidebar: full width ↔ mini-rail
               AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeInOut,
-                width: expanded ? _sidebarWidth : 0,
-                clipBehavior: Clip.hardEdge,
-                decoration: const BoxDecoration(),
-                child: SizedBox(
-                  width: _sidebarWidth,
-                  child: Material(
-                    elevation: 2,
-                    child: AppDrawer(embedded: true),
-                  ),
+                width: expanded ? _sidebarExpandedWidth : _sidebarCollapsedWidth,
+                child: Material(
+                  elevation: 2,
+                  child: AppDrawer(embedded: true, collapsed: !expanded),
                 ),
               ),
               Expanded(
                 child: Scaffold(
                   appBar: AppBar(
                     leading: IconButton(
-                      icon: const Icon(Icons.menu),
+                      icon: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(
+                          expanded ? Icons.menu_open : Icons.menu,
+                          key: ValueKey(expanded),
+                        ),
+                      ),
                       onPressed: toggleSidebar,
                     ),
                     title: Text(title, style: const TextStyle(fontSize: 20)),
