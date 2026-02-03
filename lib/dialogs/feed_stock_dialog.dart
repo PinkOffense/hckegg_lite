@@ -67,89 +67,95 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
   Future<void> _scanFeedBag(String locale) async {
     final picker = ImagePicker();
 
-    // Show options: camera or gallery
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Text(
-                locale == 'pt' ? 'Digitalizar Saco de Ração' : 'Scan Feed Bag',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                locale == 'pt'
-                    ? 'Tire uma foto ou escolha uma imagem do saco'
-                    : 'Take a photo or choose an image of the bag',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
+    // On web, camera is not available — go directly to gallery/file picker
+    ImageSource? source;
+    if (kIsWeb) {
+      source = ImageSource.gallery;
+    } else {
+      // Show options: camera or gallery (mobile only)
+      source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.camera_alt,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                title: Text(locale == 'pt' ? 'Tirar Foto' : 'Take Photo'),
-                subtitle: Text(
+                Text(
+                  locale == 'pt' ? 'Digitalizar Saco de Ração' : 'Scan Feed Bag',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
                   locale == 'pt'
-                      ? 'Usar a câmera do dispositivo'
-                      : 'Use device camera',
-                ),
-                onTap: () => Navigator.pop(context, ImageSource.camera),
-              ),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.photo_library,
-                    color: Theme.of(context).colorScheme.secondary,
+                      ? 'Tire uma foto ou escolha uma imagem do saco'
+                      : 'Take a photo or choose an image of the bag',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade600,
                   ),
                 ),
-                title: Text(locale == 'pt' ? 'Escolher da Galeria' : 'Choose from Gallery'),
-                subtitle: Text(
-                  locale == 'pt'
-                      ? 'Selecionar uma imagem existente'
-                      : 'Select an existing image',
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.camera_alt,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  title: Text(locale == 'pt' ? 'Tirar Foto' : 'Take Photo'),
+                  subtitle: Text(
+                    locale == 'pt'
+                        ? 'Usar a câmera do dispositivo'
+                        : 'Use device camera',
+                  ),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
                 ),
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
-              ),
-              const SizedBox(height: 8),
-            ],
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.photo_library,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                  ),
+                  title: Text(locale == 'pt' ? 'Escolher da Galeria' : 'Choose from Gallery'),
+                  subtitle: Text(
+                    locale == 'pt'
+                        ? 'Selecionar uma imagem existente'
+                        : 'Select an existing image',
+                  ),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    }
 
     if (source == null) return;
 
@@ -544,7 +550,9 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                         label: Text(
                           _isProcessingOcr
                               ? (locale == 'pt' ? 'A processar...' : 'Processing...')
-                              : (locale == 'pt' ? 'Digitalizar Saco de Ração' : 'Scan Feed Bag'),
+                              : kIsWeb
+                                  ? (locale == 'pt' ? 'Carregar Imagem do Saco' : 'Upload Bag Image')
+                                  : (locale == 'pt' ? 'Digitalizar Saco de Ração' : 'Scan Feed Bag'),
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         style: FilledButton.styleFrom(
@@ -557,9 +565,13 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      locale == 'pt'
-                          ? 'Tire uma foto do saco para preencher automaticamente'
-                          : 'Take a photo of the bag to auto-fill',
+                      kIsWeb
+                          ? (locale == 'pt'
+                              ? 'Carregue uma imagem do saco para preencher automaticamente'
+                              : 'Upload an image of the bag to auto-fill')
+                          : (locale == 'pt'
+                              ? 'Tire uma foto do saco para preencher automaticamente'
+                              : 'Take a photo of the bag to auto-fill'),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
