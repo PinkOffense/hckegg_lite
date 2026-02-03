@@ -236,18 +236,18 @@ class _HenHealthPageState extends State<HenHealthPage> {
   void _deleteRecord(BuildContext context, VetRecord record, String Function(String) t) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(t('delete_record')),
         content: Text(t('delete_record_confirm')),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(t('cancel')),
           ),
           TextButton(
-            onPressed: () {
-              context.read<VetRecordProvider>().deleteVetRecord(record.id);
-              Navigator.pop(context);
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await context.read<VetRecordProvider>().deleteVetRecord(record.id);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: Text(t('delete')),
