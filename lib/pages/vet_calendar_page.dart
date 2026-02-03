@@ -497,7 +497,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(locale == 'pt' ? 'Eliminar Agendamento' : 'Delete Appointment'),
         content: Text(
           locale == 'pt'
@@ -506,13 +506,13 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              context.read<VetRecordProvider>().deleteVetRecord(record.id);
-              Navigator.pop(context);
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await context.read<VetRecordProvider>().deleteVetRecord(record.id);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: Text(locale == 'pt' ? 'Eliminar' : 'Delete'),

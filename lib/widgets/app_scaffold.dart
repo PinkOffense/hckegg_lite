@@ -11,11 +11,20 @@ import 'app_drawer.dart';
 const double _tabletBreakpoint = 768;
 const double _desktopBreakpoint = 1200;
 
+/// Sidebar width constant
+const double _sidebarWidth = 280;
+
 class AppScaffold extends StatelessWidget {
   final String title;
   final Widget body;
   final Widget? fab;
   final List<Widget>? additionalActions;
+
+  /// Shared sidebar expanded state — persists across page navigations
+  static final ValueNotifier<bool> sidebarExpanded = ValueNotifier<bool>(true);
+
+  /// Toggle the desktop sidebar
+  static void toggleSidebar() => sidebarExpanded.value = !sidebarExpanded.value;
 
   const AppScaffold({
     super.key,
@@ -31,35 +40,52 @@ class AppScaffold extends StatelessWidget {
     final isDesktop = screenWidth >= _desktopBreakpoint;
     final isTablet = screenWidth >= _tabletBreakpoint && screenWidth < _desktopBreakpoint;
 
-    // Desktop: permanent sidebar + constrained content
+    // Desktop: collapsible sidebar + constrained content
     if (isDesktop) {
-      return Row(
-        children: [
-          SizedBox(
-            width: 280,
-            child: Material(
-              elevation: 2,
-              child: AppDrawer(embedded: true),
-            ),
-          ),
-          Expanded(
-            child: Scaffold(
-              appBar: AppBar(
-                title: Text(title, style: const TextStyle(fontSize: 20)),
-                elevation: 0,
-                automaticallyImplyLeading: false,
-                actions: _buildDesktopActions(context),
-              ),
-              body: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1200),
-                  child: body,
+      return ValueListenableBuilder<bool>(
+        valueListenable: sidebarExpanded,
+        builder: (context, expanded, _) {
+          return Row(
+            children: [
+              // Animated collapsible sidebar
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                width: expanded ? _sidebarWidth : 0,
+                clipBehavior: Clip.hardEdge,
+                decoration: const BoxDecoration(),
+                child: SizedBox(
+                  width: _sidebarWidth,
+                  child: Material(
+                    elevation: 2,
+                    child: AppDrawer(embedded: true),
+                  ),
                 ),
               ),
-              floatingActionButton: fab,
-            ),
-          ),
-        ],
+              Expanded(
+                child: Scaffold(
+                  appBar: AppBar(
+                    leading: IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: toggleSidebar,
+                    ),
+                    title: Text(title, style: const TextStyle(fontSize: 20)),
+                    elevation: 0,
+                    automaticallyImplyLeading: false,
+                    actions: _buildDesktopActions(context),
+                  ),
+                  body: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1200),
+                      child: body,
+                    ),
+                  ),
+                  floatingActionButton: fab,
+                ),
+              ),
+            ],
+          );
+        },
       );
     }
 
