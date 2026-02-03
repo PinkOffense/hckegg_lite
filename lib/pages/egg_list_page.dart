@@ -177,19 +177,19 @@ class _EggListPageState extends State<EggListPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _SummaryItem(
-                      label: 'Total',
+                      label: locale == 'pt' ? 'Total' : 'Total',
                       value: '${eggProvider.totalEggsCollected}',
                       icon: Icons.egg,
                       color: theme.colorScheme.primary,
                     ),
                     _SummaryItem(
-                      label: 'Consumed',
+                      label: locale == 'pt' ? 'Consumidos' : 'Consumed',
                       value: '${eggProvider.totalEggsConsumed}',
                       icon: Icons.restaurant,
                       color: Colors.orange,
                     ),
                     _SummaryItem(
-                      label: 'Remaining',
+                      label: locale == 'pt' ? 'Restantes' : 'Remaining',
                       value: '${eggProvider.totalEggsCollected - eggProvider.totalEggsConsumed}',
                       icon: Icons.inventory,
                       color: Colors.green,
@@ -322,13 +322,13 @@ class _RecordCard extends StatelessWidget {
                   if (record.eggsConsumed > 0)
                     _StatChip(
                       icon: Icons.restaurant,
-                      label: '${record.eggsConsumed} eaten',
+                      label: '${record.eggsConsumed} ${locale == 'pt' ? 'consumidos' : 'eaten'}',
                       color: theme.colorScheme.tertiary,
                     ),
                   if (record.henCount != null)
                     _StatChip(
                       icon: Icons.flutter_dash,
-                      label: '${record.henCount} hens',
+                      label: '${record.henCount} ${locale == 'pt' ? 'galinhas' : 'hens'}',
                       color: Colors.orange,
                     ),
                 ],
@@ -420,22 +420,25 @@ class _SummaryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
+    return Semantics(
+      label: '$label: $value',
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 20, semanticLabel: label),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-        ),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall,
-        ),
-      ],
+          Text(
+            label,
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
+      ),
     );
   }
 }
