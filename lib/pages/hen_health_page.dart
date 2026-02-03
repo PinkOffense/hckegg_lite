@@ -71,14 +71,14 @@ class _HenHealthPageState extends State<HenHealthPage> {
               Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
               const SizedBox(height: 16),
               Text(
-                locale == 'pt' ? 'Erro ao carregar registos' : 'Error loading records',
+                t('error_loading_records'),
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: () => vetProvider.loadRecords(),
                 icon: const Icon(Icons.refresh),
-                label: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
+                label: Text(t('try_again')),
               ),
             ],
           ),
@@ -112,7 +112,7 @@ class _HenHealthPageState extends State<HenHealthPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  locale == 'pt' ? 'Panorama de Saúde' : 'Health Overview',
+                  t('health_overview'),
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -124,19 +124,19 @@ class _HenHealthPageState extends State<HenHealthPage> {
                   children: [
                     _HealthStat(
                       icon: Icons.medical_information,
-                      label: locale == 'pt' ? 'Total de Registos' : 'Total Records',
+                      label: t('total_records'),
                       value: totalRecords.toString(),
                       color: Colors.blue,
                     ),
                     _HealthStat(
                       icon: Icons.warning_amber,
-                      label: locale == 'pt' ? 'Mortes' : 'Deaths',
+                      label: t('deaths'),
                       value: totalDeaths.toString(),
                       color: Colors.red,
                     ),
                     _HealthStat(
                       icon: Icons.euro,
-                      label: locale == 'pt' ? 'Custos Veterinários' : 'Vet Costs',
+                      label: t('vet_costs'),
                       value: '€${totalVetCosts.toStringAsFixed(2)}',
                       color: Colors.orange,
                     ),
@@ -144,7 +144,7 @@ class _HenHealthPageState extends State<HenHealthPage> {
                       onTap: () => context.push('/vet-calendar'),
                       child: _HealthStat(
                         icon: Icons.event,
-                        label: locale == 'pt' ? 'Ações Agendadas' : 'Upcoming Actions',
+                        label: t('upcoming_actions'),
                         value: upcomingActions.toString(),
                         color: Colors.purple,
                         showArrow: true,
@@ -160,9 +160,7 @@ class _HenHealthPageState extends State<HenHealthPage> {
           if (allRecords.isNotEmpty)
             AppSearchBar(
               controller: _searchController,
-              hintText: locale == 'pt'
-                  ? 'Pesquisar registos...'
-                  : 'Search records...',
+              hintText: t('search_records'),
               hasContent: _searchQuery.isNotEmpty,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               onChanged: (value) {
@@ -182,12 +180,8 @@ class _HenHealthPageState extends State<HenHealthPage> {
 
                 if (allRecords.isEmpty) {
                   return ChickenEmptyState(
-                    title: locale == 'pt'
-                        ? 'Nenhum registo veterinário'
-                        : 'No veterinary records',
-                    message: locale == 'pt'
-                        ? 'Registe vacinas, tratamentos e mortes das suas galinhas'
-                        : 'Record vaccinations, treatments and deaths for your chickens',
+                    title: t('no_vet_records'),
+                    message: t('no_vet_records_msg'),
                     actionLabel: t('add_vet_record'),
                     onAction: () => _addRecord(context),
                   );
@@ -448,7 +442,7 @@ class _VetRecordCard extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                     onPressed: onDelete,
-                    tooltip: locale == 'pt' ? 'Eliminar' : 'Delete',
+                    tooltip: Translations.of(locale, 'delete'),
                   ),
                 ],
               ),
@@ -466,7 +460,7 @@ class _VetRecordCard extends StatelessWidget {
                 children: [
                   _DetailChip(
                     icon: Icons.numbers,
-                    label: '${record.hensAffected} ${locale == 'pt' ? 'galinhas' : 'hens'}',
+                    label: '${record.hensAffected} ${Translations.of(locale, 'hens_unit')}',
                   ),
                   if (record.cost != null)
                     _DetailChip(
@@ -496,7 +490,7 @@ class _VetRecordCard extends StatelessWidget {
                       const Icon(Icons.event, size: 16, color: Colors.purple),
                       const SizedBox(width: 6),
                       Text(
-                        '${locale == 'pt' ? 'Próxima ação' : 'Next action'}: ${_formatDate(DateTime.parse(record.nextActionDate!), locale)}',
+                        '${Translations.of(locale, 'next_action')}: ${_formatDate(DateTime.parse(record.nextActionDate!), locale)}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Colors.purple,
@@ -511,7 +505,7 @@ class _VetRecordCard extends StatelessWidget {
               if (record.notes != null && record.notes!.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
-                  '${locale == 'pt' ? 'Notas' : 'Notes'}: ${record.notes}',
+                  '${Translations.of(locale, 'notes')}: ${record.notes}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontStyle: FontStyle.italic,
                     color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),

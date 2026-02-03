@@ -46,7 +46,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
       title: t('expenses'),
       additionalActions: [
         IconButton(
-          tooltip: locale == 'pt' ? 'Exportar CSV' : 'Export CSV',
+          tooltip: t('export_csv'),
           icon: const Icon(Icons.download),
           onPressed: () {
             final expenses = context.read<ExpenseProvider>().expenses;
@@ -347,9 +347,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
                     if (standaloneExpenses.isNotEmpty)
                       AppSearchBar(
                         controller: _searchController,
-                        hintText: locale == 'pt'
-                            ? 'Pesquisar despesas...'
-                            : 'Search expenses...',
+                        hintText: t('search_expenses'),
                         hasContent: _searchQuery.isNotEmpty,
                         padding: const EdgeInsets.only(bottom: 12),
                         onChanged: (value) {
@@ -367,13 +365,9 @@ class _ExpensesPageState extends State<ExpensesPage> {
                         if (standaloneExpenses.isEmpty) {
                           return EmptyState(
                             icon: Icons.receipt_long_outlined,
-                            title: locale == 'pt'
-                                ? 'Nenhuma despesa independente'
-                                : 'No standalone expenses',
-                            message: locale == 'pt'
-                                ? 'Registe despesas como ração, manutenção, etc.'
-                                : 'Record expenses like feed, maintenance, etc.',
-                            actionLabel: locale == 'pt' ? 'Adicionar Despesa' : 'Add Expense',
+                            title: t('no_standalone_expenses'),
+                            message: t('record_expenses_msg'),
+                            actionLabel: t('add_expense'),
                             onAction: () => showDialog(
                               context: context,
                               builder: (_) => const ExpenseDialog(),
@@ -651,7 +645,7 @@ class _StandaloneExpenseCard extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                     onPressed: onDelete,
-                    tooltip: locale == 'pt' ? 'Eliminar despesa' : 'Delete expense',
+                    tooltip: Translations.of(locale, 'delete_expense_tooltip'),
                   ),
                 ],
               ),

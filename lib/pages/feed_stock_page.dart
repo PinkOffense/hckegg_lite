@@ -97,7 +97,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
             SliverToBoxAdapter(
               child: AppSearchBar(
                 controller: _searchController,
-                hintText: locale == 'pt' ? 'Pesquisar...' : 'Search...',
+                hintText: t('search_feed'),
                 hasContent: _searchQuery.isNotEmpty,
                 onChanged: (value) => setState(() => _searchQuery = value),
                 onClear: () {
@@ -112,11 +112,9 @@ class _FeedStockPageState extends State<FeedStockPage> {
             SliverFillRemaining(
               child: EmptyState(
                 icon: Icons.grass_outlined,
-                title: locale == 'pt' ? 'Sem stock' : 'No stock',
-                message: locale == 'pt'
-                    ? 'Adicione ração para começar'
-                    : 'Add feed to get started',
-                actionLabel: locale == 'pt' ? 'Adicionar' : 'Add',
+                title: t('no_stock'),
+                message: t('add_feed_to_start'),
+                actionLabel: t('add'),
                 onAction: () => _showAddDialog(context),
               ),
             )
@@ -183,16 +181,14 @@ class _FeedStockPageState extends State<FeedStockPage> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(locale == 'pt' ? 'Eliminar?' : 'Delete?'),
+        title: Text(Translations.of(locale, 'delete_question')),
         content: Text(
-          locale == 'pt'
-              ? 'Eliminar "${stock.type.displayName(locale)}"?'
-              : 'Delete "${stock.type.displayName(locale)}"?',
+          '${Translations.of(locale, 'delete')} "${stock.type.displayName(locale)}"?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+            child: Text(Translations.of(locale, 'cancel')),
           ),
           TextButton(
             onPressed: () async {
@@ -200,7 +196,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
               await context.read<FeedStockProvider>().deleteFeedStock(stock.id);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(locale == 'pt' ? 'Eliminar' : 'Delete'),
+            child: Text(Translations.of(locale, 'delete')),
           ),
         ],
       ),
@@ -235,7 +231,7 @@ class _ErrorView extends StatelessWidget {
             Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
             const SizedBox(height: 16),
             Text(
-              locale == 'pt' ? 'Erro ao carregar' : 'Error loading',
+              Translations.of(locale, 'error_loading'),
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -248,9 +244,7 @@ class _ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              locale == 'pt'
-                  ? 'Verifique se as tabelas feed_stocks e feed_movements existem no Supabase'
-                  : 'Check if feed_stocks and feed_movements tables exist in Supabase',
+              Translations.of(locale, 'check_tables_msg'),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.tertiary,
@@ -260,7 +254,7 @@ class _ErrorView extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: Text(locale == 'pt' ? 'Tentar novamente' : 'Retry'),
+              label: Text(Translations.of(locale, 'retry')),
             ),
           ],
         ),
@@ -302,7 +296,7 @@ class _OverviewCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            locale == 'pt' ? 'Resumo' : 'Overview',
+            Translations.of(locale, 'overview'),
             style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -311,7 +305,7 @@ class _OverviewCard extends StatelessWidget {
               Expanded(
                 child: _StatItem(
                   icon: Icons.inventory_2,
-                  label: locale == 'pt' ? 'Total' : 'Total',
+                  label: Translations.of(locale, 'total'),
                   value: '${totalStock.toStringAsFixed(1)} kg',
                   color: Colors.blue,
                 ),
@@ -320,7 +314,7 @@ class _OverviewCard extends StatelessWidget {
               Expanded(
                 child: _StatItem(
                   icon: Icons.warning_amber,
-                  label: locale == 'pt' ? 'Baixo' : 'Low',
+                  label: Translations.of(locale, 'low'),
                   value: lowStockCount.toString(),
                   color: lowStockCount > 0 ? Colors.red : Colors.green,
                 ),
@@ -329,7 +323,7 @@ class _OverviewCard extends StatelessWidget {
               Expanded(
                 child: _StatItem(
                   icon: Icons.category,
-                  label: locale == 'pt' ? 'Tipos' : 'Types',
+                  label: Translations.of(locale, 'types'),
                   value: stockCount.toString(),
                   color: Colors.purple,
                 ),
@@ -464,7 +458,7 @@ class _StockCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            locale == 'pt' ? 'BAIXO' : 'LOW',
+                            Translations.of(locale, 'low_stock'),
                             style: TextStyle(
                               color: theme.colorScheme.error,
                               fontSize: 10,
@@ -496,7 +490,7 @@ class _StockCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${locale == 'pt' ? 'Mín' : 'Min'}: ${stock.minimumQuantityKg.toStringAsFixed(0)} kg',
+                    '${Translations.of(locale, 'min_stock')}: ${stock.minimumQuantityKg.toStringAsFixed(0)} kg',
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontSize: 11,
                       color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
@@ -514,7 +508,7 @@ class _StockCard extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: stock.currentQuantityKg > 0 ? onConsume : null,
                       icon: const Icon(Icons.restaurant, size: 18),
-                      label: Text(locale == 'pt' ? 'Consumir' : 'Consume'),
+                      label: Text(Translations.of(locale, 'consume')),
                       style: FilledButton.styleFrom(
                         backgroundColor: Colors.orange,
                         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -525,7 +519,7 @@ class _StockCard extends StatelessWidget {
                   IconButton(
                     onPressed: onDelete,
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    tooltip: locale == 'pt' ? 'Eliminar' : 'Delete',
+                    tooltip: Translations.of(locale, 'delete'),
                   ),
                 ],
               ),
@@ -597,7 +591,7 @@ class _ConsumeDialogState extends State<_ConsumeDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              widget.locale == 'pt' ? 'Consumo registado!' : 'Consumption recorded!',
+              Translations.of(widget.locale, 'consumption_recorded'),
             ),
             backgroundColor: Colors.green,
           ),
@@ -628,7 +622,7 @@ class _ConsumeDialogState extends State<_ConsumeDialog> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              widget.locale == 'pt' ? 'Registar Consumo' : 'Record Consumption',
+              Translations.of(widget.locale, 'record_consumption'),
             ),
           ),
         ],
@@ -661,7 +655,7 @@ class _ConsumeDialogState extends State<_ConsumeDialog> {
                               style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             Text(
-                              '${widget.locale == 'pt' ? 'Actual' : 'Current'}: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
+                              '${Translations.of(widget.locale, 'current')}: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                               ),
@@ -681,7 +675,7 @@ class _ConsumeDialogState extends State<_ConsumeDialog> {
             TextField(
               controller: _controller,
               decoration: InputDecoration(
-                labelText: widget.locale == 'pt' ? 'Quantidade (kg)' : 'Quantity (kg)',
+                labelText: Translations.of(widget.locale, 'quantity_kg'),
                 border: const OutlineInputBorder(),
                 suffixText: 'kg',
                 errorText: _error,
@@ -703,7 +697,7 @@ class _ConsumeDialogState extends State<_ConsumeDialog> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(widget.locale == 'pt' ? 'Após consumo:' : 'After consumption:'),
+                    Text(Translations.of(widget.locale, 'after_consumption')),
                     Text(
                       '${_newStock.toStringAsFixed(1)} kg',
                       style: TextStyle(
@@ -719,9 +713,7 @@ class _ConsumeDialogState extends State<_ConsumeDialog> {
             if (_newStock < 0 && _quantity > 0) ...[
               const SizedBox(height: 8),
               Text(
-                widget.locale == 'pt'
-                    ? 'Máx: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg'
-                    : 'Max: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
+                '${Translations.of(widget.locale, 'max_label')}: ${widget.stock.currentQuantityKg.toStringAsFixed(1)} kg',
                 style: const TextStyle(color: Colors.red, fontSize: 12),
               ),
             ],
@@ -731,7 +723,7 @@ class _ConsumeDialogState extends State<_ConsumeDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.pop(context),
-          child: Text(widget.locale == 'pt' ? 'Cancelar' : 'Cancel'),
+          child: Text(Translations.of(widget.locale, 'cancel')),
         ),
         FilledButton(
           onPressed: (_isValid && !_saving) ? _save : null,
@@ -742,7 +734,7 @@ class _ConsumeDialogState extends State<_ConsumeDialog> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
-              : Text(widget.locale == 'pt' ? 'Confirmar' : 'Confirm'),
+              : Text(Translations.of(widget.locale, 'confirm')),
         ),
       ],
     );

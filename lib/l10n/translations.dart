@@ -322,6 +322,28 @@ class Translations {
       'confirm': 'Confirm',
       // Export
       'export_csv': 'Export CSV',
+      // Hen Health page
+      'health_overview': 'Health Overview',
+      'deaths': 'Deaths',
+      'vet_costs': 'Vet Costs',
+      'error_loading_records': 'Error loading records',
+      'search_records': 'Search records...',
+      'no_vet_records_msg': 'Record vaccinations, treatments and deaths for your chickens',
+      'hens_unit': 'hens',
+      // Reservations page
+      'convert_dialog_message': 'Customer picked up the eggs. How was the payment?',
+      'payment_pending_desc': 'Customer took but didn\'t pay',
+      'payment_advance_desc': 'Customer already paid in advance',
+      'reservation_converted': 'Reservation converted to sale successfully!',
+      // Feed Stock page
+      'check_tables_msg': 'Check if feed_stocks and feed_movements tables exist in Supabase',
+      'consumption_recorded': 'Consumption recorded!',
+      'max_label': 'Max',
+      // Expenses page
+      'search_expenses': 'Search expenses...',
+      'no_standalone_expenses': 'No standalone expenses',
+      'record_expenses_msg': 'Record expenses like feed, maintenance, etc.',
+      'delete_expense_tooltip': 'Delete expense',
     },
     'pt': {
       'app_title': 'HCKEgg 360',
@@ -643,6 +665,28 @@ class Translations {
       'confirm': 'Confirmar',
       // Exportar
       'export_csv': 'Exportar CSV',
+      // Página Saúde das Galinhas
+      'health_overview': 'Panorama de Saúde',
+      'deaths': 'Mortes',
+      'vet_costs': 'Custos Veterinários',
+      'error_loading_records': 'Erro ao carregar registos',
+      'search_records': 'Pesquisar registos...',
+      'no_vet_records_msg': 'Registe vacinas, tratamentos e mortes das suas galinhas',
+      'hens_unit': 'galinhas',
+      // Página Reservas
+      'convert_dialog_message': 'O cliente levantou os ovos. Como foi o pagamento?',
+      'payment_pending_desc': 'Cliente levou mas não pagou',
+      'payment_advance_desc': 'Cliente já tinha pago adiantado',
+      'reservation_converted': 'Reserva convertida em venda com sucesso!',
+      // Página Stock de Ração
+      'check_tables_msg': 'Verifique se as tabelas feed_stocks e feed_movements existem no Supabase',
+      'consumption_recorded': 'Consumo registado!',
+      'max_label': 'Máx',
+      // Página Despesas
+      'search_expenses': 'Pesquisar despesas...',
+      'no_standalone_expenses': 'Nenhuma despesa independente',
+      'record_expenses_msg': 'Registe despesas como ração, manutenção, etc.',
+      'delete_expense_tooltip': 'Eliminar despesa',
     }
   };
 
