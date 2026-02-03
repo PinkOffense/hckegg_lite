@@ -32,6 +32,11 @@ class _AuthGateState extends State<AuthGate> {
   bool _dataLoading = false;
   bool _dataLoaded = false;
   String? _loadingMessage;
+  bool _showSkip = false;
+  Timer? _skipTimer;
+
+  /// Max time to wait for initial data before showing dashboard anyway
+  static const _loadTimeout = Duration(seconds: 10);
 
   @override
   void initState() {
@@ -96,38 +101,52 @@ class _AuthGateState extends State<AuthGate> {
 
     setState(() {
       _dataLoading = true;
+      _showSkip = false;
       _loadingMessage = null;
     });
 
+    // Show skip button after 4 seconds so user isn't stuck
+    _skipTimer?.cancel();
+    _skipTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted && _dataLoading) {
+        setState(() => _showSkip = true);
+      }
+    });
+
     try {
-      // Load critical data with visual feedback
       _updateLoadingMessage('Loading your data...');
 
-      // Load primary data that's needed for dashboard
+      // Load primary data with a timeout to prevent infinite loading
+      // If the backend is cold (Render.com), this prevents hanging
       await Future.wait([
         context.read<EggProvider>().loadRecords(),
         context.read<AnalyticsProvider>().loadDashboardAnalytics(),
         context.read<SaleProvider>().loadSales(),
-      ]);
+      ]).timeout(_loadTimeout);
 
-      // Mark as loaded before loading secondary data
-      if (mounted) {
-        setState(() {
-          _dataLoaded = true;
-          _dataLoading = false;
-        });
-      }
-
-      // Load secondary data in background (non-blocking)
-      _loadSecondaryDataInBackground();
+      _proceedToDashboard();
     } catch (e) {
-      // Even on error, show the dashboard (it will handle error states)
-      if (mounted) {
-        setState(() {
-          _dataLoaded = true;
-          _dataLoading = false;
-        });
-      }
+      // Timeout or error: show dashboard anyway (it handles error/empty states)
+      _proceedToDashboard();
+    }
+  }
+
+  /// Skip loading and go straight to dashboard
+  void _skipLoading() {
+    _proceedToDashboard();
+  }
+
+  /// Mark loading as complete and proceed to dashboard
+  void _proceedToDashboard() {
+    _skipTimer?.cancel();
+    if (mounted && !_dataLoaded) {
+      setState(() {
+        _dataLoaded = true;
+        _dataLoading = false;
+        _showSkip = false;
+      });
+      // Load remaining data in background
+      _loadSecondaryDataInBackground();
     }
   }
 
@@ -151,6 +170,7 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   void dispose() {
+    _skipTimer?.cancel();
     _sub.cancel();
     super.dispose();
   }
@@ -170,7 +190,11 @@ class _AuthGateState extends State<AuthGate> {
 
     // Signed in but still loading primary data - show loading screen
     if (_dataLoading && !_dataLoaded) {
-      return _LoadingScreen(message: _loadingMessage);
+      return _LoadingScreen(
+        message: _loadingMessage,
+        showSkip: _showSkip,
+        onSkip: _skipLoading,
+      );
     }
 
     // Data loaded (or loading failed) - show dashboard
@@ -181,8 +205,14 @@ class _AuthGateState extends State<AuthGate> {
 /// Loading screen shown while initial data loads
 class _LoadingScreen extends StatelessWidget {
   final String? message;
+  final bool showSkip;
+  final VoidCallback? onSkip;
 
-  const _LoadingScreen({this.message});
+  const _LoadingScreen({
+    this.message,
+    this.showSkip = false,
+    this.onSkip,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -263,6 +293,23 @@ class _LoadingScreen extends StatelessWidget {
                     color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
                   ),
                   textAlign: TextAlign.center,
+                ),
+              ),
+
+              // Skip button - appears after a delay
+              const SizedBox(height: 32),
+              AnimatedOpacity(
+                opacity: showSkip ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 400),
+                child: TextButton(
+                  onPressed: showSkip ? onSkip : null,
+                  child: Text(
+                    locale == 'pt' ? 'Continuar mesmo assim' : 'Continue anyway',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ],
