@@ -9,6 +9,7 @@ import '../core/utils/validators.dart';
 import '../models/feed_stock.dart';
 import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../services/ocr_service.dart' as web_ocr;
 import 'base_dialog.dart';
 
@@ -63,6 +64,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
   }
 
   Future<void> _scanFeedBag(String locale) async {
+    final t = (String k) => Translations.of(locale, k);
     final picker = ImagePicker();
 
     // On web, camera is not available — go directly to gallery/file picker
@@ -92,16 +94,14 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                   ),
                 ),
                 Text(
-                  locale == 'pt' ? 'Digitalizar Saco de Ração' : 'Scan Feed Bag',
+                  t('scan_title'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  locale == 'pt'
-                      ? 'Tire uma foto ou escolha uma imagem do saco'
-                      : 'Take a photo or choose an image of the bag',
+                  t('scan_desc'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey.shade600,
                   ),
@@ -119,12 +119,8 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                       color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
-                  title: Text(locale == 'pt' ? 'Tirar Foto' : 'Take Photo'),
-                  subtitle: Text(
-                    locale == 'pt'
-                        ? 'Usar a câmera do dispositivo'
-                        : 'Use device camera',
-                  ),
+                  title: Text(t('take_photo')),
+                  subtitle: Text(t('use_camera')),
                   onTap: () => Navigator.pop(context, ImageSource.camera),
                 ),
                 ListTile(
@@ -139,12 +135,8 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                       color: Theme.of(context).colorScheme.secondary,
                     ),
                   ),
-                  title: Text(locale == 'pt' ? 'Escolher da Galeria' : 'Choose from Gallery'),
-                  subtitle: Text(
-                    locale == 'pt'
-                        ? 'Selecionar uma imagem existente'
-                        : 'Select an existing image',
-                  ),
+                  title: Text(t('choose_from_gallery')),
+                  subtitle: Text(t('select_existing')),
                   onTap: () => Navigator.pop(context, ImageSource.gallery),
                 ),
                 const SizedBox(height: 8),
@@ -199,9 +191,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
         setState(() {
           _isProcessingOcr = false;
           _extractedText = null;
-          _ocrError = locale == 'pt'
-              ? 'Não foi possível ler texto na imagem. Tente novamente com melhor iluminação.'
-              : 'Could not read text from image. Try again with better lighting.';
+          _ocrError = t('ocr_no_text');
         });
         return;
       }
@@ -225,11 +215,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Text(locale == 'pt'
-                      ? 'Dados extraídos! Verifique e ajuste se necessário.'
-                      : 'Data extracted! Please verify and adjust if needed.'),
-                ),
+                Expanded(child: Text(t('data_extracted'))),
               ],
             ),
             backgroundColor: Colors.green.shade600,
@@ -244,14 +230,13 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
     } catch (e) {
       setState(() {
         _isProcessingOcr = false;
-        _ocrError = locale == 'pt'
-            ? 'Erro ao processar imagem. Tente novamente.'
-            : 'Error processing image. Please try again.';
+        _ocrError = t('error_processing');
       });
     }
   }
 
   void _parseOcrText(String text, String locale) {
+    final t = (String k) => Translations.of(locale, k);
     final lowerText = text.toLowerCase();
     final lines = text.split('\n');
 
@@ -349,7 +334,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
       }
     }
 
-    // Extended price patterns
+    // Extended price patterns (works for both bag labels and invoices)
     final pricePatterns = [
       RegExp(r'€\s*(\d+(?:[.,]\d+)?)', caseSensitive: false),
       RegExp(r'(\d+(?:[.,]\d+)?)\s*€', caseSensitive: false),
@@ -358,6 +343,10 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
       RegExp(r'preço\s*[:\s]*(\d+(?:[.,]\d+)?)', caseSensitive: false),
       RegExp(r'price\s*[:\s]*(\d+(?:[.,]\d+)?)', caseSensitive: false),
       RegExp(r'pvp\s*[:\s]*(\d+(?:[.,]\d+)?)', caseSensitive: false),
+      // Invoice-specific: total, subtotal
+      RegExp(r'total\s*[:\s]*€?\s*(\d+(?:[.,]\d+)?)', caseSensitive: false),
+      RegExp(r'subtotal\s*[:\s]*€?\s*(\d+(?:[.,]\d+)?)', caseSensitive: false),
+      RegExp(r'valor\s*[:\s]*€?\s*(\d+(?:[.,]\d+)?)', caseSensitive: false),
       RegExp(r'(\d+[.,]\d{2})\s*(?:€|EUR)?', caseSensitive: false), // Matches XX.XX format
     ];
 
@@ -382,7 +371,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
       }
     }
 
-    // Try to extract lot number or expiry date for notes
+    // Try to extract lot number, expiry date, invoice info for notes
     final lotPatterns = [
       RegExp(r'lote[:\s]*([A-Z0-9\-]+)', caseSensitive: false),
       RegExp(r'lot[:\s]*([A-Z0-9\-]+)', caseSensitive: false),
@@ -396,12 +385,59 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
       RegExp(r'best\s*before[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})', caseSensitive: false),
     ];
 
+    // Invoice-specific patterns
+    final invoicePatterns = [
+      RegExp(r'(?:fatura|factura|invoice|fat\.?)\s*(?:n[ºo°.]?\s*)?[:\s]*([A-Z0-9\-\/]+)', caseSensitive: false),
+    ];
+
+    final nifPatterns = [
+      RegExp(r'(?:nif|contribuinte|tax\s*id)[:\s]*(\d{9})', caseSensitive: false),
+    ];
+
+    final supplierPatterns = [
+      RegExp(r'(?:fornecedor|supplier|empresa|company)[:\s]*(.+)', caseSensitive: false),
+    ];
+
     final notesLines = <String>[];
+
+    // Extract invoice number
+    for (final pattern in invoicePatterns) {
+      final match = pattern.firstMatch(text);
+      if (match != null) {
+        notesLines.add('${t('invoice_number')}: ${match.group(1)}');
+        break;
+      }
+    }
+
+    // Extract NIF/Tax ID
+    for (final pattern in nifPatterns) {
+      final match = pattern.firstMatch(text);
+      if (match != null) {
+        notesLines.add('${t('nif_tax')}: ${match.group(1)}');
+        break;
+      }
+    }
+
+    // Extract supplier name
+    for (final pattern in supplierPatterns) {
+      final match = pattern.firstMatch(text);
+      if (match != null) {
+        final supplier = match.group(1)?.trim();
+        if (supplier != null && supplier.length >= 3 && supplier.length <= 60) {
+          notesLines.add('${t('supplier_label')}: $supplier');
+          // Also use supplier as brand if brand is empty
+          if (_brandController.text.isEmpty) {
+            _brandController.text = supplier;
+          }
+          break;
+        }
+      }
+    }
 
     for (final pattern in lotPatterns) {
       final match = pattern.firstMatch(text);
       if (match != null) {
-        notesLines.add('${locale == 'pt' ? 'Lote' : 'Lot'}: ${match.group(1)}');
+        notesLines.add('${t('lot_label')}: ${match.group(1)}');
         break;
       }
     }
@@ -409,7 +445,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
     for (final pattern in expiryPatterns) {
       final match = pattern.firstMatch(text);
       if (match != null) {
-        notesLines.add('${locale == 'pt' ? 'Validade' : 'Expiry'}: ${match.group(1)}');
+        notesLines.add('${t('expiry_label')}: ${match.group(1)}');
         break;
       }
     }
@@ -448,6 +484,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final locale = Provider.of<LocaleProvider>(context).code;
+    final t = (String k) => Translations.of(locale, k);
     final isEditing = widget.existingStock != null;
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 600;
@@ -491,9 +528,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      isEditing
-                          ? (locale == 'pt' ? 'Editar Stock' : 'Edit Stock')
-                          : (locale == 'pt' ? 'Novo Stock de Ração' : 'New Feed Stock'),
+                      isEditing ? t('edit_stock') : t('new_feed_stock'),
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: isSmallScreen ? 18 : 22,
@@ -540,10 +575,10 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                             : const Icon(Icons.document_scanner),
                         label: Text(
                           _isProcessingOcr
-                              ? (locale == 'pt' ? 'A processar...' : 'Processing...')
+                              ? t('processing_ocr')
                               : kIsWeb
-                                  ? (locale == 'pt' ? 'Carregar Imagem do Saco' : 'Upload Bag Image')
-                                  : (locale == 'pt' ? 'Digitalizar Saco de Ração' : 'Scan Feed Bag'),
+                                  ? t('upload_image')
+                                  : t('scan_feed_or_invoice'),
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         style: FilledButton.styleFrom(
@@ -556,13 +591,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      kIsWeb
-                          ? (locale == 'pt'
-                              ? 'Carregue uma imagem do saco para preencher automaticamente'
-                              : 'Upload an image of the bag to auto-fill')
-                          : (locale == 'pt'
-                              ? 'Tire uma foto do saco para preencher automaticamente'
-                              : 'Take a photo of the bag to auto-fill'),
+                      kIsWeb ? t('upload_desc') : t('photo_desc'),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -581,9 +610,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              locale == 'pt'
-                                  ? 'OCR via Tesseract.js — pode demorar alguns segundos'
-                                  : 'OCR via Tesseract.js — may take a few seconds',
+                              t('ocr_tesseract_info'),
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.primary,
                                 fontStyle: FontStyle.italic,
@@ -627,9 +654,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              _ocrError != null
-                                  ? (locale == 'pt' ? 'Erro na Digitalização' : 'Scan Error')
-                                  : (locale == 'pt' ? 'Imagem Capturada' : 'Captured Image'),
+                              _ocrError != null ? t('scan_error') : t('captured_image'),
                               style: theme.textTheme.labelLarge?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: _ocrError != null
@@ -643,7 +668,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                             onPressed: _clearOcrData,
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
-                            tooltip: locale == 'pt' ? 'Fechar' : 'Close',
+                            tooltip: t('close'),
                           ),
                         ],
                       ),
@@ -694,9 +719,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          locale == 'pt'
-                                              ? 'Texto extraído com sucesso'
-                                              : 'Text extracted successfully',
+                                          t('text_extracted_ok'),
                                           style: theme.textTheme.bodySmall?.copyWith(
                                             color: Colors.green.shade600,
                                             fontWeight: FontWeight.w500,
@@ -708,9 +731,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                                     TextButton.icon(
                                       onPressed: () => _showExtractedText(locale),
                                       icon: const Icon(Icons.edit_note, size: 16),
-                                      label: Text(
-                                        locale == 'pt' ? 'Editar texto' : 'Edit text',
-                                      ),
+                                      label: Text(t('edit_text')),
                                       style: TextButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 8,
@@ -742,7 +763,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                     DropdownButtonFormField<FeedType>(
                       value: _type,
                       decoration: InputDecoration(
-                        labelText: locale == 'pt' ? 'Tipo de Ração' : 'Feed Type',
+                        labelText: t('feed_type_label'),
                         prefixIcon: const Icon(Icons.category),
                       ),
                       items: FeedType.values.map((type) {
@@ -767,9 +788,9 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                     TextFormField(
                       controller: _brandController,
                       decoration: InputDecoration(
-                        labelText: locale == 'pt' ? 'Marca (opcional)' : 'Brand (optional)',
+                        labelText: t('brand_label'),
                         prefixIcon: const Icon(Icons.label),
-                        hintText: locale == 'pt' ? 'Ex: Purina, Valouro...' : 'E.g.: Purina, Cargill...',
+                        hintText: t('brand_hint'),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -778,10 +799,10 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                     TextFormField(
                       controller: _quantityController,
                       decoration: InputDecoration(
-                        labelText: '${locale == 'pt' ? 'Quantidade' : 'Quantity'} (kg) *',
+                        labelText: '${t('quantity_label')} (kg) *',
                         prefixIcon: const Icon(Icons.scale),
                         suffixText: 'kg',
-                        hintText: locale == 'pt' ? 'Ex: 25' : 'E.g.: 25',
+                        hintText: t('quantity_hint'),
                       ),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       enabled: !isLoading,
@@ -793,12 +814,10 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                     TextFormField(
                       controller: _minQuantityController,
                       decoration: InputDecoration(
-                        labelText: locale == 'pt' ? 'Quantidade Mínima (kg)' : 'Minimum Quantity (kg)',
+                        labelText: t('min_quantity_label'),
                         prefixIcon: const Icon(Icons.warning_amber),
                         suffixText: 'kg',
-                        helperText: locale == 'pt'
-                            ? 'Alerta quando abaixo deste valor'
-                            : 'Alert when below this value',
+                        helperText: t('min_quantity_helper'),
                       ),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     ),
@@ -808,10 +827,10 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                     TextFormField(
                       controller: _priceController,
                       decoration: InputDecoration(
-                        labelText: locale == 'pt' ? 'Preço por kg (opcional)' : 'Price per kg (optional)',
+                        labelText: t('price_per_kg_label'),
                         prefixIcon: const Icon(Icons.euro),
                         prefixText: '€ ',
-                        hintText: locale == 'pt' ? 'Ex: 0.85' : 'E.g.: 0.85',
+                        hintText: t('price_hint'),
                       ),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     ),
@@ -821,12 +840,10 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                     TextFormField(
                       controller: _notesController,
                       decoration: InputDecoration(
-                        labelText: locale == 'pt' ? 'Notas (opcional)' : 'Notes (optional)',
+                        labelText: t('notes_label'),
                         prefixIcon: const Icon(Icons.note),
                         alignLabelWithHint: true,
-                        hintText: locale == 'pt'
-                            ? 'Lote, validade, observações...'
-                            : 'Lot, expiry, observations...',
+                        hintText: t('notes_hint'),
                       ),
                       maxLines: 3,
                     ),
@@ -849,8 +866,8 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
             DialogFooter(
               onCancel: () => Navigator.pop(context),
               onSave: _save,
-              cancelText: locale == 'pt' ? 'Cancelar' : 'Cancel',
-              saveText: locale == 'pt' ? 'Guardar' : 'Save',
+              cancelText: t('cancel'),
+              saveText: t('save'),
               isLoading: isLoading,
             ),
           ],
@@ -860,6 +877,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
   }
 
   void _showExtractedText(String locale) {
+    final t = (String k) => Translations.of(locale, k);
     final textController = TextEditingController(text: _extractedText ?? '');
 
     showDialog(
@@ -871,7 +889,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                locale == 'pt' ? 'Editar Texto Extraído' : 'Edit Extracted Text',
+                t('edit_extracted_text'),
                 style: const TextStyle(fontSize: 18),
               ),
             ),
@@ -884,9 +902,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                locale == 'pt'
-                    ? 'Corrija o texto se necessário e clique em "Reprocessar" para atualizar os campos.'
-                    : 'Correct the text if needed and click "Reprocess" to update fields.',
+                t('correct_text_desc'),
                 style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
                   color: Theme.of(dialogContext).colorScheme.onSurfaceVariant,
                 ),
@@ -904,9 +920,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                       borderRadius: BorderRadius.circular(8),
                     ),
                     contentPadding: const EdgeInsets.all(12),
-                    hintText: locale == 'pt'
-                        ? 'Cole ou edite o texto aqui...'
-                        : 'Paste or edit text here...',
+                    hintText: t('paste_edit_hint'),
                   ),
                 ),
               ),
@@ -916,7 +930,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+            child: Text(t('cancel')),
           ),
           FilledButton.icon(
             onPressed: () {
@@ -933,9 +947,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
                       children: [
                         const Icon(Icons.check_circle, color: Colors.white),
                         const SizedBox(width: 12),
-                        Text(locale == 'pt'
-                            ? 'Texto reprocessado com sucesso!'
-                            : 'Text reprocessed successfully!'),
+                        Text(t('text_reprocessed')),
                       ],
                     ),
                     backgroundColor: Colors.green.shade600,
@@ -948,7 +960,7 @@ class _FeedStockDialogState extends State<FeedStockDialog> with DialogStateMixin
               }
             },
             icon: const Icon(Icons.refresh, size: 18),
-            label: Text(locale == 'pt' ? 'Reprocessar' : 'Reprocess'),
+            label: Text(t('reprocess')),
           ),
         ],
       ),

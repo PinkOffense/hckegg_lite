@@ -157,7 +157,7 @@ class _AppDrawerState extends State<AppDrawer> {
             ),
             ),
 
-            // Scrollable menu items
+            // Scrollable menu items with section groupings
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -171,6 +171,9 @@ class _AppDrawerState extends State<AppDrawer> {
                     currentRoute: currentRoute,
                     color: const Color(0xFF6C63FF),
                   ),
+
+                  // Production section
+                  _buildSectionHeader(context, t('section_production')),
                   _buildMenuItem(
                     context: context,
                     icon: Icons.egg_rounded,
@@ -179,42 +182,6 @@ class _AppDrawerState extends State<AppDrawer> {
                     route: '/eggs',
                     currentRoute: currentRoute,
                     color: const Color(0xFFFFB347),
-                  ),
-                  _buildMenuItem(
-                    context: context,
-                    icon: Icons.store_rounded,
-                    emoji: '💰',
-                    title: locale == 'pt' ? 'Vendas' : 'Sales',
-                    route: '/sales',
-                    currentRoute: currentRoute,
-                    color: const Color(0xFF4CAF50),
-                  ),
-                  _buildMenuItem(
-                    context: context,
-                    icon: Icons.credit_card_rounded,
-                    emoji: '💳',
-                    title: locale == 'pt' ? 'Pagamentos' : 'Payments',
-                    route: '/payments',
-                    currentRoute: currentRoute,
-                    color: const Color(0xFF2196F3),
-                  ),
-                  _buildMenuItem(
-                    context: context,
-                    icon: Icons.calendar_month_rounded,
-                    emoji: '📅',
-                    title: locale == 'pt' ? 'Reservas' : 'Reservations',
-                    route: '/reservations',
-                    currentRoute: currentRoute,
-                    color: const Color(0xFF9C27B0),
-                  ),
-                  _buildMenuItem(
-                    context: context,
-                    icon: Icons.receipt_long_rounded,
-                    emoji: '📊',
-                    title: t('expenses'),
-                    route: '/expenses',
-                    currentRoute: currentRoute,
-                    color: const Color(0xFFE91E63),
                   ),
                   _buildMenuItem(
                     context: context,
@@ -229,11 +196,54 @@ class _AppDrawerState extends State<AppDrawer> {
                     context: context,
                     icon: Icons.grass_rounded,
                     emoji: '🌾',
-                    title: locale == 'pt' ? 'Stock de Ração' : 'Feed Stock',
+                    title: t('feed_stock'),
                     route: '/feed-stock',
                     currentRoute: currentRoute,
                     color: const Color(0xFF8BC34A),
                   ),
+
+                  // Financial section
+                  _buildSectionHeader(context, t('section_financial')),
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.store_rounded,
+                    emoji: '💰',
+                    title: t('sales'),
+                    route: '/sales',
+                    currentRoute: currentRoute,
+                    color: const Color(0xFF4CAF50),
+                  ),
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.credit_card_rounded,
+                    emoji: '💳',
+                    title: t('payments'),
+                    route: '/payments',
+                    currentRoute: currentRoute,
+                    color: const Color(0xFF2196F3),
+                  ),
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.receipt_long_rounded,
+                    emoji: '📊',
+                    title: t('expenses'),
+                    route: '/expenses',
+                    currentRoute: currentRoute,
+                    color: const Color(0xFFE91E63),
+                  ),
+
+                  // Management section
+                  _buildSectionHeader(context, t('section_management')),
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.calendar_month_rounded,
+                    emoji: '📅',
+                    title: t('reservations'),
+                    route: '/reservations',
+                    currentRoute: currentRoute,
+                    color: const Color(0xFF9C27B0),
+                  ),
+
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Divider(),
@@ -306,6 +316,22 @@ class _AppDrawerState extends State<AppDrawer> {
     // When embedded as permanent sidebar, don't wrap in Drawer
     if (widget.embedded) return content;
     return Drawer(child: content);
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 16, 16, 4),
+      child: Text(
+        title.toUpperCase(),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
+          fontSize: 11,
+        ),
+      ),
+    );
   }
 
   Widget _buildMenuItem({

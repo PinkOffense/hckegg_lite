@@ -56,6 +56,7 @@ class _FeedStockPageState extends State<FeedStockPage> {
 
   Widget _buildContent(BuildContext context, String locale, FeedStockProvider provider) {
     final theme = Theme.of(context);
+    final t = (String k) => Translations.of(locale, k);
 
     // Loading state
     if (provider.isLoading && provider.feedStocks.isEmpty) {

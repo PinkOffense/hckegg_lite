@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../l10n/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../state/theme_provider.dart';
 import '../features/health/presentation/providers/vet_provider.dart';
 import 'app_drawer.dart';
@@ -97,6 +98,7 @@ class AppScaffold extends StatelessWidget {
   }
 
   List<Widget> _buildMobileActions(BuildContext context, String locale, ThemeProvider themeProvider) {
+    final t = (String k) => Translations.of(locale, k);
     final vetProvider = Provider.of<VetRecordProvider>(context);
     final todayAppointments = vetProvider.getTodayAppointments();
     final hasAppointmentsToday = todayAppointments.isNotEmpty;
@@ -104,9 +106,7 @@ class AppScaffold extends StatelessWidget {
     return [
       if (additionalActions != null) ...additionalActions!,
       IconButton(
-        tooltip: hasAppointmentsToday
-            ? (locale == 'pt' ? 'Veterinário Hoje!' : 'Vet Today!')
-            : (locale == 'pt' ? 'Calendário' : 'Calendar'),
+        tooltip: hasAppointmentsToday ? t('vet_today') : t('calendar'),
         icon: Badge(
           isLabelVisible: hasAppointmentsToday,
           label: Text('${todayAppointments.length}'),
@@ -119,7 +119,7 @@ class AppScaffold extends StatelessWidget {
         onPressed: () => context.push('/vet-calendar'),
       ),
       PopupMenuButton<String>(
-        tooltip: locale == 'pt' ? 'Mais opções' : 'More options',
+        tooltip: t('more_options'),
         icon: const Icon(Icons.more_vert),
         onSelected: (String value) async {
           switch (value) {
@@ -143,7 +143,7 @@ class AppScaffold extends StatelessWidget {
             PopupMenuItem<String>(
               enabled: false,
               child: Text(
-                locale == 'pt' ? 'Idioma' : 'Language',
+                t('language'),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.primary,
@@ -187,9 +187,7 @@ class AppScaffold extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    themeProvider.isDarkMode
-                        ? (locale == 'pt' ? 'Modo Claro' : 'Light Mode')
-                        : (locale == 'pt' ? 'Modo Escuro' : 'Dark Mode'),
+                    themeProvider.isDarkMode ? t('light_mode') : t('dark_mode'),
                   ),
                 ],
               ),
@@ -201,7 +199,7 @@ class AppScaffold extends StatelessWidget {
                 children: [
                   const Icon(Icons.account_circle, size: 18),
                   const SizedBox(width: 8),
-                  Text(locale == 'pt' ? 'Perfil' : 'Profile'),
+                  Text(t('profile')),
                 ],
               ),
             ),
@@ -212,6 +210,7 @@ class AppScaffold extends StatelessWidget {
   }
 
   List<Widget> _buildDesktopActions(BuildContext context, String locale, ThemeProvider themeProvider) {
+    final t = (String k) => Translations.of(locale, k);
     final vetProvider = Provider.of<VetRecordProvider>(context);
     final todayAppointments = vetProvider.getTodayAppointments();
     final hasAppointmentsToday = todayAppointments.isNotEmpty;
@@ -219,9 +218,7 @@ class AppScaffold extends StatelessWidget {
     return [
       if (additionalActions != null) ...additionalActions!,
       IconButton(
-        tooltip: hasAppointmentsToday
-            ? (locale == 'pt' ? 'Veterinário Hoje!' : 'Vet Today!')
-            : (locale == 'pt' ? 'Calendário' : 'Calendar'),
+        tooltip: hasAppointmentsToday ? t('vet_today') : t('calendar'),
         icon: Badge(
           isLabelVisible: hasAppointmentsToday,
           label: Text('${todayAppointments.length}'),
@@ -234,7 +231,7 @@ class AppScaffold extends StatelessWidget {
         onPressed: () => context.push('/vet-calendar'),
       ),
       PopupMenuButton<String>(
-        tooltip: locale == 'pt' ? 'Idioma' : 'Language',
+        tooltip: t('language'),
         icon: const Icon(Icons.language),
         onSelected: (String languageCode) {
           Provider.of<LocaleProvider>(context, listen: false).setLocale(languageCode);
@@ -270,16 +267,14 @@ class AppScaffold extends StatelessWidget {
         },
       ),
       IconButton(
-        tooltip: themeProvider.isDarkMode
-            ? (locale == 'pt' ? 'Modo Claro' : 'Light Mode')
-            : (locale == 'pt' ? 'Modo Escuro' : 'Dark Mode'),
+        tooltip: themeProvider.isDarkMode ? t('light_mode') : t('dark_mode'),
         icon: Icon(
           themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
         ),
         onPressed: () => themeProvider.toggleTheme(),
       ),
       IconButton(
-        tooltip: locale == 'pt' ? 'Perfil' : 'Profile',
+        tooltip: t('profile'),
         icon: const Icon(Icons.account_circle),
         onPressed: () => context.push('/settings'),
       ),
