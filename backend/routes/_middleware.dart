@@ -3,6 +3,7 @@ import 'package:dart_frog/dart_frog.dart';
 import '../lib/core/core.dart';
 import '../lib/core/middleware/cors.dart';
 import '../lib/core/middleware/rate_limiter.dart';
+import '../lib/core/middleware/security_headers.dart';
 
 /// Global middleware for all routes
 Handler middleware(Handler handler) {
@@ -11,6 +12,7 @@ Handler middleware(Handler handler) {
 
   return handler
       .use(requestLogger())
+      .use(securityHeadersMiddleware())
       .use(rateLimiter())
       .use(corsMiddleware())
       .use(supabaseProvider());
