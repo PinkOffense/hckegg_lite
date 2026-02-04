@@ -4,8 +4,8 @@
 -- Execute this SQL in Supabase SQL Editor
 -- This is a FRESH INSTALL script - run once for new projects
 -- ============================================
--- Version: 2.0
--- Last Updated: 2026-01-30
+-- Version: 2.1
+-- Last Updated: 2026-02-04
 -- ============================================
 --
 -- Tables included:
@@ -123,6 +123,10 @@ CREATE TABLE IF NOT EXISTS public.egg_sales (
     customer_email TEXT,
     customer_phone TEXT,
     notes TEXT,
+    payment_status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (payment_status IN ('paid', 'pending', 'overdue', 'advance')),
+    payment_date DATE,
+    is_reservation BOOLEAN NOT NULL DEFAULT FALSE,
+    reservation_notes TEXT,
     is_lost BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -132,8 +136,11 @@ CREATE INDEX idx_egg_sales_user_date ON public.egg_sales(user_id, date DESC);
 CREATE INDEX idx_egg_sales_user_created ON public.egg_sales(user_id, created_at DESC);
 CREATE INDEX idx_egg_sales_customer ON public.egg_sales(user_id, customer_name) WHERE customer_name IS NOT NULL;
 CREATE INDEX idx_egg_sales_is_lost ON public.egg_sales(user_id, is_lost) WHERE is_lost = TRUE;
+CREATE INDEX idx_egg_sales_payment ON public.egg_sales(user_id, payment_status);
 
 COMMENT ON TABLE public.egg_sales IS 'Egg sales records with pricing and customer information';
+COMMENT ON COLUMN public.egg_sales.payment_status IS 'Payment status: paid, pending, overdue, advance';
+COMMENT ON COLUMN public.egg_sales.is_reservation IS 'Whether this sale originated from a reservation';
 COMMENT ON COLUMN public.egg_sales.is_lost IS 'Marks a sale as lost - customer took eggs but will never pay';
 
 -- ============================================

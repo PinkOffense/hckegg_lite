@@ -1,215 +1,146 @@
-# HCKEgg Aviculture 360 - Lite Version
+# HCKEgg 360 Lite
 
-**Intelligent Poultry Management, Offline-First and Zero-Cost**
+**Gestao avicola simplificada / Poultry farm management made simple**
 
-A Flutter mobile application for small and medium-sized poultry producers raising laying hens. Control production, costs, and herd health - all working offline, syncing to the cloud when connected.
-
----
-
-## About the Project
-
-HCKEgg is an innovative solution that modernizes rural poultry management, bringing accessible technology to farmers in the field. Built with **Flutter**, **Supabase** backend with offline support, it offers professional features with zero infrastructure costs.
-
-**Current Version**: Lite (Free)
-**Target Audience**: Small and medium-sized poultry producers (50-500 hens)
-**Platforms**: Android, iOS, Web
+Aplicacao web (PWA) para pequenos e medios avicultores. Controle producao, vendas, despesas e saude do bando num unico lugar.
 
 ---
 
-## Key Features
+## Funcionalidades / Features
 
-### Production Control
-- Daily egg production logging with date picker
-- Classification tracking and notes
-- Real-time performance dashboards with charts
-- Search and filter records
+### Producao / Production
+- Registo diario de ovos recolhidos e consumidos
+- Contagem de galinhas por dia
+- Historico pesquisavel com exportacao CSV
 
-### Sales Management
-- Record egg sales with customer details
-- Payment status tracking (Paid, Pending, Advance)
-- Revenue analytics and reporting
-- Payment history management
+### Vendas / Sales
+- Registo de vendas com preco por ovo e por duzia
+- Dados de cliente (nome, email, telefone)
+- Estado de pagamento (pago, pendente, atrasado, adiantado)
+- Marcacao de vendas perdidas
 
-### Reservations
-- Reserve eggs for customers
-- Pickup date scheduling
-- Convert reservations to sales
-- Customer contact management
+### Reservas / Reservations
+- Reservar ovos para clientes com data de levantamento
+- Converter reservas em vendas com um clique
+- Gestao de precos no momento da reserva
 
-### Cost Management
-- Feed stock tracking with OCR support for feed bags
-- Expense categorization (Feed, Maintenance, Equipment, Utilities)
-- Veterinary cost integration
-- Profitability calculations
+### Despesas / Expenses
+- Categorias: racao, manutencao, equipamento, utilidades, outros
+- Pesquisa e filtro por categoria
+- Historial completo com notas
 
-### Health & Wellness
-- Veterinary records (vaccines, treatments, checkups)
-- Severity levels (Low, Medium, High, Critical)
-- **Appointment reminders** - Red badge on calendar icon when vet visits are scheduled
-- Treatment history and notes
+### Saude das Galinhas / Hen Health
+- Registos veterinarios: vacinas, doencas, tratamentos, mortes, exames
+- Niveis de gravidade (baixa, media, alta, critica)
+- Calendario com lembretes de proximas acoes
+- Badge no icone quando ha consultas hoje
 
-### Feed Stock with OCR
-- Scan feed bags to extract brand, weight, and price
-- Manual text correction for OCR results
-- Stock level monitoring with alerts
-- Usage tracking
+### Stock de Racao / Feed Stock
+- Tipos: poedeiras, crescimento, inicial, cereais, suplementos
+- Alertas de stock baixo
+- Registo de consumo
+- OCR para digitalizar sacos de racao e faturas (via Tesseract.js)
 
-### User Experience
-- **Bilingual support**: Portuguese and English
-- **Dark/Light theme** toggle
-- **Offline-first** architecture
-- Responsive design (Mobile, Tablet, Desktop)
+### Painel / Dashboard
+- Graficos de producao e receita (fl_chart)
+- Estatisticas: total de ovos, vendas, despesas, lucro
+- Resumo dos ultimos 7 e 30 dias
 
----
-
-## Technical Architecture
-
-```
-+------------------------------------------+
-|  Flutter App (Offline-First)             |
-|  +- Provider (State Management)          |
-|  +- Supabase Client (Auth + Data)        |
-|  +- Google ML Kit (OCR)                  |
-+------------------+-----------------------+
-                   | (Synchronization)
-                   v
-+------------------------------------------+
-|  Supabase (Free Backend)                 |
-|  +- PostgreSQL (Auth + Data)             |
-|  +- Row Level Security (RLS)             |
-|  +- Real-time subscriptions              |
-+------------------------------------------+
-```
-
-### Technology Stack
-
-| Component       | Technology      | Purpose                    |
-|-----------------|-----------------|----------------------------|
-| **Frontend**    | Flutter 3.x     | Cross-platform UI          |
-| **Language**    | Dart 3.x        | Application logic          |
-| **State Mgmt**  | Provider        | Reactive state management  |
-| **Backend**     | Supabase        | Auth, Database, Storage    |
-| **OCR**         | Google ML Kit   | Text recognition from images |
-| **Charts**      | fl_chart        | Data visualization         |
+### UX
+- Bilingue: Portugues e Ingles
+- Tema claro e escuro
+- Sidebar colapsavel com mini-rail no desktop
+- Drawer com seccoes: Producao, Financeiro, Gestao
+- Layout responsivo (desktop, tablet, mobile)
 
 ---
 
-## Quick Start
+## Stack Tecnica / Tech Stack
 
-### Prerequisites
+| Componente   | Tecnologia     | Funcao                           |
+|-------------|----------------|----------------------------------|
+| Frontend    | Flutter 3.x    | UI cross-platform (web-first)    |
+| Linguagem   | Dart 3.x       | Logica da aplicacao              |
+| Estado      | Provider        | Gestao de estado reativa         |
+| Backend     | Supabase        | Auth, Base de Dados, Storage     |
+| OCR         | Tesseract.js    | Reconhecimento de texto (web)    |
+| Graficos    | fl_chart        | Visualizacao de dados            |
+| Router      | go_router       | Navegacao declarativa            |
 
+---
+
+## Instalacao / Setup
+
+### Pre-requisitos
 - Flutter 3.x+
-- Android SDK 21+ or iOS 13+
-- Git
-- Editor: Android Studio or VS Code
+- Projeto Supabase (free tier)
 
-### Installation
+### Passos
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/your-username/hckegg-lite.git
+# 1. Clonar o repositorio
+git clone https://github.com/PinkOffense/hckegg_lite.git
 cd hckegg_lite
 
-# 2. Install dependencies
+# 2. Instalar dependencias
 flutter pub get
 
-# 3. Run the app
-flutter run
-```
+# 3. Configurar Supabase
+#    Copiar supabase/schema.sql para o SQL Editor do Supabase e executar
 
-### Running Tests
+# 4. Configurar variaveis de ambiente
+#    Adicionar SUPABASE_URL e SUPABASE_ANON_KEY no ficheiro de config
 
-```bash
-# Run all tests
-flutter test
-
-# Run with coverage
-flutter test --coverage
+# 5. Correr a app
+flutter run -d chrome
 ```
 
 ---
 
-## Project Structure
+## Base de Dados / Database
+
+Executar `supabase/schema.sql` no SQL Editor do Supabase. Cria todas as tabelas, indices, RLS e storage num unico script.
+
+| Tabela              | Descricao                              |
+|--------------------|----------------------------------------|
+| user_profiles      | Perfil do utilizador (nome, avatar)    |
+| daily_egg_records  | Registos diarios de producao de ovos   |
+| egg_sales          | Vendas com precos e dados de cliente   |
+| egg_reservations   | Reservas de ovos para levantamento     |
+| expenses           | Despesas operacionais por categoria    |
+| vet_records        | Registos veterinarios e de saude       |
+| feed_stocks        | Niveis de inventario de racao          |
+| feed_movements     | Historico de movimentos de stock       |
+
+**Storage:** Bucket `avatars` para fotos de perfil.
+
+**Seguranca:** Row Level Security (RLS) em todas as tabelas — cada utilizador so acede aos seus dados.
+
+---
+
+## Estrutura / Project Structure
 
 ```
-hckegg_lite/
-+-- lib/
-|   +-- main.dart                 # App entry point
-|   +-- app/                      # App configuration
-|   |   +-- app_widget.dart       # Main app widget
-|   |   +-- auth_gate.dart        # Authentication flow
-|   +-- core/                     # Core utilities
-|   |   +-- constants/            # App constants
-|   |   +-- di/                   # Dependency injection
-|   |   +-- models/               # Core models
-|   +-- data/                     # Data layer
-|   |   +-- datasources/remote/   # Remote data sources
-|   |   +-- repositories/         # Repository implementations
-|   +-- dialogs/                  # Dialog widgets
-|   +-- domain/                   # Business logic
-|   |   +-- repositories/         # Repository interfaces
-|   +-- l10n/                     # Localization (PT/EN)
-|   +-- models/                   # Data models
-|   +-- pages/                    # App screens
-|   +-- services/                 # Business services
-|   +-- state/                    # State management
-|   |   +-- providers/            # Provider classes
-|   +-- widgets/                  # Reusable widgets
-|       +-- charts/               # Chart widgets
-+-- test/                         # Unit and widget tests
-+-- pubspec.yaml                  # Dependencies
-+-- README.md                     # This file
+lib/
+├── app/                    # App config, auth gate, router
+├── core/                   # Constants, DI, API client
+├── data/datasources/       # Remote data sources (Supabase)
+├── dialogs/                # Dialog widgets (feed stock, etc.)
+├── features/               # Feature modules (feed, reservations, health)
+├── l10n/                   # Translations (PT/EN)
+├── models/                 # Data models
+├── pages/                  # App screens
+├── services/               # Profile, error handling
+├── state/providers/        # Provider classes
+└── widgets/                # Shared widgets (scaffold, drawer, charts)
 ```
 
 ---
 
-## Database Tables
+## Licenca / License
 
-| Table          | Description                              |
-|----------------|------------------------------------------|
-| egg_records    | Daily egg production records             |
-| egg_sales      | Sales transactions                       |
-| egg_reservations | Customer reservations                  |
-| expenses       | Standalone expenses (feed, maintenance)  |
-| vet_records    | Veterinary records and appointments      |
-| feed_stock     | Feed inventory tracking                  |
-| payments       | Payment transactions                     |
-| profiles       | User profiles                            |
+MIT License
 
 ---
 
-## Security
-
-- **Authentication**: Email/Password with Supabase Auth
-- **Authorization**: Row Level Security (RLS) on PostgreSQL
-- **Communication**: SSL/TLS encryption
-- **Privacy**: User data isolated by account
-
----
-
-## Localization
-
-The app supports two languages:
-- **Portuguese (PT)** - Default
-- **English (EN)**
-
-Language can be changed from the app header menu.
-
----
-
-## License
-
-This project is licensed under the **MIT License**. See `LICENSE` for details.
-
----
-
-## Support & Contact
-
-- **GitHub Issues**: Report bugs and suggestions
-- **Email**: support@hckegg.com
-
----
-
-**Built with care to modernize poultry farming.**
-
-*HCKEgg 2025 - Aviculture 360*
+*HCKEgg 2025-2026 — Aviculture 360*
