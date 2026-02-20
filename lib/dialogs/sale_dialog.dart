@@ -145,8 +145,8 @@ class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
             // Header
             DialogHeader(
               title: widget.existingSale != null
-                  ? (locale == 'pt' ? 'Editar Venda' : 'Edit Sale')
-                  : (locale == 'pt' ? 'Nova Venda' : 'New Sale'),
+                  ? t('edit_sale')
+                  : t('new_sale'),
               icon: Icons.point_of_sale,
               onClose: () => Navigator.of(context).pop(),
             ),
@@ -184,9 +184,9 @@ class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
                     TextFormField(
                       controller: _quantityController,
                       decoration: InputDecoration(
-                        labelText: '${locale == 'pt' ? 'Quantidade de Ovos' : 'Quantity of Eggs'} *',
+                        labelText: '${t('quantity_eggs')} *',
                         prefixIcon: const Icon(Icons.egg),
-                        suffixText: locale == 'pt' ? 'ovos' : 'eggs',
+                        suffixText: t('eggs_unit'),
                       ),
                       keyboardType: TextInputType.number,
                       enabled: !isLoading,
@@ -201,7 +201,7 @@ class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
                           child: TextFormField(
                             controller: _pricePerEggController,
                             decoration: InputDecoration(
-                              labelText: '${locale == 'pt' ? 'Preço/Ovo' : 'Price/Egg'} *',
+                              labelText: '${t('price_per_egg')} *',
                               prefixIcon: const Icon(Icons.euro),
                               suffixText: '€',
                             ),
@@ -215,7 +215,7 @@ class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
                           child: TextFormField(
                             controller: _pricePerDozenController,
                             decoration: InputDecoration(
-                              labelText: '${locale == 'pt' ? 'Preço/Dúzia' : 'Price/Dozen'} *',
+                              labelText: '${t('price_per_dozen')} *',
                               prefixIcon: const Icon(Icons.euro),
                               suffixText: '€',
                             ),
@@ -232,7 +232,7 @@ class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
                     TextFormField(
                       controller: _totalPriceController,
                       decoration: InputDecoration(
-                        labelText: locale == 'pt' ? 'Preço Total' : 'Total Price',
+                        labelText: t('total_price'),
                         prefixIcon: const Icon(Icons.euro, color: Colors.green),
                         suffixText: '€',
                         filled: true,
@@ -257,9 +257,7 @@ class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            locale == 'pt'
-                                ? 'Calculado automaticamente: (dúzias × preço/dúzia) + (ovos individuais × preço/ovo)'
-                                : 'Calculated automatically: (dozens × price/dozen) + (individual eggs × price/egg)',
+                            t('price_calc_explanation'),
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade600,
@@ -273,7 +271,7 @@ class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
 
                     // Customer Information Section
                     DialogSectionHeader(
-                      title: locale == 'pt' ? 'Informação do Cliente (opcional)' : 'Customer Information (optional)',
+                      title: t('customer_info_optional'),
                       icon: Icons.person,
                     ),
                     const SizedBox(height: 16),
@@ -282,7 +280,7 @@ class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
                     TextFormField(
                       controller: _customerNameController,
                       decoration: InputDecoration(
-                        labelText: locale == 'pt' ? 'Nome do Cliente' : 'Customer Name',
+                        labelText: t('customer_name'),
                         prefixIcon: const Icon(Icons.person_outline),
                       ),
                       enabled: !isLoading,
@@ -307,7 +305,7 @@ class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
                     TextFormField(
                       controller: _customerPhoneController,
                       decoration: InputDecoration(
-                        labelText: locale == 'pt' ? 'Telefone' : 'Phone',
+                        labelText: t('phone'),
                         prefixIcon: const Icon(Icons.phone_outlined),
                       ),
                       keyboardType: TextInputType.phone,
@@ -332,7 +330,7 @@ class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
 
                     // Payment Section
                     DialogSectionHeader(
-                      title: locale == 'pt' ? 'Pagamento' : 'Payment',
+                      title: t('payment_section'),
                       icon: Icons.payment,
                     ),
                     const SizedBox(height: 16),
@@ -341,11 +339,9 @@ class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
                     DropdownButtonFormField<PaymentStatus>(
                       value: _paymentStatus,
                       decoration: InputDecoration(
-                        labelText: locale == 'pt' ? 'Estado do Pagamento' : 'Payment Status',
+                        labelText: t('payment_status_label'),
                         prefixIcon: const Icon(Icons.account_balance_wallet),
-                        helperText: locale == 'pt'
-                            ? 'Pago = cliente levou e pagou, Pendente = cliente levou mas não pagou'
-                            : 'Paid = customer took and paid, Pending = customer took but didn\'t pay',
+                        helperText: t('payment_helper_pending'),
                       ),
                       items: PaymentStatus.values.map((status) {
                         return DropdownMenuItem(

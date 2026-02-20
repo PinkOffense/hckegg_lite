@@ -132,7 +132,7 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao guardar: ${e.toString()}'),
+            content: Text(Translations.of(Provider.of<LocaleProvider>(context, listen: false).code, 'error_saving', params: {'e': e.toString()})),
             backgroundColor: Colors.red,
           ),
         );
@@ -283,11 +283,11 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
+                            return t('required_field');
                           }
                           final num = int.tryParse(value);
                           if (num == null || num < 1) {
-                            return locale == 'pt' ? 'Mínimo 1' : 'Minimum 1';
+                            return t('minimum_1');
                           }
                           return null;
                         },
@@ -351,9 +351,7 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
                   controller: _descriptionController,
                   decoration: InputDecoration(
                     labelText: '${t('diagnosis')} *',
-                    hintText: locale == 'pt'
-                        ? 'Ex: Vacinação anual, sintomas de...'
-                        : 'Ex: Annual vaccination, symptoms of...',
+                    hintText: t('diagnosis_hint'),
                     prefixIcon: const Icon(Icons.description),
                     alignLabelWithHint: true,
                   ),
@@ -361,7 +359,7 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
                   maxLength: 300,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
+                      return t('required_field');
                     }
                     return null;
                   },
@@ -373,7 +371,7 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
                   controller: _medicationController,
                   decoration: InputDecoration(
                     labelText: '${t('medication_used')} (${t('optional')})',
-                    hintText: locale == 'pt' ? 'Nome do medicamento' : 'Medication name',
+                    hintText: t('medication_name'),
                     prefixIcon: const Icon(Icons.medication),
                   ),
                   maxLength: 150,
@@ -417,7 +415,7 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
                     child: Text(
                       _nextActionDate != null
                           ? _formatDate(_nextActionDate!, locale)
-                          : (locale == 'pt' ? 'Sem ação agendada' : 'No action scheduled'),
+                          : t('no_action_scheduled'),
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: _nextActionDate == null
                             ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5)
@@ -433,9 +431,7 @@ class _VetRecordDialogState extends State<VetRecordDialog> {
                   controller: _notesController,
                   decoration: InputDecoration(
                     labelText: '${t('notes')} (${t('optional')})',
-                    hintText: locale == 'pt'
-                        ? 'Observações adicionais...'
-                        : 'Additional observations...',
+                    hintText: t('additional_observations'),
                     prefixIcon: const Icon(Icons.note),
                     alignLabelWithHint: true,
                   ),

@@ -6,6 +6,7 @@ import '../core/date_utils.dart';
 import '../models/vet_record.dart';
 import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
+import '../l10n/translations.dart';
 
 class ScheduleVetVisitDialog extends StatefulWidget {
   final DateTime? initialDate;
@@ -90,9 +91,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
     // Build description with time and vet info
     String description;
     if (notes.isEmpty) {
-      description = locale == 'pt'
-          ? '${_selectedType.displayName(locale)} agendado'
-          : 'Scheduled ${_selectedType.displayName(locale).toLowerCase()}';
+      description = Translations.of(locale, 'scheduled_type', params: {'type': _selectedType.displayName(locale)});
     } else {
       description = notes;
     }
@@ -102,10 +101,10 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
     final List<String> notesParts = [];
     if (_selectedTime != null) {
       final timeStr = '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
-      notesParts.add(locale == 'pt' ? 'Hora: $timeStr' : 'Time: $timeStr');
+      notesParts.add(Translations.of(locale, 'time_with_value', params: {'value': timeStr}));
     }
     if (vetName.isNotEmpty) {
-      notesParts.add(locale == 'pt' ? 'Veterinário: $vetName' : 'Vet: $vetName');
+      notesParts.add(Translations.of(locale, 'vet_with_name', params: {'name': vetName}));
     }
     if (notesParts.isNotEmpty) {
       fullNotes = notesParts.join(' | ');
@@ -133,7 +132,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(locale == 'pt' ? 'Erro ao guardar: $e' : 'Error saving: $e'),
+            content: Text(Translations.of(locale, 'error_saving', params: {'e': e.toString()})),
             backgroundColor: Colors.red,
           ),
         );
@@ -205,6 +204,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final locale = Provider.of<LocaleProvider>(context).code;
+    final t = (String k) => Translations.of(locale, k);
 
     return Dialog(
       child: Container(
@@ -235,7 +235,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
-                        locale == 'pt' ? 'Agendar Visita' : 'Schedule Visit',
+                        t('schedule_visit_title'),
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -244,7 +244,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                     IconButton(
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.close),
-                      tooltip: locale == 'pt' ? 'Fechar' : 'Close',
+                      tooltip: t('close'),
                     ),
                   ],
                 ),
@@ -252,7 +252,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
 
                 // Appointment Type Selection
                 Text(
-                  locale == 'pt' ? 'Tipo de Consulta' : 'Appointment Type',
+                  t('appointment_type'),
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -317,7 +317,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      locale == 'pt' ? 'Data' : 'Date',
+                                      t('date_label'),
                                       style: theme.textTheme.bodySmall?.copyWith(
                                         color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                                       ),
@@ -362,7 +362,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      locale == 'pt' ? 'Hora' : 'Time',
+                                      t('time_label'),
                                       style: theme.textTheme.bodySmall?.copyWith(
                                         color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                                       ),
@@ -371,7 +371,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                                     Text(
                                       _selectedTime != null
                                           ? _formatTime(_selectedTime!, locale)
-                                          : (locale == 'pt' ? 'Definir' : 'Set'),
+                                          : t('set_time'),
                                       style: theme.textTheme.bodyMedium?.copyWith(
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -392,8 +392,8 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                 TextFormField(
                   controller: _vetNameController,
                   decoration: InputDecoration(
-                    labelText: locale == 'pt' ? 'Veterinário / Clínica' : 'Vet / Clinic',
-                    hintText: locale == 'pt' ? 'Ex: Dr. Silva, Clínica Animal' : 'Ex: Dr. Smith, Animal Clinic',
+                    labelText: t('vet_clinic'),
+                    hintText: t('vet_clinic_hint'),
                     prefixIcon: const Icon(Icons.local_hospital),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -411,7 +411,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                       child: TextFormField(
                         controller: _hensController,
                         decoration: InputDecoration(
-                          labelText: locale == 'pt' ? 'Galinhas' : 'Hens',
+                          labelText: t('hens_label'),
                           prefixIcon: const Icon(Icons.egg_alt),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -421,11 +421,11 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return locale == 'pt' ? 'Obrigatório' : 'Required';
+                            return t('required_field');
                           }
                           final n = int.tryParse(value);
                           if (n == null || n < 1) {
-                            return locale == 'pt' ? 'Mínimo 1' : 'Min 1';
+                            return t('min_1');
                           }
                           return null;
                         },
@@ -437,7 +437,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                       child: TextFormField(
                         controller: _costController,
                         decoration: InputDecoration(
-                          labelText: locale == 'pt' ? 'Custo (€)' : 'Cost (€)',
+                          labelText: t('cost_label'),
                           prefixIcon: const Icon(Icons.euro),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -457,10 +457,8 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                 TextFormField(
                   controller: _notesController,
                   decoration: InputDecoration(
-                    labelText: locale == 'pt' ? 'Motivo / Notas' : 'Reason / Notes',
-                    hintText: locale == 'pt'
-                        ? 'Ex: Vacinação anual, checkup de rotina...'
-                        : 'Ex: Annual vaccination, routine checkup...',
+                    labelText: t('reason_notes'),
+                    hintText: t('reason_notes_hint'),
                     prefixIcon: const Icon(Icons.notes),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -478,7 +476,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                   children: [
                     TextButton(
                       onPressed: _isSaving ? null : () => Navigator.pop(context),
-                      child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+                      child: Text(t('cancel')),
                     ),
                     const SizedBox(width: 12),
                     FilledButton.icon(
@@ -493,7 +491,7 @@ class _ScheduleVetVisitDialogState extends State<ScheduleVetVisitDialog> {
                               ),
                             )
                           : const Icon(Icons.check),
-                      label: Text(locale == 'pt' ? 'Agendar' : 'Schedule'),
+                      label: Text(t('schedule_button')),
                     ),
                   ],
                 ),

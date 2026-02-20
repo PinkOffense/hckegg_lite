@@ -51,10 +51,10 @@ class _EggListPageState extends State<EggListPage> {
     final theme = Theme.of(context);
 
     return AppScaffold(
-      title: locale == 'pt' ? 'Registos Diários' : 'Daily Records',
+      title: t('daily_records'),
       additionalActions: [
         IconButton(
-          tooltip: locale == 'pt' ? 'Exportar CSV' : 'Export CSV',
+          tooltip: t('export_csv'),
           icon: const Icon(Icons.download),
           onPressed: () {
             final records = context.read<EggProvider>().records;
@@ -88,14 +88,14 @@ class _EggListPageState extends State<EggListPage> {
                   Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
                   const SizedBox(height: 16),
                   Text(
-                    locale == 'pt' ? 'Erro ao carregar registos' : 'Error loading records',
+                    t('error_loading_records'),
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(
                     onPressed: () => eggProvider.loadRecords(),
                     icon: const Icon(Icons.refresh),
-                    label: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
+                    label: Text(t('try_again')),
                   ),
                 ],
               ),
@@ -104,11 +104,9 @@ class _EggListPageState extends State<EggListPage> {
 
           if (allRecords.isEmpty) {
             return ChickenEmptyState(
-              title: locale == 'pt' ? 'Sem Registos' : 'No Records Yet',
-              message: locale == 'pt'
-                  ? 'Registe a sua recolha diária de ovos'
-                  : 'Track your daily egg collection',
-              actionLabel: locale == 'pt' ? 'Adicionar Registo' : 'Add Record',
+              title: t('no_records_yet'),
+              message: t('no_records_message'),
+              actionLabel: t('add_record'),
               onAction: () => showDialog(
                 context: context,
                 builder: (_) => const DailyRecordDialog(),
@@ -121,7 +119,7 @@ class _EggListPageState extends State<EggListPage> {
               // Search Bar
               AppSearchBar(
                 controller: _searchController,
-                hintText: locale == 'pt' ? 'Pesquisar por data ou notas...' : 'Search by date or notes...',
+                hintText: t('search_date_notes'),
                 hasContent: _searchQuery.isNotEmpty,
                 onChanged: _onSearchChanged,
                 onClear: () {
@@ -185,19 +183,19 @@ class _EggListPageState extends State<EggListPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _SummaryItem(
-                      label: locale == 'pt' ? 'Total' : 'Total',
+                      label: t('total'),
                       value: '${eggProvider.totalEggsCollected}',
                       icon: Icons.egg,
                       color: theme.colorScheme.primary,
                     ),
                     _SummaryItem(
-                      label: locale == 'pt' ? 'Consumidos' : 'Consumed',
+                      label: t('consumed'),
                       value: '${eggProvider.totalEggsConsumed}',
                       icon: Icons.restaurant,
                       color: Colors.orange,
                     ),
                     _SummaryItem(
-                      label: locale == 'pt' ? 'Restantes' : 'Remaining',
+                      label: t('remaining'),
                       value: '${eggProvider.totalEggsCollected - eggProvider.totalEggsConsumed}',
                       icon: Icons.inventory,
                       color: Colors.green,
@@ -222,12 +220,11 @@ class _EggListPageState extends State<EggListPage> {
   }
 
   Future<void> _confirmDelete(BuildContext context, String locale, EggProvider eggProvider, DailyEggRecord record) async {
+    final t = (String k) => Translations.of(locale, k);
     final confirmed = await DeleteConfirmationDialog.show(
       context: context,
-      title: locale == 'pt' ? 'Apagar Registo' : 'Delete Record',
-      message: locale == 'pt'
-          ? 'Tens a certeza que queres apagar este registo?'
-          : 'Are you sure you want to delete this record?',
+      title: t('delete_record'),
+      message: t('delete_record_confirm'),
       itemName: AppDateUtils.formatFullFromString(record.date, locale: locale),
       locale: locale,
     );
@@ -237,7 +234,7 @@ class _EggListPageState extends State<EggListPage> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(locale == 'pt' ? 'Registo apagado' : 'Record deleted'),
+            content: Text(t('record_deleted')),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -263,6 +260,7 @@ class _RecordCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = (String k) => Translations.of(locale, k);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -316,7 +314,7 @@ class _RecordCard extends StatelessWidget {
                     icon: const Icon(Icons.delete_outline, size: 20),
                     onPressed: onDelete,
                     color: Colors.red,
-                    tooltip: locale == 'pt' ? 'Apagar registo' : 'Delete record',
+                    tooltip: t('delete_record_tooltip'),
                   ),
                 ],
               ),
@@ -330,13 +328,13 @@ class _RecordCard extends StatelessWidget {
                   if (record.eggsConsumed > 0)
                     _StatChip(
                       icon: Icons.restaurant,
-                      label: '${record.eggsConsumed} ${locale == 'pt' ? 'consumidos' : 'eaten'}',
+                      label: '${record.eggsConsumed} ${t('eaten')}',
                       color: theme.colorScheme.tertiary,
                     ),
                   if (record.henCount != null)
                     _StatChip(
                       icon: Icons.flutter_dash,
-                      label: '${record.henCount} ${locale == 'pt' ? 'galinhas' : 'hens'}',
+                      label: '${record.henCount} ${t('hens_unit')}',
                       color: Colors.orange,
                     ),
                 ],
