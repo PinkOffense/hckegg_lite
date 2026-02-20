@@ -26,22 +26,32 @@ class FarmProvider extends ChangeNotifier {
   bool get isOwnerOfActiveFarm => _activeFarm?.isOwner ?? false;
 
   /// Initialize farm provider - load farms and migrate if needed
+  /// Returns silently if the farm feature is not yet set up in the backend
   Future<void> initialize() async {
-    await loadFarms();
-
-    // If no farms, migrate existing data to a personal farm
-    if (_farms.isEmpty) {
-      await migrateToFarm();
+    try {
       await loadFarms();
-    }
 
-    // Set active farm to first farm if not set
-    if (_activeFarm == null && _farms.isNotEmpty) {
-      await setActiveFarm(_farms.first.id);
+      // If no farms, try to migrate existing data to a personal farm
+      if (_farms.isEmpty && !_migrationFailed) {
+        await migrateToFarm();
+        await loadFarms();
+      }
+
+      // Set active farm to first farm if not set
+      if (_activeFarm == null && _farms.isNotEmpty) {
+        _activeFarm = _farms.first;
+        notifyListeners();
+      }
+    } catch (e) {
+      // Farm feature may not be set up yet - this is OK
+      debugPrint('FarmProvider.initialize: $e');
     }
   }
 
+  bool _migrationFailed = false;
+
   /// Load all farms the user belongs to
+  /// Fails silently if RPC functions don't exist (migration not applied)
   Future<void> loadFarms() async {
     _setLoading(true);
     _clearError();
@@ -65,7 +75,11 @@ class FarmProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      _setError('Failed to load farms: $e');
+      // RPC function may not exist yet - don't show error to user
+      debugPrint('FarmProvider.loadFarms: $e');
+      _farms = [];
+      _activeFarm = null;
+      notifyListeners();
     } finally {
       _setLoading(false);
     }
@@ -357,7 +371,8 @@ class FarmProvider extends ChangeNotifier {
   }
 
   /// Migrate existing user data to a personal farm
-  Future<String> migrateToFarm() async {
+  /// Returns null if migration fails (e.g., RPC doesn't exist)
+  Future<String?> migrateToFarm() async {
     _setLoading(true);
     _clearError();
 
@@ -365,8 +380,10 @@ class FarmProvider extends ChangeNotifier {
       final response = await _supabase.rpc('migrate_user_to_farm');
       return response as String;
     } catch (e) {
-      _setError('Failed to migrate data: $e');
-      rethrow;
+      // Migration may fail if RPC doesn't exist - this is OK
+      debugPrint('FarmProvider.migrateToFarm: $e');
+      _migrationFailed = true;
+      return null;
     } finally {
       _setLoading(false);
     }

@@ -737,7 +737,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     subtitle: activeFarm != null
                         ? Text(
-                            '${activeFarm.memberCount} ${Translations.of(locale, activeFarm.memberCount == 1 ? 'member' : 'members')} • ${activeFarm.isOwner ? Translations.of(locale, 'role_owner') : Translations.of(locale, 'role_editor')}',
+                            activeFarm.memberCount != null
+                                ? '${activeFarm.memberCount} ${Translations.of(locale, activeFarm.memberCount == 1 ? 'member' : 'members')} • ${activeFarm.isOwner ? Translations.of(locale, 'role_owner') : Translations.of(locale, 'role_editor')}'
+                                : activeFarm.isOwner ? Translations.of(locale, 'role_owner') : Translations.of(locale, 'role_editor'),
                           )
                         : Text(Translations.of(locale, 'tap_to_setup')),
                     trailing: const Icon(Icons.chevron_right),
