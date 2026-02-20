@@ -18,13 +18,20 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
   @override
   void initState() {
     super.initState();
-    // Load farm data when page opens
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Initialize and load farm data when page opens
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final farmProvider = context.read<FarmProvider>();
+
+      // Initialize if not yet done (loads farms)
+      if (!farmProvider.hasFarms && !farmProvider.isLoading) {
+        await farmProvider.initialize();
+      }
+
+      // Load members if we have an active farm
       if (farmProvider.activeFarm != null) {
-        farmProvider.loadFarmMembers();
+        await farmProvider.loadFarmMembers();
         if (farmProvider.activeFarm!.isOwner) {
-          farmProvider.loadPendingInvitations();
+          await farmProvider.loadPendingInvitations();
         }
       }
     });
