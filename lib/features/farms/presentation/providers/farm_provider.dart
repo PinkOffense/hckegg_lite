@@ -441,22 +441,35 @@ class FarmProvider extends ChangeNotifier {
   }
 
   /// Get pending invitations for the current user (to accept)
+  /// Uses RPC function for case-insensitive email matching
   Future<List<FarmInvitation>> getMyPendingInvitations() async {
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) return [];
 
-      final response = await _supabase
-          .from('farm_invitations')
-          .select()
-          .eq('email', user.email!)
-          .isFilter('accepted_at', null)
-          .gt('expires_at', DateTime.now().toIso8601String());
-
+      // Use RPC function for case-insensitive email matching
+      final response = await _supabase.rpc('get_my_pending_invitations');
       final data = response as List<dynamic>;
       return data.map((json) => FarmInvitation.fromJson(json)).toList();
     } catch (e) {
-      return [];
+      // Fallback to direct query if RPC doesn't exist
+      debugPrint('FarmProvider.getMyPendingInvitations RPC failed: $e');
+      try {
+        final user = _supabase.auth.currentUser;
+        if (user?.email == null) return [];
+
+        final response = await _supabase
+            .from('farm_invitations')
+            .select()
+            .ilike('email', user!.email!)
+            .isFilter('accepted_at', null)
+            .gt('expires_at', DateTime.now().toIso8601String());
+
+        final data = response as List<dynamic>;
+        return data.map((json) => FarmInvitation.fromJson(json)).toList();
+      } catch (_) {
+        return [];
+      }
     }
   }
 
