@@ -251,7 +251,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> with DialogStateM
                       controller: _notesController,
                       decoration: InputDecoration(
                         labelText: '${t('notes')} (${t('optional')})',
-                        hintText: t('notes_hint'),
+                        hintText: t('notes_hint_daily'),
                         prefixIcon: const Icon(Icons.note),
                         alignLabelWithHint: true,
                       ),
