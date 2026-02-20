@@ -9,3 +9,4 @@ export '../../features/health/presentation/providers/vet_provider.dart';
 export '../../features/feed_stock/presentation/providers/feed_stock_provider.dart';
 export '../../features/reservations/presentation/providers/reservation_provider.dart';
 export '../../features/analytics/presentation/providers/analytics_provider.dart';
+export '../../features/farms/presentation/providers/farm_provider.dart';
