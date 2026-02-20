@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,6 +14,8 @@ import '../services/profile_service.dart';
 import '../services/notification_service.dart';
 import '../services/account_deletion_service.dart';
 import '../state/providers/providers.dart';
+import '../features/farms/presentation/providers/farm_provider.dart';
+import '../app/app_router.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -699,6 +702,49 @@ class _SettingsPageState extends State<SettingsPage> {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _editDisplayName(locale),
               ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Farm section
+            Text(
+              Translations.of(locale, 'farm_section'),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Farm management card
+            Consumer<FarmProvider>(
+              builder: (context, farmProvider, _) {
+                final activeFarm = farmProvider.activeFarm;
+                return Card(
+                  child: ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.agriculture,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    title: Text(
+                      activeFarm?.name ?? Translations.of(locale, 'no_farm'),
+                    ),
+                    subtitle: activeFarm != null
+                        ? Text(
+                            '${activeFarm.memberCount} ${Translations.of(locale, activeFarm.memberCount == 1 ? 'member' : 'members')} • ${activeFarm.isOwner ? Translations.of(locale, 'role_owner') : Translations.of(locale, 'role_editor')}',
+                          )
+                        : Text(Translations.of(locale, 'tap_to_setup')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.go(AppRoutes.farmSettings),
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 24),

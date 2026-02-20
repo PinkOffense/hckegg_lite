@@ -18,6 +18,7 @@ import '../pages/settings_page.dart';
 import '../pages/hen_health_page.dart';
 import '../pages/vet_calendar_page.dart';
 import '../pages/feed_stock_page.dart';
+import '../features/farms/presentation/pages/farm_settings_page.dart';
 import 'auth_gate.dart';
 
 /// Route path constants
@@ -33,6 +34,7 @@ class AppRoutes {
   static const String health = '/health';
   static const String vetCalendar = '/vet-calendar';
   static const String feedStock = '/feed-stock';
+  static const String farmSettings = '/farm-settings';
 }
 
 /// Notifier that triggers GoRouter refresh on auth state changes
@@ -112,6 +114,10 @@ class AppRouter {
           GoRoute(
             path: AppRoutes.feedStock,
             builder: (context, state) => const FeedStockPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.farmSettings,
+            builder: (context, state) => const FarmSettingsPage(),
           ),
         ],
       ),

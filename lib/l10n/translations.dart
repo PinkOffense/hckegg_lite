@@ -612,6 +612,11 @@ class Translations {
       'expires_in': 'Expires in {days} days',
       'joined_on': 'Joined {date}',
       'member_count': '{count} members',
+      'farm_section': 'Farm',
+      'no_farm': 'No farm',
+      'tap_to_setup': 'Tap to set up',
+      'member': 'member',
+      'members': 'members',
     },
     'pt': {
       'app_title': 'HCKEgg 360',
@@ -1223,6 +1228,11 @@ class Translations {
       'expires_in': 'Expira em {days} dias',
       'joined_on': 'Entrou em {date}',
       'member_count': '{count} membros',
+      'farm_section': 'Capoeiro',
+      'no_farm': 'Sem capoeiro',
+      'tap_to_setup': 'Toque para configurar',
+      'member': 'membro',
+      'members': 'membros',
     }
   };
 
