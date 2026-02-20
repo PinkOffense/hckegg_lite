@@ -49,11 +49,19 @@ class RevenueVsExpensesChart extends StatelessWidget {
     final maxY = maxRevenue * 1.2;
     final adjustedMaxY = maxY > 0 ? maxY : 10.0;
 
-    return SizedBox(
-      height: 250,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: BarChart(
+    // Compute totals for accessibility
+    final totalRevenue = displaySales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+    final semanticLabel = locale == 'pt'
+        ? 'Gráfico de vendas: ${displaySales.length} vendas, total €${totalRevenue.toStringAsFixed(2)}'
+        : 'Sales chart: ${displaySales.length} sales, total €${totalRevenue.toStringAsFixed(2)}';
+
+    return Semantics(
+      label: semanticLabel,
+      child: SizedBox(
+        height: 250,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: BarChart(
           BarChartData(
             alignment: BarChartAlignment.spaceAround,
             maxY: adjustedMaxY,
@@ -160,6 +168,7 @@ class RevenueVsExpensesChart extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

@@ -350,7 +350,7 @@ class _SaleDialogState extends State<SaleDialog> with DialogStateMixin {
                       items: PaymentStatus.values.map((status) {
                         return DropdownMenuItem(
                           value: status,
-                          child: Text(status.displayName),
+                          child: Text(status.displayName(locale)),
                         );
                       }).toList(),
                       onChanged: isLoading ? null : (value) {

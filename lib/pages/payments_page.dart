@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/providers/providers.dart';
@@ -19,9 +20,18 @@ class PaymentsPage extends StatefulWidget {
 class _PaymentsPageState extends State<PaymentsPage> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  Timer? _debounce;
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _searchQuery = value);
+    });
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -77,9 +87,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                   controller: _searchController,
                   hintText: locale == 'pt' ? 'Pesquisar por cliente...' : 'Search by customer...',
                   hasContent: _searchQuery.isNotEmpty,
-                  onChanged: (value) {
-                    setState(() => _searchQuery = value);
-                  },
+                  onChanged: _onSearchChanged,
                   onClear: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
@@ -578,7 +586,7 @@ class _PaymentCard extends StatelessWidget {
                       border: Border.all(color: _getStatusColor(), width: 1.5),
                     ),
                     child: Text(
-                      sale.paymentStatus.displayName,
+                      sale.paymentStatus.displayName(locale),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: _getStatusColor(),
                         fontWeight: FontWeight.bold,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/date_utils.dart';
@@ -26,9 +27,18 @@ class _EggListPageState extends State<EggListPage> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   String _searchQuery = '';
+  Timer? _debounce;
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _searchQuery = value);
+    });
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -113,9 +123,7 @@ class _EggListPageState extends State<EggListPage> {
                 controller: _searchController,
                 hintText: locale == 'pt' ? 'Pesquisar por data ou notas...' : 'Search by date or notes...',
                 hasContent: _searchQuery.isNotEmpty,
-                onChanged: (value) {
-                  setState(() => _searchQuery = value);
-                },
+                onChanged: _onSearchChanged,
                 onClear: () {
                   _searchController.clear();
                   setState(() => _searchQuery = '');

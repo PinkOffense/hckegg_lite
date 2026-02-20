@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/date_utils.dart';
@@ -27,9 +28,18 @@ class _SalesPageState extends State<SalesPage> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   String _searchQuery = '';
+  Timer? _debounce;
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _searchQuery = value);
+    });
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -118,9 +128,7 @@ class _SalesPageState extends State<SalesPage> {
                         ? 'Pesquisar por cliente, notas...'
                         : 'Search by customer, notes...',
                     hasContent: _searchQuery.isNotEmpty,
-                    onChanged: (value) {
-                      setState(() => _searchQuery = value);
-                    },
+                    onChanged: _onSearchChanged,
                   ),
 
                 Padding(

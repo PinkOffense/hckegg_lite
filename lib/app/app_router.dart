@@ -2,8 +2,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../l10n/locale_provider.dart';
+import '../l10n/translations.dart';
 import '../pages/login_page.dart';
 import '../pages/dashboard_page.dart';
 import '../pages/egg_list_page.dart';
@@ -127,8 +130,11 @@ class AppRouter {
 
   /// Error page for unknown routes
   static Widget _errorPage(BuildContext context, GoRouterState state) {
+    final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    final t = (String k) => Translations.of(locale, k);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Error')),
+      appBar: AppBar(title: Text(t('error_title'))),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -136,7 +142,7 @@ class AppRouter {
             const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
             Text(
-              'Route not found: ${state.uri.path}',
+              '${t('route_not_found')}: ${state.uri.path}',
               style: const TextStyle(fontSize: 18),
               textAlign: TextAlign.center,
             ),
@@ -144,7 +150,7 @@ class AppRouter {
             ElevatedButton.icon(
               onPressed: () => context.go(AppRoutes.home),
               icon: const Icon(Icons.home),
-              label: const Text('Go to Home'),
+              label: Text(t('go_to_home')),
             ),
           ],
         ),
