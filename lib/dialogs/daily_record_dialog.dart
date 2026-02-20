@@ -196,7 +196,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> with DialogStateM
                       controller: _collectedController,
                       decoration: InputDecoration(
                         labelText: '${t('eggs_collected')} *',
-                        hintText: locale == 'pt' ? 'Quantos ovos hoje?' : 'How many eggs today?',
+                        hintText: t('how_many_eggs'),
                         prefixIcon: const Icon(Icons.egg),
                       ),
                       keyboardType: TextInputType.number,
@@ -251,7 +251,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> with DialogStateM
                       controller: _notesController,
                       decoration: InputDecoration(
                         labelText: '${t('notes')} (${t('optional')})',
-                        hintText: locale == 'pt' ? 'Clima, comportamento das galinhas, etc.' : 'Weather, hen behavior, etc.',
+                        hintText: t('notes_hint_daily'),
                         prefixIcon: const Icon(Icons.note),
                         alignLabelWithHint: true,
                       ),
@@ -279,7 +279,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> with DialogStateM
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  locale == 'pt' ? 'Resumo Rápido' : 'Quick Summary',
+                                  t('quick_summary'),
                                   style: theme.textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -288,15 +288,7 @@ class _DailyRecordDialogState extends State<DailyRecordDialog> with DialogStateM
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              locale == 'pt'
-                                  ? '• Apenas "${t('eggs_collected')}" é obrigatório\n'
-                                    '• Todos os outros campos são opcionais\n'
-                                    '• Use a página de vendas para registar vendas de ovos\n'
-                                    '• As notas ajudam a lembrar detalhes importantes'
-                                  : '• Only "${t('eggs_collected')}" is required\n'
-                                    '• All other fields are optional\n'
-                                    '• Use the sales page to record egg sales\n'
-                                    '• Notes help you remember important details',
+                              Translations.of(locale, 'quick_summary_info', params: {'field': t('eggs_collected')}),
                               style: theme.textTheme.bodySmall,
                             ),
                           ],

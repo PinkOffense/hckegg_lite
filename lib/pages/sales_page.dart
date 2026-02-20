@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/date_utils.dart';
@@ -27,9 +28,18 @@ class _SalesPageState extends State<SalesPage> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   String _searchQuery = '';
+  Timer? _debounce;
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _searchQuery = value);
+    });
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -42,10 +52,10 @@ class _SalesPageState extends State<SalesPage> {
     final theme = Theme.of(context);
 
     return AppScaffold(
-      title: locale == 'pt' ? 'Vendas de Ovos' : 'Egg Sales',
+      title: t('egg_sales'),
       additionalActions: [
         IconButton(
-          tooltip: locale == 'pt' ? 'Exportar CSV' : 'Export CSV',
+          tooltip: t('export_csv'),
           icon: const Icon(Icons.download),
           onPressed: () {
             final sales = context.read<SaleProvider>().sales;
@@ -79,7 +89,7 @@ class _SalesPageState extends State<SalesPage> {
                   Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
                   const SizedBox(height: 16),
                   Text(
-                    locale == 'pt' ? 'Erro ao carregar vendas' : 'Error loading sales',
+                    t('error_loading_sales'),
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
@@ -88,7 +98,7 @@ class _SalesPageState extends State<SalesPage> {
                   FilledButton.icon(
                     onPressed: () => saleProvider.loadSales(),
                     icon: const Icon(Icons.refresh),
-                    label: Text(locale == 'pt' ? 'Tentar novamente' : 'Try again'),
+                    label: Text(t('try_again')),
                   ),
                 ],
               ),
@@ -114,13 +124,9 @@ class _SalesPageState extends State<SalesPage> {
                 if (allSales.isNotEmpty)
                   AppSearchBar(
                     controller: _searchController,
-                    hintText: locale == 'pt'
-                        ? 'Pesquisar por cliente, notas...'
-                        : 'Search by customer, notes...',
+                    hintText: t('search_sales'),
                     hasContent: _searchQuery.isNotEmpty,
-                    onChanged: (value) {
-                      setState(() => _searchQuery = value);
-                    },
+                    onChanged: _onSearchChanged,
                   ),
 
                 Padding(
@@ -156,7 +162,7 @@ class _SalesPageState extends State<SalesPage> {
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
-                                    locale == 'pt' ? 'Estatísticas de Vendas' : 'Sales Statistics',
+                                    t('sales_statistics'),
                                     style: theme.textTheme.titleLarge?.copyWith(
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -168,13 +174,13 @@ class _SalesPageState extends State<SalesPage> {
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
                                   _SalesStat(
-                                    label: locale == 'pt' ? 'Total Vendas' : 'Total Sales',
+                                    label: t('total_sales'),
                                     value: totalSales.toString(),
                                     color: Colors.blue,
                                     icon: Icons.receipt_long,
                                   ),
                                   _SalesStat(
-                                    label: locale == 'pt' ? 'Ovos Vendidos' : 'Eggs Sold',
+                                    label: t('eggs_sold'),
                                     value: totalQuantity.toString(),
                                     color: Colors.orange,
                                     icon: Icons.egg,
@@ -186,13 +192,13 @@ class _SalesPageState extends State<SalesPage> {
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
                                   _SalesStat(
-                                    label: locale == 'pt' ? 'Receita Total' : 'Total Revenue',
+                                    label: t('total_revenue'),
                                     value: '€${totalRevenue.toStringAsFixed(2)}',
                                     color: Colors.green,
                                     icon: Icons.euro,
                                   ),
                                   _SalesStat(
-                                    label: locale == 'pt' ? 'Preço Médio' : 'Average Price',
+                                    label: t('average_price'),
                                     value: '€${avgPrice.toStringAsFixed(2)}',
                                     color: Colors.purple,
                                     icon: Icons.trending_up,
@@ -210,14 +216,14 @@ class _SalesPageState extends State<SalesPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            locale == 'pt' ? 'Histórico de Vendas' : 'Sales History',
+                            t('sales_history'),
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           if (_searchQuery.isNotEmpty)
                             Text(
-                              '${sales.length} ${locale == 'pt' ? 'resultado(s)' : 'result(s)'}',
+                              '${sales.length} ${t('results')}',
                               style: theme.textTheme.bodySmall,
                             ),
                         ],
@@ -227,11 +233,9 @@ class _SalesPageState extends State<SalesPage> {
                       // Sales List
                       if (allSales.isEmpty)
                         ChickenEmptyState(
-                          title: locale == 'pt' ? 'Nenhuma venda registada' : 'No sales recorded',
-                          message: locale == 'pt'
-                              ? 'Registe as vendas de ovos e acompanhe as suas receitas'
-                              : 'Record egg sales and track your revenue',
-                          actionLabel: locale == 'pt' ? 'Adicionar Venda' : 'Add Sale',
+                          title: t('no_sales'),
+                          message: t('no_sales_message'),
+                          actionLabel: t('add_sale'),
                           onAction: () => _showSaleDialog(context, null),
                         )
                       else if (sales.isEmpty && _searchQuery.isNotEmpty)
@@ -373,6 +377,7 @@ class _SaleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = (String k) => Translations.of(locale, k);
     final formattedDate = AppDateUtils.formatFullFromString(sale.date, locale: locale);
 
     return Card(
@@ -423,7 +428,7 @@ class _SaleCard extends StatelessWidget {
                     icon: const Icon(Icons.delete_outline),
                     color: Colors.red,
                     onPressed: onDelete,
-                    tooltip: locale == 'pt' ? 'Eliminar venda' : 'Delete sale',
+                    tooltip: t('delete_sale'),
                   ),
                 ],
               ),
@@ -435,17 +440,17 @@ class _SaleCard extends StatelessWidget {
                 children: [
                   _InfoChip(
                     icon: Icons.egg,
-                    label: locale == 'pt' ? 'Quantidade' : 'Quantity',
+                    label: t('quantity'),
                     value: '${sale.quantitySold}',
                   ),
                   _InfoChip(
                     icon: Icons.euro,
-                    label: locale == 'pt' ? 'Preço/Ovo' : 'Price/Egg',
+                    label: t('price_per_egg'),
                     value: '€${sale.pricePerEgg.toStringAsFixed(2)}',
                   ),
                   _InfoChip(
                     icon: Icons.payments,
-                    label: locale == 'pt' ? 'Total' : 'Total',
+                    label: t('total'),
                     value: '€${sale.totalAmount.toStringAsFixed(2)}',
                     highlight: true,
                   ),
@@ -459,9 +464,7 @@ class _SaleCard extends StatelessWidget {
                         size: 16, color: theme.textTheme.bodySmall?.color),
                     const SizedBox(width: 4),
                     Text(
-                      locale == 'pt'
-                          ? '${sale.dozens} dúzia(s) + ${sale.individualEggs} ovos'
-                          : '${sale.dozens} dozen + ${sale.individualEggs} eggs',
+                      Translations.of(locale, 'dozen_eggs', params: {'dozens': '${sale.dozens}', 'individual': '${sale.individualEggs}'}),
                       style: theme.textTheme.bodySmall,
                     ),
                   ],

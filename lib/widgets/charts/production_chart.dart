@@ -78,11 +78,20 @@ class ProductionChart extends StatelessWidget {
     final displayRecords = chartData.displayRecords;
     final adjustedMaxY = chartData.adjustedMaxY;
 
-    return SizedBox(
-      height: 250,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: BarChart(
+    // Compute totals for accessibility
+    final totalEggs = displayRecords.fold<int>(0, (sum, r) => sum + r.eggsCollected);
+    final avgEggs = displayRecords.isNotEmpty ? (totalEggs / displayRecords.length).round() : 0;
+    final semanticLabel = locale == 'pt'
+        ? 'Gráfico de produção: ${displayRecords.length} dias, total $totalEggs ovos, média $avgEggs por dia'
+        : 'Production chart: ${displayRecords.length} days, total $totalEggs eggs, average $avgEggs per day';
+
+    return Semantics(
+      label: semanticLabel,
+      child: SizedBox(
+        height: 250,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: BarChart(
           BarChartData(
             alignment: BarChartAlignment.spaceAround,
             maxY: adjustedMaxY,
@@ -185,6 +194,7 @@ class ProductionChart extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

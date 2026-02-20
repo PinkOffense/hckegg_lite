@@ -5,6 +5,7 @@ import '../core/date_utils.dart';
 import '../models/egg_reservation.dart';
 import '../state/providers/providers.dart';
 import '../l10n/locale_provider.dart';
+import '../l10n/translations.dart';
 
 class ReservationDialog extends StatefulWidget {
   final EggReservation? existingReservation;
@@ -107,6 +108,7 @@ class _ReservationDialogState extends State<ReservationDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final locale = Provider.of<LocaleProvider>(context).code;
+    final t = (String k) => Translations.of(locale, k);
 
     return Dialog(
       child: Container(
@@ -135,8 +137,8 @@ class _ReservationDialogState extends State<ReservationDialog> {
                   Expanded(
                     child: Text(
                       widget.existingReservation != null
-                          ? (locale == 'pt' ? 'Editar Reserva' : 'Edit Reservation')
-                          : (locale == 'pt' ? 'Nova Reserva' : 'New Reservation'),
+                          ? t('edit_reservation')
+                          : t('new_reservation'),
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -161,7 +163,7 @@ class _ReservationDialogState extends State<ReservationDialog> {
                       onTap: () => _selectReservationDate(context, locale),
                       child: InputDecorator(
                         decoration: InputDecoration(
-                          labelText: locale == 'pt' ? 'Data da Reserva' : 'Reservation Date',
+                          labelText: t('reservation_date'),
                           suffixIcon: const Icon(Icons.calendar_today),
                         ),
                         child: Text(
@@ -178,7 +180,7 @@ class _ReservationDialogState extends State<ReservationDialog> {
                       child: InputDecorator(
                         decoration: InputDecoration(
                           labelText:
-                              '${locale == 'pt' ? 'Data de Levantamento' : 'Pickup Date'} (${locale == 'pt' ? 'opcional' : 'optional'})',
+                              '${t('pickup_date')} (${t('optional')})',
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -196,7 +198,7 @@ class _ReservationDialogState extends State<ReservationDialog> {
                         child: Text(
                           _pickupDate != null
                               ? _formatDate(_pickupDate!, locale)
-                              : (locale == 'pt' ? 'Não definido' : 'Not set'),
+                              : t('not_set'),
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: _pickupDate == null ? Colors.grey.shade600 : null,
                           ),
@@ -209,20 +211,20 @@ class _ReservationDialogState extends State<ReservationDialog> {
                     TextFormField(
                       controller: _quantityController,
                       decoration: InputDecoration(
-                        labelText: '${locale == 'pt' ? 'Quantidade de Ovos' : 'Quantity of Eggs'} *',
+                        labelText: '${t('quantity_eggs')} *',
                         prefixIcon: const Icon(Icons.egg),
-                        suffixText: locale == 'pt' ? 'ovos' : 'eggs',
+                        suffixText: t('eggs_unit'),
                       ),
                       keyboardType: TextInputType.number,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
+                          return t('required_field');
                         }
                         if (int.tryParse(value) == null) {
-                          return locale == 'pt' ? 'Valor inválido' : 'Invalid value';
+                          return t('invalid_value');
                         }
                         if (int.parse(value) <= 0) {
-                          return locale == 'pt' ? 'Deve ser maior que zero' : 'Must be greater than zero';
+                          return t('must_be_greater');
                         }
                         return null;
                       },
@@ -235,7 +237,7 @@ class _ReservationDialogState extends State<ReservationDialog> {
                         Icon(Icons.person, size: 20, color: theme.colorScheme.primary),
                         const SizedBox(width: 8),
                         Text(
-                          locale == 'pt' ? 'Informação do Cliente' : 'Customer Information',
+                          t('customer_information'),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
@@ -249,12 +251,12 @@ class _ReservationDialogState extends State<ReservationDialog> {
                     TextFormField(
                       controller: _customerNameController,
                       decoration: InputDecoration(
-                        labelText: '${locale == 'pt' ? 'Nome do Cliente' : 'Customer Name'} *',
+                        labelText: '${t('customer_name')} *',
                         prefixIcon: const Icon(Icons.person_outline),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return locale == 'pt' ? 'Campo obrigatório' : 'Required field';
+                          return t('required_field');
                         }
                         return null;
                       },
@@ -265,7 +267,7 @@ class _ReservationDialogState extends State<ReservationDialog> {
                     TextFormField(
                       controller: _customerPhoneController,
                       decoration: InputDecoration(
-                        labelText: locale == 'pt' ? 'Telefone' : 'Phone',
+                        labelText: t('phone'),
                         prefixIcon: const Icon(Icons.phone_outlined),
                       ),
                       keyboardType: TextInputType.phone,
@@ -288,7 +290,7 @@ class _ReservationDialogState extends State<ReservationDialog> {
                       controller: _notesController,
                       decoration: InputDecoration(
                         labelText:
-                            '${locale == 'pt' ? 'Notas' : 'Notes'} (${locale == 'pt' ? 'opcional' : 'optional'})',
+                            '${t('notes_optional')} (${t('optional')})',
                         prefixIcon: const Icon(Icons.note),
                         alignLabelWithHint: true,
                       ),
@@ -299,11 +301,9 @@ class _ReservationDialogState extends State<ReservationDialog> {
                     // Lock Price Section
                     Card(
                       child: SwitchListTile(
-                        title: Text(locale == 'pt' ? 'Fixar Preço' : 'Lock Price'),
+                        title: Text(t('lock_price')),
                         subtitle: Text(
-                          locale == 'pt'
-                              ? 'Guardar o preço atual para esta reserva'
-                              : 'Save current price for this reservation',
+                          t('lock_price_desc'),
                         ),
                         value: _lockPrice,
                         onChanged: (value) {
@@ -325,7 +325,7 @@ class _ReservationDialogState extends State<ReservationDialog> {
                             child: TextFormField(
                               controller: _pricePerEggController,
                               decoration: InputDecoration(
-                                labelText: locale == 'pt' ? 'Preço/Ovo' : 'Price/Egg',
+                                labelText: t('price_per_egg'),
                                 prefixIcon: const Icon(Icons.euro),
                                 suffixText: '€',
                               ),
@@ -337,7 +337,7 @@ class _ReservationDialogState extends State<ReservationDialog> {
                             child: TextFormField(
                               controller: _pricePerDozenController,
                               decoration: InputDecoration(
-                                labelText: locale == 'pt' ? 'Preço/Dúzia' : 'Price/Dozen',
+                                labelText: t('price_per_dozen'),
                                 prefixIcon: const Icon(Icons.euro),
                                 suffixText: '€',
                               ),
@@ -367,13 +367,13 @@ class _ReservationDialogState extends State<ReservationDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+                    child: Text(t('cancel')),
                   ),
                   const SizedBox(width: 12),
                   FilledButton.icon(
                     onPressed: _saveReservation,
                     icon: const Icon(Icons.check),
-                    label: Text(locale == 'pt' ? 'Guardar' : 'Save'),
+                    label: Text(t('save')),
                   ),
                 ],
               ),

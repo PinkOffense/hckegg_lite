@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/translations.dart';
 
 /// Mixin for dialog state management with loading and error states
 mixin DialogStateMixin<T extends StatefulWidget> on State<T> {
@@ -71,9 +72,7 @@ mixin DialogStateMixin<T extends StatefulWidget> on State<T> {
       return true;
     } catch (e) {
       if (mounted) {
-        setError(locale == 'pt'
-            ? 'Erro ao guardar: ${e.toString()}'
-            : 'Error saving: ${e.toString()}');
+        setError(Translations.of(locale, 'error_saving', params: {'e': e.toString()}));
       }
       return false;
     }

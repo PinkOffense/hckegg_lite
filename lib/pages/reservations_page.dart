@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/egg_reservation.dart';
@@ -21,9 +22,18 @@ class ReservationsPage extends StatefulWidget {
 class _ReservationsPageState extends State<ReservationsPage> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  Timer? _debounce;
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _searchQuery = value);
+    });
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -116,9 +126,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
                   controller: _searchController,
                   hintText: t('search_reservations'),
                   hasContent: _searchQuery.isNotEmpty,
-                  onChanged: (value) {
-                    setState(() => _searchQuery = value);
-                  },
+                  onChanged: _onSearchChanged,
                   onClear: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
@@ -374,7 +382,7 @@ class _ReservationCard extends StatelessWidget {
             // Only show Pending and Advance options
             ListTile(
               leading: const Icon(Icons.hourglass_empty, color: Colors.orange),
-              title: Text(PaymentStatus.pending.displayName),
+              title: Text(PaymentStatus.pending.displayName(locale)),
               subtitle: Text(
                 Translations.of(locale, 'payment_pending_desc'),
               ),
@@ -382,7 +390,7 @@ class _ReservationCard extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.account_balance_wallet, color: Colors.blue),
-              title: Text(PaymentStatus.advance.displayName),
+              title: Text(PaymentStatus.advance.displayName(locale)),
               subtitle: Text(
                 Translations.of(locale, 'payment_advance_desc'),
               ),

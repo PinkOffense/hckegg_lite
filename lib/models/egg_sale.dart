@@ -4,16 +4,16 @@ enum PaymentStatus {
   overdue,
   advance; // Paid in advance
 
-  String get displayName {
+  String displayName(String locale) {
     switch (this) {
       case PaymentStatus.paid:
-        return 'Pago';
+        return locale == 'pt' ? 'Pago' : 'Paid';
       case PaymentStatus.pending:
-        return 'Pendente';
+        return locale == 'pt' ? 'Pendente' : 'Pending';
       case PaymentStatus.overdue:
-        return 'Atrasado';
+        return locale == 'pt' ? 'Atrasado' : 'Overdue';
       case PaymentStatus.advance:
-        return 'Adiantado';
+        return locale == 'pt' ? 'Adiantado' : 'Advance';
     }
   }
 

@@ -71,11 +71,20 @@ class RevenueChart extends StatelessWidget {
     final displaySales = chartData.displaySales;
     final adjustedMaxY = chartData.adjustedMaxY;
 
-    return SizedBox(
-      height: 250,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: LineChart(
+    // Compute totals for accessibility
+    final totalRevenue = displaySales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+    final avgRevenue = displaySales.isNotEmpty ? totalRevenue / displaySales.length : 0;
+    final semanticLabel = locale == 'pt'
+        ? 'Gráfico de receita: ${displaySales.length} vendas, total €${totalRevenue.toStringAsFixed(2)}, média €${avgRevenue.toStringAsFixed(2)}'
+        : 'Revenue chart: ${displaySales.length} sales, total €${totalRevenue.toStringAsFixed(2)}, average €${avgRevenue.toStringAsFixed(2)}';
+
+    return Semantics(
+      label: semanticLabel,
+      child: SizedBox(
+        height: 250,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: LineChart(
           LineChartData(
             gridData: FlGridData(
               show: true,
@@ -196,6 +205,7 @@ class RevenueChart extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

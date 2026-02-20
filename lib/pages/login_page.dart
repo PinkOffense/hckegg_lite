@@ -184,6 +184,9 @@ class _LoginPageState extends State<LoginPage>
       } else if (!_hasNumber(pass)) {
         setState(() => _passError = _t('password_needs_number'));
         isValid = false;
+      } else if (!_hasSpecialChar(pass)) {
+        setState(() => _passError = _t('password_needs_special'));
+        isValid = false;
       }
     }
 

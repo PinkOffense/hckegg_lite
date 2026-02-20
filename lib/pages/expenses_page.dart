@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -28,9 +29,18 @@ class _ExpensesPageState extends State<ExpensesPage> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   String _searchQuery = '';
+  Timer? _debounce;
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _searchQuery = value);
+    });
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -350,9 +360,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
                         hintText: t('search_expenses'),
                         hasContent: _searchQuery.isNotEmpty,
                         padding: const EdgeInsets.only(bottom: 12),
-                        onChanged: (value) {
-                          setState(() => _searchQuery = value);
-                        },
+                        onChanged: _onSearchChanged,
                       ),
 
                     // Filtered expenses
