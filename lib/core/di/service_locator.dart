@@ -13,6 +13,7 @@ import '../../features/feed_stock/feed_stock.dart';
 import '../../features/reservations/reservations.dart';
 import '../../features/analytics/data/datasources/analytics_api_datasource.dart';
 import '../../features/analytics/presentation/providers/analytics_provider.dart';
+import '../../features/farms/presentation/providers/farm_provider.dart';
 
 /// Service Locator for dependency injection
 /// All data operations go through the backend API
@@ -158,5 +159,12 @@ class ServiceLocator {
 
   AnalyticsProvider createAnalyticsProvider() {
     return AnalyticsProvider(_analyticsDataSource);
+  }
+
+  // ===== FARMS FEATURE =====
+  // Uses Supabase RPC directly for multi-user farm management
+
+  FarmProvider createFarmProvider() {
+    return FarmProvider(supabaseClient);
   }
 }
