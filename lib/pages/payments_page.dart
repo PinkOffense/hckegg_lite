@@ -54,7 +54,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
     final theme = Theme.of(context);
 
     return AppScaffold(
-      title: locale == 'pt' ? 'Gestão de Pagamentos' : 'Payment Management',
+      title: t('payment_management'),
       body: Consumer<SaleProvider>(
         builder: (context, saleProvider, _) {
           final allSales = saleProvider.sales;
@@ -85,7 +85,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
               if (allSales.isNotEmpty)
                 AppSearchBar(
                   controller: _searchController,
-                  hintText: locale == 'pt' ? 'Pesquisar por cliente...' : 'Search by customer...',
+                  hintText: t('search_customer'),
                   hasContent: _searchQuery.isNotEmpty,
                   onChanged: _onSearchChanged,
                   onClear: () {
@@ -124,7 +124,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                             if (pendingSales.isNotEmpty) ...[
                               _SectionHeader(
                                 icon: Icons.hourglass_empty,
-                                title: locale == 'pt' ? 'Pagamentos Pendentes' : 'Pending Payments',
+                                title: t('pending_payments'),
                                 color: Colors.orange,
                               ),
                               const SizedBox(height: 12),
@@ -142,7 +142,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                             if (advanceSales.isNotEmpty) ...[
                               _SectionHeader(
                                 icon: Icons.account_balance_wallet,
-                                title: locale == 'pt' ? 'Pagamentos Adiantados' : 'Advance Payments',
+                                title: t('advance_payments'),
                                 color: Colors.green,
                               ),
                               const SizedBox(height: 12),
@@ -158,7 +158,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                             if (lostSales.isNotEmpty) ...[
                               _SectionHeader(
                                 icon: Icons.cancel,
-                                title: locale == 'pt' ? 'Vendas Perdidas' : 'Lost Sales',
+                                title: t('lost_sales'),
                                 color: Colors.grey.shade700,
                               ),
                               const SizedBox(height: 12),
@@ -174,7 +174,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                             if (paidSales.isNotEmpty) ...[
                               _SectionHeader(
                                 icon: Icons.check_circle,
-                                title: locale == 'pt' ? 'Pagamentos Realizados' : 'Completed Payments',
+                                title: t('completed_payments'),
                                 color: Colors.green,
                               ),
                               const SizedBox(height: 12),
@@ -204,6 +204,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
 
   Future<void> _markAsPaid(BuildContext context, EggSale sale) async {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    final t = (String k) => Translations.of(locale, k);
     final saleProvider = context.read<SaleProvider>();
     final now = DateTime.now();
     final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
@@ -223,7 +224,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                 ),
               ),
               const SizedBox(width: 16),
-              Text(locale == 'pt' ? 'Atualizando...' : 'Updating...'),
+              Text(t('updating')),
             ],
           ),
           duration: const Duration(seconds: 3),
@@ -243,11 +244,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              locale == 'pt'
-                  ? '✓ Pagamento marcado como pago'
-                  : '✓ Payment marked as paid',
-            ),
+            content: Text('✓ ${t('payment_marked_paid')}'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
@@ -258,7 +255,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro: ${e.toString()}'),
+            content: Text('${t('error')}: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -268,28 +265,25 @@ class _PaymentsPageState extends State<PaymentsPage> {
 
   Future<void> _markAsLost(BuildContext context, EggSale sale) async {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    final t = (String k) => Translations.of(locale, k);
 
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(locale == 'pt' ? 'Marcar como Perdida?' : 'Mark as Lost?'),
-        content: Text(
-          locale == 'pt'
-              ? 'Esta venda será marcada como perdida (cliente nunca pagará). Esta ação não pode ser desfeita. Continuar?'
-              : 'This sale will be marked as lost (customer will never pay). This action cannot be undone. Continue?',
-        ),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(t('mark_as_lost_title')),
+        content: Text(t('mark_as_lost_confirm')),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(t('cancel')),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red,
             ),
-            child: Text(locale == 'pt' ? 'Marcar como Perdida' : 'Mark as Lost'),
+            child: Text(t('mark_as_lost')),
           ),
         ],
       ),
@@ -314,7 +308,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                 ),
               ),
               const SizedBox(width: 16),
-              Text(locale == 'pt' ? 'Atualizando...' : 'Updating...'),
+              Text(t('updating')),
             ],
           ),
           duration: const Duration(seconds: 3),
@@ -333,11 +327,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              locale == 'pt'
-                  ? '✗ Venda marcada como perdida'
-                  : '✗ Sale marked as lost',
-            ),
+            content: Text('✗ ${t('sale_marked_lost')}'),
             backgroundColor: Colors.grey.shade700,
             duration: const Duration(seconds: 2),
           ),
@@ -348,7 +338,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro: ${e.toString()}'),
+            content: Text('${t('error')}: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -374,13 +364,15 @@ class _PaymentSummaryCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = (String k) => Translations.of(locale, k);
+
     return Column(
       children: [
         Row(
           children: [
             Expanded(
               child: _SummaryCard(
-                title: locale == 'pt' ? 'Total Pago' : 'Total Paid',
+                title: t('total_paid'),
                 amount: totalPaid,
                 color: Colors.green,
                 icon: Icons.check_circle,
@@ -389,7 +381,7 @@ class _PaymentSummaryCards extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _SummaryCard(
-                title: locale == 'pt' ? 'Pendente' : 'Pending',
+                title: t('pending'),
                 amount: totalPending,
                 color: Colors.orange,
                 icon: Icons.hourglass_empty,
@@ -402,7 +394,7 @@ class _PaymentSummaryCards extends StatelessWidget {
           children: [
             Expanded(
               child: _SummaryCard(
-                title: locale == 'pt' ? 'Perdido' : 'Lost',
+                title: t('lost'),
                 amount: totalLost,
                 color: Colors.grey,
                 icon: Icons.cancel_outlined,
@@ -411,7 +403,7 @@ class _PaymentSummaryCards extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _SummaryCard(
-                title: locale == 'pt' ? 'Adiantado' : 'Advance',
+                title: t('advance'),
                 amount: totalAdvance,
                 color: Colors.blue,
                 icon: Icons.account_balance_wallet,
@@ -547,6 +539,7 @@ class _PaymentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = (String k) => Translations.of(locale, k);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -565,7 +558,7 @@ class _PaymentCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          sale.customerName ?? (locale == 'pt' ? 'Cliente sem nome' : 'Unnamed customer'),
+                          sale.customerName ?? t('unnamed_customer'),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -600,7 +593,7 @@ class _PaymentCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${sale.quantitySold} ${locale == 'pt' ? 'ovos' : 'eggs'}',
+                    '${sale.quantitySold} ${t('eggs_unit')}',
                     style: theme.textTheme.bodyMedium,
                   ),
                   Text(
@@ -615,7 +608,7 @@ class _PaymentCard extends StatelessWidget {
               if (sale.paymentDate != null) ...[
                 const SizedBox(height: 8),
                 Text(
-                  '${locale == 'pt' ? 'Pago em' : 'Paid on'}: ${_formatDate(sale.paymentDate!)}',
+                  '${t('paid_on')}: ${_formatDate(sale.paymentDate!)}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: Colors.green,
                   ),
@@ -635,7 +628,7 @@ class _PaymentCard extends StatelessWidget {
                       Icon(Icons.cancel, size: 16, color: Colors.grey.shade700),
                       const SizedBox(width: 8),
                       Text(
-                        locale == 'pt' ? 'Venda perdida - cliente nunca pagou' : 'Lost sale - customer never paid',
+                        t('lost_sale_never_paid'),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.grey.shade700,
                           fontStyle: FontStyle.italic,
@@ -654,7 +647,7 @@ class _PaymentCard extends StatelessWidget {
                         child: ElevatedButton.icon(
                           onPressed: onMarkPaid,
                           icon: const Icon(Icons.check, size: 18),
-                          label: Text(locale == 'pt' ? 'Pago' : 'Paid'),
+                          label: Text(t('mark_paid')),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             foregroundColor: Colors.white,
@@ -667,7 +660,7 @@ class _PaymentCard extends StatelessWidget {
                         child: ElevatedButton.icon(
                           onPressed: onMarkLost,
                           icon: const Icon(Icons.cancel, size: 18),
-                          label: Text(locale == 'pt' ? 'Perdida' : 'Lost'),
+                          label: Text(t('mark_lost')),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.grey.shade700,
                             foregroundColor: Colors.white,

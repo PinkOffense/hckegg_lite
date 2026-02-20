@@ -124,12 +124,12 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
     final fromHenHealth = args?['fromHenHealth'] == true;
 
     return AppScaffold(
-      title: locale == 'pt' ? 'Calendário Veterinário' : 'Vet Calendar',
+      title: t('vet_calendar'),
       additionalActions: fromHenHealth
           ? [
               IconButton(
                 icon: const Icon(Icons.arrow_back),
-                tooltip: locale == 'pt' ? 'Voltar à Saúde' : 'Back to Health',
+                tooltip: t('back_to_health'),
                 onPressed: () => Navigator.pop(context),
               ),
             ]
@@ -151,7 +151,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.chevron_left),
-                  tooltip: locale == 'pt' ? 'Mês anterior' : 'Previous month',
+                  tooltip: t('previous_month'),
                   onPressed: () {
                     setState(() {
                       _currentMonth = DateTime(
@@ -173,7 +173,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
-                  tooltip: locale == 'pt' ? 'Próximo mês' : 'Next month',
+                  tooltip: t('next_month'),
                   onPressed: () {
                     setState(() {
                       _currentMonth = DateTime(
@@ -207,13 +207,15 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
 
   Widget _buildCalendarGrid(
       ThemeData theme, String locale, Map<String, List<VetRecord>> recordsByDate) {
+    final t = (String k) => Translations.of(locale, k);
     final daysInMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
     final firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
     final firstWeekday = firstDayOfMonth.weekday; // 1 = Monday, 7 = Sunday
 
-    final weekdayNames = locale == 'pt'
-        ? ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
-        : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final weekdayNames = [
+      t('weekday_mon'), t('weekday_tue'), t('weekday_wed'), t('weekday_thu'),
+      t('weekday_fri'), t('weekday_sat'), t('weekday_sun'),
+    ];
 
     final today = DateTime.now();
 
@@ -359,7 +361,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                     _selectedDate = null;
                   });
                 },
-                child: Text(locale == 'pt' ? 'Ver próximos' : 'View upcoming'),
+                child: Text(t('view_upcoming')),
               ),
             ],
           ),
@@ -377,9 +379,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        locale == 'pt'
-                            ? 'Sem eventos agendados'
-                            : 'No scheduled events',
+                        t('no_scheduled_events'),
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                         ),
@@ -388,9 +388,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                       TextButton.icon(
                         onPressed: () => _scheduleVisit(context, date),
                         icon: const Icon(Icons.add),
-                        label: Text(
-                          locale == 'pt' ? 'Agendar visita' : 'Schedule visit',
-                        ),
+                        label: Text(t('schedule_visit')),
                       ),
                     ],
                   ),
@@ -422,7 +420,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
         Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
-            locale == 'pt' ? 'Próximas Visitas' : 'Upcoming Visits',
+            t('upcoming_visits'),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -441,9 +439,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        locale == 'pt'
-                            ? 'Nenhuma visita agendada'
-                            : 'No visits scheduled',
+                        t('no_visits_scheduled'),
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                         ),
@@ -452,9 +448,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
                       TextButton.icon(
                         onPressed: () => _scheduleVisit(context, null),
                         icon: const Icon(Icons.add),
-                        label: Text(
-                          locale == 'pt' ? 'Agendar visita' : 'Schedule visit',
-                        ),
+                        label: Text(t('schedule_visit')),
                       ),
                     ],
                   ),
@@ -495,19 +489,16 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
 
   void _deleteRecord(BuildContext context, VetRecord record) {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    final t = (String k) => Translations.of(locale, k);
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(locale == 'pt' ? 'Eliminar Agendamento' : 'Delete Appointment'),
-        content: Text(
-          locale == 'pt'
-              ? 'Tem certeza que deseja eliminar este agendamento?'
-              : 'Are you sure you want to delete this appointment?',
-        ),
+        title: Text(t('delete_appointment')),
+        content: Text(t('delete_appointment_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text(locale == 'pt' ? 'Cancelar' : 'Cancel'),
+            child: Text(t('cancel')),
           ),
           TextButton(
             onPressed: () async {
@@ -515,7 +506,7 @@ class _VetCalendarPageState extends State<VetCalendarPage> {
               await context.read<VetRecordProvider>().deleteVetRecord(record.id);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(locale == 'pt' ? 'Eliminar' : 'Delete'),
+            child: Text(t('delete')),
           ),
         ],
       ),
@@ -615,6 +606,8 @@ class _EventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = (String k, {Map<String, String>? params}) =>
+        Translations.of(locale, k, params: params);
 
     IconData typeIcon;
     Color typeColor;
@@ -648,16 +641,16 @@ class _EventCard extends StatelessWidget {
     String daysText;
     Color daysColor;
     if (daysUntil < 0) {
-      daysText = locale == 'pt' ? 'Atrasado' : 'Overdue';
+      daysText = t('overdue');
       daysColor = Colors.red;
     } else if (daysUntil == 0) {
-      daysText = locale == 'pt' ? 'Hoje' : 'Today';
+      daysText = t('today');
       daysColor = Colors.orange;
     } else if (daysUntil == 1) {
-      daysText = locale == 'pt' ? 'Amanhã' : 'Tomorrow';
+      daysText = t('tomorrow');
       daysColor = Colors.orange;
     } else {
-      daysText = locale == 'pt' ? 'Em $daysUntil dias' : 'In $daysUntil days';
+      daysText = t('in_days', params: {'count': '$daysUntil'});
       daysColor = Colors.green;
     }
 
@@ -830,7 +823,7 @@ class _EventCard extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.delete_outline, size: 20),
                 color: Colors.red.withValues(alpha: 0.7),
-                tooltip: locale == 'pt' ? 'Eliminar' : 'Delete',
+                tooltip: t('delete'),
                 onPressed: onDelete,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -866,6 +859,8 @@ class _TodayReminderDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = (String k, {Map<String, String>? params}) =>
+        Translations.of(locale, k, params: params);
 
     return AlertDialog(
       title: Row(
@@ -881,7 +876,7 @@ class _TodayReminderDialog extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              locale == 'pt' ? 'Lembrete de Hoje' : "Today's Reminder",
+              t('todays_reminder'),
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -896,9 +891,9 @@ class _TodayReminderDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              locale == 'pt'
-                  ? 'Tem ${appointments.length} agendamento${appointments.length > 1 ? 's' : ''} para hoje:'
-                  : 'You have ${appointments.length} appointment${appointments.length > 1 ? 's' : ''} today:',
+              appointments.length == 1
+                  ? t('appointments_today_singular')
+                  : t('appointments_today_plural', params: {'count': '${appointments.length}'}),
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -909,7 +904,7 @@ class _TodayReminderDialog extends StatelessWidget {
       actions: [
         FilledButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(locale == 'pt' ? 'Entendido' : 'Got it'),
+          child: Text(t('got_it')),
         ),
       ],
     );
@@ -917,6 +912,7 @@ class _TodayReminderDialog extends StatelessWidget {
 
   Widget _buildAppointmentTile(BuildContext context, VetRecord record) {
     final theme = Theme.of(context);
+    final t = (String k) => Translations.of(locale, k);
 
     IconData typeIcon;
     Color typeColor;
@@ -979,7 +975,7 @@ class _TodayReminderDialog extends StatelessWidget {
                 ),
                 if (time != null)
                   Text(
-                    '${locale == 'pt' ? 'Hora' : 'Time'}: $time',
+                    '${t('time_label')}: $time',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                     ),

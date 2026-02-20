@@ -95,6 +95,7 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Future<void> _exportDashboard(BuildContext context, String locale) async {
+    final t = (String k) => Translations.of(locale, k);
     final eggProvider = context.read<EggProvider>();
     final analyticsProvider = context.read<AnalyticsProvider>();
 
@@ -113,7 +114,7 @@ class _DashboardPageState extends State<DashboardPage>
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(locale == 'pt' ? 'Erro ao exportar: $e' : 'Export error: $e'),
+            content: Text(t('export_error').replaceAll('{e}', e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -133,13 +134,13 @@ class _DashboardPageState extends State<DashboardPage>
       additionalActions: [
         IconButton(
           icon: const Icon(Icons.picture_as_pdf),
-          tooltip: locale == 'pt' ? 'Exportar PDF' : 'Export PDF',
+          tooltip: t('export_pdf'),
           onPressed: () => _exportDashboard(context, locale),
         ),
       ],
       fab: GradientFAB(
         icon: Icons.add,
-        label: locale == 'pt' ? 'Novo Registo' : 'New Record',
+        label: t('new_record'),
         extended: true,
         onPressed: () => showDialog(
           context: context,
@@ -183,11 +184,9 @@ class _DashboardPageState extends State<DashboardPage>
 
             if (records.isEmpty) {
               return ChickenEmptyState(
-                title: locale == 'pt' ? 'Sem Registos' : 'No Records Yet',
-                message: locale == 'pt'
-                    ? 'Comece a registar a sua recolha diária de ovos'
-                    : 'Start tracking your daily egg collection',
-                actionLabel: locale == 'pt' ? 'Adicionar Registo de Hoje' : 'Add Today\'s Record',
+                title: t('no_records_yet'),
+                message: t('start_tracking'),
+                actionLabel: t('add_todays_record'),
                 onAction: () => showDialog(
                   context: context,
                   builder: (_) => const DailyRecordDialog(),
@@ -231,7 +230,7 @@ class _DashboardPageState extends State<DashboardPage>
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                locale == 'pt' ? 'Recolha de Hoje' : 'Today\'s Collection',
+                                t('todays_collection'),
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -272,7 +271,7 @@ class _DashboardPageState extends State<DashboardPage>
 
                   // This Week's Stats (from backend)
                   Text(
-                    locale == 'pt' ? 'Esta Semana' : 'This Week',
+                    t('this_week'),
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -283,7 +282,7 @@ class _DashboardPageState extends State<DashboardPage>
                       Expanded(
                         child: _StatCard(
                           icon: Icons.egg,
-                          label: locale == 'pt' ? 'Recolhidos' : 'Collected',
+                          label: t('collected'),
                           value: '${weekStatsData.eggsCollected}',
                           color: colorScheme.primary,
                         ),
@@ -292,7 +291,7 @@ class _DashboardPageState extends State<DashboardPage>
                       Expanded(
                         child: _StatCard(
                           icon: Icons.sell,
-                          label: locale == 'pt' ? 'Vendidos' : 'Sold',
+                          label: t('sold'),
                           value: '${weekStatsData.eggsSold}',
                           color: colorScheme.secondary,
                         ),
@@ -305,7 +304,7 @@ class _DashboardPageState extends State<DashboardPage>
                       Expanded(
                         child: _StatCard(
                           icon: Icons.restaurant,
-                          label: locale == 'pt' ? 'Consumidos' : 'Consumed',
+                          label: t('consumed'),
                           value: '${weekStatsData.eggsConsumed}',
                           color: colorScheme.tertiary,
                         ),
@@ -314,7 +313,7 @@ class _DashboardPageState extends State<DashboardPage>
                       Expanded(
                         child: _StatCard(
                           icon: Icons.euro,
-                          label: locale == 'pt' ? 'Receita' : 'Revenue',
+                          label: t('revenue'),
                           value: '€${weekStatsData.revenue.toStringAsFixed(2)}',
                           color: Colors.green,
                         ),
@@ -329,7 +328,7 @@ class _DashboardPageState extends State<DashboardPage>
                       Expanded(
                         child: _StatCard(
                           icon: Icons.inventory,
-                          label: locale == 'pt' ? 'Disponíveis' : 'Available',
+                          label: t('available'),
                           value: '${dashboard.production.totalRemaining}',
                           color: Colors.purple,
                         ),
@@ -338,7 +337,7 @@ class _DashboardPageState extends State<DashboardPage>
                       Expanded(
                         child: _StatCard(
                           icon: Icons.bookmark,
-                          label: locale == 'pt' ? 'Reservados' : 'Reserved',
+                          label: t('reserved'),
                           value: '${reservationProvider.reservations.fold<int>(0, (sum, r) => sum + r.quantity)}',
                           color: Colors.blue,
                         ),
@@ -353,7 +352,7 @@ class _DashboardPageState extends State<DashboardPage>
                       Expanded(
                         child: _StatCard(
                           icon: Icons.trending_down,
-                          label: locale == 'pt' ? 'Despesas' : 'Expenses',
+                          label: t('expenses'),
                           value: '€${weekStatsData.expenses.toStringAsFixed(2)}',
                           color: Colors.orange,
                         ),
@@ -362,7 +361,7 @@ class _DashboardPageState extends State<DashboardPage>
                       Expanded(
                         child: _StatCard(
                           icon: weekStatsData.netProfit >= 0 ? Icons.trending_up : Icons.trending_down,
-                          label: locale == 'pt' ? 'Lucro Líquido' : 'Net Profit',
+                          label: t('net_profit'),
                           value: '€${weekStatsData.netProfit.toStringAsFixed(2)}',
                           color: weekStatsData.netProfit >= 0 ? Colors.green : Colors.red,
                         ),
@@ -460,12 +459,12 @@ class _DashboardPageState extends State<DashboardPage>
                             children: [
                               _ChartLegend(
                                 color: Colors.green,
-                                label: locale == 'pt' ? 'Receitas' : 'Revenue',
+                                label: t('revenue'),
                               ),
                               const SizedBox(width: 24),
                               _ChartLegend(
                                 color: Colors.red,
-                                label: locale == 'pt' ? 'Despesas' : 'Expenses',
+                                label: t('expenses'),
                               ),
                             ],
                           ),
@@ -487,7 +486,7 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                       TextButton(
                         onPressed: () => context.go('/eggs'),
-                        child: Text(locale == 'pt' ? 'Ver Todos' : 'View All'),
+                        child: Text(t('view_all')),
                       ),
                     ],
                   ),
@@ -599,14 +598,15 @@ class _DayRecordCard extends StatelessWidget {
   });
 
   String _formatDate(String dateStr, String locale) {
+    final t = (String k) => Translations.of(locale, k);
     final date = DateTime.parse(dateStr);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final recordDate = DateTime(date.year, date.month, date.day);
     final difference = today.difference(recordDate).inDays;
 
-    if (difference == 0) return locale == 'pt' ? 'Hoje' : 'Today';
-    if (difference == 1) return locale == 'pt' ? 'Ontem' : 'Yesterday';
+    if (difference == 0) return t('today');
+    if (difference == 1) return t('yesterday');
 
     return locale == 'pt'
         ? DateConstants.formatDayMonth(date, locale)
@@ -617,6 +617,7 @@ class _DayRecordCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
+    final t = (String k) => Translations.of(locale, k);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -662,7 +663,7 @@ class _DayRecordCard extends StatelessWidget {
                           Icon(Icons.restaurant, size: 14, color: theme.textTheme.bodySmall?.color),
                           const SizedBox(width: 4),
                           Text(
-                            '${record.eggsConsumed} ${locale == 'pt' ? 'consumidos' : 'eaten'}',
+                            '${record.eggsConsumed} ${t('eaten')}',
                             style: theme.textTheme.bodySmall,
                           ),
                         ],
@@ -704,19 +705,21 @@ class _PredictionCardFromApi extends StatelessWidget {
     }
   }
 
-  String _getConfidenceLabel(String locale) {
+  String _getConfidenceLabel(String Function(String) t) {
     if (prediction.confidence >= 0.8) {
-      return locale == 'pt' ? 'Alta' : 'High';
+      return t('severity_high');
     } else if (prediction.confidence >= 0.5) {
-      return locale == 'pt' ? 'Média' : 'Medium';
+      return t('severity_medium');
     } else {
-      return locale == 'pt' ? 'Baixa' : 'Low';
+      return t('severity_low');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = (String k, {Map<String, String>? params}) =>
+        Translations.of(locale, k, params: params);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -753,7 +756,7 @@ class _PredictionCardFromApi extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    locale == 'pt' ? 'Previsão para Amanhã' : 'Tomorrow\'s Prediction',
+                    t('tomorrow_prediction'),
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: Colors.blue.shade700,
                       fontWeight: FontWeight.w600,
@@ -771,7 +774,7 @@ class _PredictionCardFromApi extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${locale == 'pt' ? 'ovos' : 'eggs'} ${_getTrendIcon()}',
+                        '${t('eggs_unit')} ${_getTrendIcon()}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.blue.shade600,
                         ),
@@ -780,9 +783,11 @@ class _PredictionCardFromApi extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    locale == 'pt'
-                        ? 'Intervalo: ${prediction.minEggs}-${prediction.maxEggs} • Confiança: ${_getConfidenceLabel(locale)}'
-                        : 'Range: ${prediction.minEggs}-${prediction.maxEggs} • Confidence: ${_getConfidenceLabel(locale)}',
+                    t('prediction_range', params: {
+                      'min': '${prediction.minEggs}',
+                      'max': '${prediction.maxEggs}',
+                      'confidence': _getConfidenceLabel((k) => Translations.of(locale, k)),
+                    }),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                     ),
@@ -836,6 +841,8 @@ class _AlertsCardFromApi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = (String k, {Map<String, String>? params}) =>
+        Translations.of(locale, k, params: params);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -875,16 +882,16 @@ class _AlertsCardFromApi extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        locale == 'pt' ? 'Alertas do Dia' : "Today's Alerts",
+                        t('todays_alerts'),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.indigo.shade800,
                         ),
                       ),
                       Text(
-                        locale == 'pt'
-                            ? '${alerts.length} ${alerts.length == 1 ? 'item' : 'itens'} a verificar'
-                            : '${alerts.length} ${alerts.length == 1 ? 'item' : 'items'} to check',
+                        alerts.length == 1
+                            ? t('items_to_check_singular')
+                            : t('items_to_check_plural', params: {'count': '${alerts.length}'}),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                         ),
@@ -949,6 +956,7 @@ class _ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = (String k) => Translations.of(locale, k);
 
     return Center(
       child: Padding(
@@ -963,16 +971,14 @@ class _ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              locale == 'pt' ? 'Erro de Ligação' : 'Connection Error',
+              t('connection_error'),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              locale == 'pt'
-                  ? 'Não foi possível carregar os dados. Verifique a sua ligação à internet.'
-                  : 'Unable to load data. Please check your internet connection.',
+              t('unable_to_load'),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
@@ -1000,7 +1006,7 @@ class _ErrorView extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: Text(locale == 'pt' ? 'Tentar Novamente' : 'Try Again'),
+              label: Text(t('try_again')),
             ),
           ],
         ),
