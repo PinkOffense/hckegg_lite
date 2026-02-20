@@ -15,6 +15,9 @@ class FarmSettingsPage extends StatefulWidget {
 }
 
 class _FarmSettingsPageState extends State<FarmSettingsPage> {
+  List<FarmInvitation> _myInvitations = [];
+  bool _loadingInvitations = false;
+
   @override
   void initState() {
     super.initState();
@@ -34,7 +37,25 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
           await farmProvider.loadPendingInvitations();
         }
       }
+
+      // Load invitations for current user (to accept)
+      await _loadMyInvitations();
     });
+  }
+
+  Future<void> _loadMyInvitations() async {
+    setState(() => _loadingInvitations = true);
+    try {
+      final farmProvider = context.read<FarmProvider>();
+      final invitations = await farmProvider.getMyPendingInvitations();
+      if (mounted) {
+        setState(() => _myInvitations = invitations);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loadingInvitations = false);
+      }
+    }
   }
 
   @override
@@ -94,12 +115,13 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
   }
 
   Widget _buildNoFarmView(BuildContext context, Function t, ThemeData theme, FarmProvider farmProvider) {
-    return Center(
+    return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const SizedBox(height: 40),
             Icon(
               Icons.home_work_outlined,
               size: 80,
@@ -124,10 +146,84 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
               icon: const Icon(Icons.add),
               label: Text(t('create_farm')),
             ),
+
+            // Show pending invitations for this user
+            if (_loadingInvitations)
+              const Padding(
+                padding: EdgeInsets.only(top: 40),
+                child: CircularProgressIndicator(),
+              )
+            else if (_myInvitations.isNotEmpty) ...[
+              const SizedBox(height: 48),
+              Divider(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
+              const SizedBox(height: 24),
+              Text(
+                t('you_have_invitations'),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ..._myInvitations.map((invitation) => Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.mail_outline,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  title: Text(t('farm_invitation')),
+                  subtitle: Text(
+                    '${invitation.role.displayName(context.read<LocaleProvider>().code)} • ${t('expires_in', params: {'days': invitation.expiresAt.difference(DateTime.now()).inDays.toString()})}',
+                  ),
+                  trailing: FilledButton(
+                    onPressed: () => _acceptInvitation(context, t, farmProvider, invitation),
+                    child: Text(t('accept')),
+                  ),
+                ),
+              )),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _acceptInvitation(
+    BuildContext context,
+    Function t,
+    FarmProvider farmProvider,
+    FarmInvitation invitation,
+  ) async {
+    try {
+      await farmProvider.acceptInvitation(invitation.token!);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(t('invitation_accepted')),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Reload invitations
+        await _loadMyInvitations();
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${t('error')}: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildSectionHeader(String title, ThemeData theme) {
