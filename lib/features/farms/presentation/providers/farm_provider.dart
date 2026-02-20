@@ -123,8 +123,27 @@ class FarmProvider extends ChangeNotifier {
       // Reload farms
       await loadFarms();
 
-      // Set the new farm as active
-      await setActiveFarm(farmId);
+      // Set the new farm as active (if found in list)
+      final createdFarm = _farms.where((f) => f.id == farmId).firstOrNull;
+      if (createdFarm != null) {
+        _activeFarm = createdFarm;
+      } else {
+        // Farm was created but not found in list - create locally
+        final newFarm = Farm(
+          id: farmId,
+          name: name,
+          description: description,
+          createdBy: _supabase.auth.currentUser?.id ?? '',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          userRole: 'owner',
+          memberCount: 1,
+          joinedAt: DateTime.now(),
+        );
+        _farms = [..._farms, newFarm];
+        _activeFarm = newFarm;
+      }
+      notifyListeners();
 
       return farmId;
     } catch (e) {
