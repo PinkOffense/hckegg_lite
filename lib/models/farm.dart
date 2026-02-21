@@ -151,6 +151,7 @@ class FarmInvitation {
   final DateTime expiresAt;
   final DateTime createdAt;
   final String? token;
+  final String? farmName;
 
   const FarmInvitation({
     required this.id,
@@ -161,6 +162,7 @@ class FarmInvitation {
     required this.expiresAt,
     required this.createdAt,
     this.token,
+    this.farmName,
   });
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
@@ -179,6 +181,7 @@ class FarmInvitation {
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
       token: json['token'],
+      farmName: json['farm_name'],
     );
   }
 }

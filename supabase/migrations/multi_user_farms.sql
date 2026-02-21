@@ -21,6 +21,14 @@
 -- ============================================
 
 -- ============================================
+-- STEP 0: ENABLE REQUIRED EXTENSIONS
+-- ============================================
+
+-- pgcrypto is needed for gen_random_bytes() used in invitation tokens
+-- On Supabase, extensions may live in the 'extensions' schema
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- ============================================
 -- STEP 1: CREATE FARM TABLES
 -- ============================================
 
@@ -62,7 +70,7 @@ CREATE TABLE IF NOT EXISTS public.farm_invitations (
     email TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'editor' CHECK (role IN ('owner', 'editor')),
     invited_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    token TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+    token TEXT NOT NULL UNIQUE DEFAULT encode(extensions.gen_random_bytes(32), 'hex'),
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),
     accepted_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -147,11 +155,16 @@ END;
 $$;
 
 -- Function to get user's farms
+-- NOTE: Return column names must NOT conflict with table column names
+-- to avoid "column reference is ambiguous" errors in subqueries.
 CREATE OR REPLACE FUNCTION public.get_user_farms(p_user_id UUID DEFAULT auth.uid())
 RETURNS TABLE (
-    farm_id UUID,
-    farm_name TEXT,
-    farm_description TEXT,
+    id UUID,
+    name TEXT,
+    description TEXT,
+    created_by UUID,
+    created_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE,
     user_role TEXT,
     member_count BIGINT,
     joined_at TIMESTAMP WITH TIME ZONE
@@ -166,8 +179,11 @@ BEGIN
         f.id,
         f.name,
         f.description,
+        f.created_by,
+        f.created_at,
+        f.updated_at,
         fm.role,
-        (SELECT COUNT(*) FROM public.farm_members WHERE farm_id = f.id),
+        (SELECT COUNT(*) FROM public.farm_members sub_fm WHERE sub_fm.farm_id = f.id),
         fm.joined_at
     FROM public.farms f
     JOIN public.farm_members fm ON f.id = fm.farm_id
@@ -217,7 +233,7 @@ CREATE OR REPLACE FUNCTION public.invite_to_farm(
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_invitation_id UUID;
@@ -519,6 +535,59 @@ BEGIN
     RETURN TRUE;
 END;
 $$;
+
+-- Function to get pending invitations for the current user (to accept)
+CREATE OR REPLACE FUNCTION public.get_my_pending_invitations()
+RETURNS TABLE (
+    id UUID,
+    farm_id UUID,
+    email TEXT,
+    role TEXT,
+    invited_by_name TEXT,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE,
+    token TEXT,
+    farm_name TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_user_email TEXT;
+BEGIN
+    -- Get current user's email
+    SELECT u.email INTO v_user_email
+    FROM auth.users u
+    WHERE u.id = auth.uid();
+
+    IF v_user_email IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
+    RETURN QUERY
+    SELECT
+        fi.id,
+        fi.farm_id,
+        fi.email,
+        fi.role,
+        COALESCE(up.display_name, u.email),
+        fi.expires_at,
+        fi.created_at,
+        fi.token,
+        f.name
+    FROM public.farm_invitations fi
+    JOIN auth.users u ON fi.invited_by = u.id
+    LEFT JOIN public.user_profiles up ON fi.invited_by = up.user_id
+    JOIN public.farms f ON fi.farm_id = f.id
+    WHERE LOWER(fi.email) = LOWER(v_user_email)
+      AND fi.accepted_at IS NULL
+      AND fi.expires_at > NOW()
+    ORDER BY fi.created_at DESC;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_my_pending_invitations() TO authenticated;
 
 -- ============================================
 -- STEP 4: ENABLE RLS ON NEW TABLES
