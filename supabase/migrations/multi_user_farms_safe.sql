@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS public.farm_invitations (
     email TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'editor' CHECK (role IN ('owner', 'editor')),
     invited_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    token TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+    token TEXT NOT NULL UNIQUE DEFAULT encode(extensions.gen_random_bytes(32), 'hex'),
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),
     accepted_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -202,7 +202,7 @@ BEGIN
     DO UPDATE SET
         role = EXCLUDED.role,
         invited_by = EXCLUDED.invited_by,
-        token = encode(gen_random_bytes(32), 'hex'),
+        token = encode(extensions.gen_random_bytes(32), 'hex'),
         expires_at = NOW() + INTERVAL '7 days',
         accepted_at = NULL,
         created_at = NOW()
