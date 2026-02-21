@@ -32,6 +32,43 @@ class FarmProvider extends ChangeNotifier {
   bool get hasFarms => _farms.isNotEmpty;
   bool get isOwnerOfActiveFarm => _activeFarm?.isOwner ?? false;
 
+  /// Get the current user's member record for the active farm
+  FarmMember? get currentMember {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null || _members.isEmpty) return null;
+    try {
+      return _members.firstWhere((m) => m.userId == userId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Check if current user can view a feature
+  /// Returns true if user is owner or has view permission for the feature
+  bool canView(String feature) {
+    // No farm = allow (for backwards compatibility)
+    if (_activeFarm == null) return true;
+    // Owner always has full access
+    if (_activeFarm!.isOwner) return true;
+    // Check member permissions
+    final member = currentMember;
+    if (member == null) return true; // Default to allow if member not loaded
+    return member.permissions.canView(feature);
+  }
+
+  /// Check if current user can edit a feature
+  /// Returns true if user is owner or has edit permission for the feature
+  bool canEdit(String feature) {
+    // No farm = allow (for backwards compatibility)
+    if (_activeFarm == null) return true;
+    // Owner always has full access
+    if (_activeFarm!.isOwner) return true;
+    // Check member permissions
+    final member = currentMember;
+    if (member == null) return true; // Default to allow if member not loaded
+    return member.permissions.canEdit(feature);
+  }
+
   /// Register a callback to be notified when active farm changes
   void addFarmChangedListener(FarmChangedCallback callback) {
     _farmChangedCallbacks.add(callback);
@@ -72,6 +109,8 @@ class FarmProvider extends ChangeNotifier {
         _activeFarm = _farms.first;
         _updateFarmContext();
         _notifyFarmChanged();
+        // Load members to get permissions
+        await loadFarmMembers();
         notifyListeners();
       }
     } catch (e) {

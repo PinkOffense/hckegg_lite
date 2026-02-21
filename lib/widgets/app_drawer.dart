@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../features/farms/presentation/providers/farm_provider.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 import '../services/profile_service.dart';
@@ -180,76 +181,126 @@ class _AppDrawerState extends State<AppDrawer> {
                     color: const Color(0xFF6C63FF),
                   ),
 
-                  // Production section
-                  _buildSectionHeader(context, t('section_production')),
-                  _buildMenuItem(
-                    context: context,
-                    icon: Icons.egg_rounded,
-                    emoji: '🥚',
-                    title: t('egg_records'),
-                    route: '/eggs',
-                    currentRoute: currentRoute,
-                    color: const Color(0xFFFFB347),
-                  ),
-                  _buildMenuItem(
-                    context: context,
-                    icon: Icons.favorite_rounded,
-                    emoji: '🐔',
-                    title: t('hen_health'),
-                    route: '/health',
-                    currentRoute: currentRoute,
-                    color: const Color(0xFFFF5722),
-                  ),
-                  _buildMenuItem(
-                    context: context,
-                    icon: Icons.grass_rounded,
-                    emoji: '🌾',
-                    title: t('feed_stock'),
-                    route: '/feed-stock',
-                    currentRoute: currentRoute,
-                    color: const Color(0xFF8BC34A),
+                  // Production section - permission checked
+                  Consumer<FarmProvider>(
+                    builder: (context, farmProvider, _) {
+                      final showEggs = farmProvider.canView('eggs');
+                      final showHealth = farmProvider.canView('health');
+                      final showFeed = farmProvider.canView('feed');
+                      final showProduction = showEggs || showHealth || showFeed;
+
+                      if (!showProduction) return const SizedBox.shrink();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionHeader(context, t('section_production')),
+                          if (showEggs)
+                            _buildMenuItem(
+                              context: context,
+                              icon: Icons.egg_rounded,
+                              emoji: '🥚',
+                              title: t('egg_records'),
+                              route: '/eggs',
+                              currentRoute: currentRoute,
+                              color: const Color(0xFFFFB347),
+                            ),
+                          if (showHealth)
+                            _buildMenuItem(
+                              context: context,
+                              icon: Icons.favorite_rounded,
+                              emoji: '🐔',
+                              title: t('hen_health'),
+                              route: '/health',
+                              currentRoute: currentRoute,
+                              color: const Color(0xFFFF5722),
+                            ),
+                          if (showFeed)
+                            _buildMenuItem(
+                              context: context,
+                              icon: Icons.grass_rounded,
+                              emoji: '🌾',
+                              title: t('feed_stock'),
+                              route: '/feed-stock',
+                              currentRoute: currentRoute,
+                              color: const Color(0xFF8BC34A),
+                            ),
+                        ],
+                      );
+                    },
                   ),
 
-                  // Financial section
-                  _buildSectionHeader(context, t('section_financial')),
-                  _buildMenuItem(
-                    context: context,
-                    icon: Icons.store_rounded,
-                    emoji: '💰',
-                    title: t('sales'),
-                    route: '/sales',
-                    currentRoute: currentRoute,
-                    color: const Color(0xFF4CAF50),
-                  ),
-                  _buildMenuItem(
-                    context: context,
-                    icon: Icons.credit_card_rounded,
-                    emoji: '💳',
-                    title: t('payments'),
-                    route: '/payments',
-                    currentRoute: currentRoute,
-                    color: const Color(0xFF2196F3),
-                  ),
-                  _buildMenuItem(
-                    context: context,
-                    icon: Icons.receipt_long_rounded,
-                    emoji: '📊',
-                    title: t('expenses'),
-                    route: '/expenses',
-                    currentRoute: currentRoute,
-                    color: const Color(0xFFE91E63),
+                  // Financial section - permission checked
+                  Consumer<FarmProvider>(
+                    builder: (context, farmProvider, _) {
+                      final showSales = farmProvider.canView('sales');
+                      final showExpenses = farmProvider.canView('expenses');
+                      final showFinancial = showSales || showExpenses;
+
+                      if (!showFinancial) return const SizedBox.shrink();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionHeader(context, t('section_financial')),
+                          if (showSales)
+                            _buildMenuItem(
+                              context: context,
+                              icon: Icons.store_rounded,
+                              emoji: '💰',
+                              title: t('sales'),
+                              route: '/sales',
+                              currentRoute: currentRoute,
+                              color: const Color(0xFF4CAF50),
+                            ),
+                          if (showSales)
+                            _buildMenuItem(
+                              context: context,
+                              icon: Icons.credit_card_rounded,
+                              emoji: '💳',
+                              title: t('payments'),
+                              route: '/payments',
+                              currentRoute: currentRoute,
+                              color: const Color(0xFF2196F3),
+                            ),
+                          if (showExpenses)
+                            _buildMenuItem(
+                              context: context,
+                              icon: Icons.receipt_long_rounded,
+                              emoji: '📊',
+                              title: t('expenses'),
+                              route: '/expenses',
+                              currentRoute: currentRoute,
+                              color: const Color(0xFFE91E63),
+                            ),
+                        ],
+                      );
+                    },
                   ),
 
-                  // Management section
-                  _buildSectionHeader(context, t('section_management')),
-                  _buildMenuItem(
-                    context: context,
-                    icon: Icons.calendar_month_rounded,
-                    emoji: '📅',
-                    title: t('reservations'),
-                    route: '/reservations',
-                    currentRoute: currentRoute,
-                    color: const Color(0xFF9C27B0),
+                  // Management section - permission checked
+                  Consumer<FarmProvider>(
+                    builder: (context, farmProvider, _) {
+                      final showReservations = farmProvider.canView('reservations');
+
+                      if (!showReservations) return const SizedBox.shrink();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionHeader(context, t('section_management')),
+                          _buildMenuItem(
+                            context: context,
+                            icon: Icons.calendar_month_rounded,
+                            emoji: '📅',
+                            title: t('reservations'),
+                            route: '/reservations',
+                            currentRoute: currentRoute,
+                            color: const Color(0xFF9C27B0),
+                          ),
+                        ],
+                      );
+                    },
                   ),
 
                   const Padding(
@@ -340,15 +391,24 @@ class _AppDrawerState extends State<AppDrawer> {
     final locale = Provider.of<LocaleProvider>(context, listen: false).code;
     final t = (String k) => Translations.of(locale, k);
 
-    final items = [
+    // Build items based on permissions
+    final farmProvider = Provider.of<FarmProvider>(context, listen: false);
+    final items = <_RailItem>[
       _RailItem('🏠', '/', const Color(0xFF6C63FF), t('dashboard')),
-      _RailItem('🥚', '/eggs', const Color(0xFFFFB347), t('egg_records')),
-      _RailItem('🐔', '/health', const Color(0xFFFF5722), t('hen_health')),
-      _RailItem('🌾', '/feed-stock', const Color(0xFF8BC34A), t('feed_stock')),
-      _RailItem('💰', '/sales', const Color(0xFF4CAF50), t('sales')),
-      _RailItem('💳', '/payments', const Color(0xFF2196F3), t('payments')),
-      _RailItem('📊', '/expenses', const Color(0xFFE91E63), t('expenses')),
-      _RailItem('📅', '/reservations', const Color(0xFF9C27B0), t('reservations')),
+      if (farmProvider.canView('eggs'))
+        _RailItem('🥚', '/eggs', const Color(0xFFFFB347), t('egg_records')),
+      if (farmProvider.canView('health'))
+        _RailItem('🐔', '/health', const Color(0xFFFF5722), t('hen_health')),
+      if (farmProvider.canView('feed'))
+        _RailItem('🌾', '/feed-stock', const Color(0xFF8BC34A), t('feed_stock')),
+      if (farmProvider.canView('sales'))
+        _RailItem('💰', '/sales', const Color(0xFF4CAF50), t('sales')),
+      if (farmProvider.canView('sales'))
+        _RailItem('💳', '/payments', const Color(0xFF2196F3), t('payments')),
+      if (farmProvider.canView('expenses'))
+        _RailItem('📊', '/expenses', const Color(0xFFE91E63), t('expenses')),
+      if (farmProvider.canView('reservations'))
+        _RailItem('📅', '/reservations', const Color(0xFF9C27B0), t('reservations')),
     ];
 
     return SafeArea(
