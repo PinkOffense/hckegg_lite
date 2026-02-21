@@ -2,7 +2,7 @@ import '../../../../core/core.dart';
 import '../entities/egg_record.dart';
 import '../repositories/egg_repository.dart';
 
-/// Get all egg records for a user
+/// Get all egg records for a user or farm
 class GetEggRecords implements UseCase<List<EggRecord>, GetEggRecordsParams> {
   GetEggRecords(this.repository);
 
@@ -10,13 +10,14 @@ class GetEggRecords implements UseCase<List<EggRecord>, GetEggRecordsParams> {
 
   @override
   Future<Result<List<EggRecord>>> call(GetEggRecordsParams params) {
-    return repository.getEggRecords(params.userId);
+    return repository.getEggRecords(params.userId, farmId: params.farmId);
   }
 }
 
 class GetEggRecordsParams {
-  const GetEggRecordsParams({required this.userId});
+  const GetEggRecordsParams({required this.userId, this.farmId});
   final String userId;
+  final String? farmId;
 }
 
 /// Get egg record by ID
@@ -45,14 +46,15 @@ class GetEggRecordByDate
 
   @override
   Future<Result<EggRecord?>> call(GetEggRecordByDateParams params) {
-    return repository.getEggRecordByDate(params.userId, params.date);
+    return repository.getEggRecordByDate(params.userId, params.date, farmId: params.farmId);
   }
 }
 
 class GetEggRecordByDateParams {
-  const GetEggRecordByDateParams({required this.userId, required this.date});
+  const GetEggRecordByDateParams({required this.userId, required this.date, this.farmId});
   final String userId;
   final String date;
+  final String? farmId;
 }
 
 /// Get egg records in date range
@@ -68,6 +70,7 @@ class GetEggRecordsInRange
       params.userId,
       params.startDate,
       params.endDate,
+      farmId: params.farmId,
     );
   }
 }
@@ -77,11 +80,13 @@ class GetEggRecordsInRangeParams {
     required this.userId,
     required this.startDate,
     required this.endDate,
+    this.farmId,
   });
 
   final String userId;
   final String startDate;
   final String endDate;
+  final String? farmId;
 }
 
 /// Create a new egg record
@@ -148,6 +153,7 @@ class GetEggStatistics
       params.userId,
       params.startDate,
       params.endDate,
+      farmId: params.farmId,
     );
   }
 }
@@ -157,9 +163,11 @@ class GetEggStatisticsParams {
     required this.userId,
     required this.startDate,
     required this.endDate,
+    this.farmId,
   });
 
   final String userId;
   final String startDate;
   final String endDate;
+  final String? farmId;
 }

@@ -17,8 +17,11 @@ Future<Response> _getFeedStocks(RequestContext context) async {
     final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
+    final queryParams = context.request.uri.queryParameters;
+    final farmId = queryParams['farm_id'];
+
     final repository = FeedStockRepositoryImpl(SupabaseClientManager.client);
-    final result = await repository.getFeedStocks(userId);
+    final result = await repository.getFeedStocks(userId, farmId: farmId);
 
     return result.fold(
       onSuccess: (feedStocks) => Response.json(body: {'data': feedStocks.map((f) => f.toJson()).toList(), 'count': feedStocks.length}),
@@ -43,9 +46,11 @@ Future<Response> _createFeedStock(RequestContext context) async {
     }
 
     final now = DateTime.now().toUtc();
+    final farmId = body['farm_id'] as String?;
     final feedStock = FeedStock(
       id: '',
       userId: userId,
+      farmId: farmId,
       type: FeedType.fromString(body['type'] as String),
       brand: body['brand'] as String?,
       currentQuantityKg: (body['current_quantity_kg'] as num?)?.toDouble() ?? 0.0,

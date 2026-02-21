@@ -4,21 +4,22 @@ import '../entities/egg_record.dart';
 /// Repository interface for egg records
 /// Defines the contract for data operations
 abstract class EggRepository {
-  /// Get all egg records for a user
-  Future<Result<List<EggRecord>>> getEggRecords(String userId);
+  /// Get all egg records for a user or farm
+  Future<Result<List<EggRecord>>> getEggRecords(String userId, {String? farmId});
 
   /// Get egg record by ID
   Future<Result<EggRecord>> getEggRecordById(String id);
 
-  /// Get egg record by date for a user
-  Future<Result<EggRecord?>> getEggRecordByDate(String userId, String date);
+  /// Get egg record by date for a user or farm
+  Future<Result<EggRecord?>> getEggRecordByDate(String userId, String date, {String? farmId});
 
   /// Get egg records in date range
   Future<Result<List<EggRecord>>> getEggRecordsInRange(
     String userId,
     String startDate,
-    String endDate,
-  );
+    String endDate, {
+    String? farmId,
+  });
 
   /// Create a new egg record
   Future<Result<EggRecord>> createEggRecord(EggRecord record);
@@ -29,15 +30,16 @@ abstract class EggRepository {
   /// Delete an egg record
   Future<Result<void>> deleteEggRecord(String id);
 
-  /// Get total eggs collected for a user
-  Future<Result<int>> getTotalEggsCollected(String userId);
+  /// Get total eggs collected for a user or farm
+  Future<Result<int>> getTotalEggsCollected(String userId, {String? farmId});
 
   /// Get statistics for a date range
   Future<Result<EggStatistics>> getStatistics(
     String userId,
     String startDate,
-    String endDate,
-  );
+    String endDate, {
+    String? farmId,
+  });
 }
 
 /// Statistics for egg records

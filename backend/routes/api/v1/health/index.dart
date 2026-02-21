@@ -22,8 +22,11 @@ Future<Response> _getVetRecords(RequestContext context) async {
       );
     }
 
+    final queryParams = context.request.uri.queryParameters;
+    final farmId = queryParams['farm_id'];
+
     final repository = VetRepositoryImpl(SupabaseClientManager.client);
-    final result = await repository.getVetRecords(userId);
+    final result = await repository.getVetRecords(userId, farmId: farmId);
 
     return result.fold(
       onSuccess: (vetRecords) => Response.json(
@@ -67,9 +70,11 @@ Future<Response> _createVetRecord(RequestContext context) async {
     }
 
     final now = DateTime.now().toUtc();
+    final farmId = body['farm_id'] as String?;
     final vetRecord = VetRecord(
       id: '',
       userId: userId,
+      farmId: farmId,
       date: body['date'] as String,
       type: VetRecordType.fromString(body['type'] as String),
       hensAffected: (body['hens_affected'] as int?) ?? 1,

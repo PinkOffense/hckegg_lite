@@ -40,6 +40,7 @@ class FeedStock extends Equatable {
   const FeedStock({
     required this.id,
     required this.userId,
+    this.farmId,
     required this.type,
     this.brand,
     required this.currentQuantityKg,
@@ -52,6 +53,7 @@ class FeedStock extends Equatable {
 
   final String id;
   final String userId;
+  final String? farmId;
   final FeedType type;
   final String? brand;
   final double currentQuantityKg;
@@ -67,6 +69,7 @@ class FeedStock extends Equatable {
   FeedStock copyWith({
     String? id,
     String? userId,
+    String? farmId,
     FeedType? type,
     String? brand,
     double? currentQuantityKg,
@@ -79,6 +82,7 @@ class FeedStock extends Equatable {
     return FeedStock(
       id: id ?? this.id,
       userId: userId ?? this.userId,
+      farmId: farmId ?? this.farmId,
       type: type ?? this.type,
       brand: brand ?? this.brand,
       currentQuantityKg: currentQuantityKg ?? this.currentQuantityKg,
@@ -93,6 +97,7 @@ class FeedStock extends Equatable {
   Map<String, dynamic> toJson() => {
         'id': id,
         'user_id': userId,
+        'farm_id': farmId,
         'type': type.name,
         'brand': brand,
         'current_quantity_kg': currentQuantityKg,
@@ -106,6 +111,7 @@ class FeedStock extends Equatable {
   factory FeedStock.fromJson(Map<String, dynamic> json) => FeedStock(
         id: json['id'] as String,
         userId: json['user_id'] as String,
+        farmId: json['farm_id'] as String?,
         type: FeedType.fromString(json['type'] as String),
         brand: json['brand'] as String?,
         currentQuantityKg: (json['current_quantity_kg'] as num).toDouble(),
@@ -121,6 +127,7 @@ class FeedStock extends Equatable {
   List<Object?> get props => [
         id,
         userId,
+        farmId,
         type,
         brand,
         currentQuantityKg,
@@ -138,6 +145,7 @@ class FeedMovement extends Equatable {
   const FeedMovement({
     required this.id,
     required this.userId,
+    this.farmId,
     required this.feedStockId,
     required this.movementType,
     required this.quantityKg,
@@ -149,6 +157,7 @@ class FeedMovement extends Equatable {
 
   final String id;
   final String userId;
+  final String? farmId;
   final String feedStockId;
   final StockMovementType movementType;
   final double quantityKg;
@@ -160,6 +169,7 @@ class FeedMovement extends Equatable {
   Map<String, dynamic> toJson() => {
         'id': id,
         'user_id': userId,
+        'farm_id': farmId,
         'feed_stock_id': feedStockId,
         'movement_type': movementType.name,
         'quantity_kg': quantityKg,
@@ -172,6 +182,7 @@ class FeedMovement extends Equatable {
   factory FeedMovement.fromJson(Map<String, dynamic> json) => FeedMovement(
         id: json['id'] as String,
         userId: json['user_id'] as String,
+        farmId: json['farm_id'] as String?,
         feedStockId: json['feed_stock_id'] as String,
         movementType:
             StockMovementType.fromString(json['movement_type'] as String),
@@ -186,6 +197,7 @@ class FeedMovement extends Equatable {
   List<Object?> get props => [
         id,
         userId,
+        farmId,
         feedStockId,
         movementType,
         quantityKg,

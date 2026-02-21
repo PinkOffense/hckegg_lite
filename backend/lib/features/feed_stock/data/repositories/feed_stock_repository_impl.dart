@@ -10,13 +10,18 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
   static const _movementTable = 'feed_movements';
 
   @override
-  Future<Result<List<FeedStock>>> getFeedStocks(String userId) async {
+  Future<Result<List<FeedStock>>> getFeedStocks(String userId, {String? farmId}) async {
     try {
-      final response = await _client
-          .from(_stockTable)
-          .select()
-          .eq('user_id', userId)
-          .order('type', ascending: true);
+      var query = _client.from(_stockTable).select();
+
+      // Filter by farm_id if provided, otherwise by user_id
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('type', ascending: true);
       return Result.success(
         (response as List)
             .map((j) => FeedStock.fromJson(j as Map<String, dynamic>))
@@ -46,12 +51,17 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
   }
 
   @override
-  Future<Result<List<FeedStock>>> getLowStockItems(String userId) async {
+  Future<Result<List<FeedStock>>> getLowStockItems(String userId, {String? farmId}) async {
     try {
-      final response = await _client
-          .from(_stockTable)
-          .select()
-          .eq('user_id', userId);
+      var query = _client.from(_stockTable).select();
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query;
 
       final stocks = (response as List)
           .map((j) => FeedStock.fromJson(j as Map<String, dynamic>))
@@ -70,6 +80,7 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
       final now = DateTime.now().toUtc();
       final data = {
         'user_id': feedStock.userId,
+        'farm_id': feedStock.farmId,
         'type': feedStock.type.name,
         'brand': feedStock.brand,
         'current_quantity_kg': feedStock.currentQuantityKg,
@@ -124,15 +135,22 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
   @override
   Future<Result<List<FeedMovement>>> getFeedMovements(
     String userId,
-    String feedStockId,
-  ) async {
+    String feedStockId, {
+    String? farmId,
+  }) async {
     try {
-      final response = await _client
+      var query = _client
           .from(_movementTable)
           .select()
-          .eq('user_id', userId)
-          .eq('feed_stock_id', feedStockId)
-          .order('date', ascending: false);
+          .eq('feed_stock_id', feedStockId);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('date', ascending: false);
       return Result.success(
         (response as List)
             .map((j) => FeedMovement.fromJson(j as Map<String, dynamic>))
@@ -148,6 +166,7 @@ class FeedStockRepositoryImpl implements FeedStockRepository {
     try {
       final data = {
         'user_id': movement.userId,
+        'farm_id': movement.farmId,
         'feed_stock_id': movement.feedStockId,
         'movement_type': movement.movementType.name,
         'quantity_kg': movement.quantityKg,

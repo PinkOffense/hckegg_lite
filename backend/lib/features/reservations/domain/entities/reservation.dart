@@ -6,6 +6,7 @@ class Reservation extends Equatable {
   const Reservation({
     required this.id,
     required this.userId,
+    this.farmId,
     required this.date,
     this.pickupDate,
     required this.quantity,
@@ -20,6 +21,7 @@ class Reservation extends Equatable {
 
   final String id;
   final String userId;
+  final String? farmId;
   final String date; // Format: YYYY-MM-DD (reservation date)
   final String? pickupDate; // Format: YYYY-MM-DD (expected pickup)
   final int quantity;
@@ -38,6 +40,7 @@ class Reservation extends Equatable {
   Reservation copyWith({
     String? id,
     String? userId,
+    String? farmId,
     String? date,
     String? pickupDate,
     int? quantity,
@@ -52,6 +55,7 @@ class Reservation extends Equatable {
     return Reservation(
       id: id ?? this.id,
       userId: userId ?? this.userId,
+      farmId: farmId ?? this.farmId,
       date: date ?? this.date,
       pickupDate: pickupDate ?? this.pickupDate,
       quantity: quantity ?? this.quantity,
@@ -68,6 +72,7 @@ class Reservation extends Equatable {
   Map<String, dynamic> toJson() => {
         'id': id,
         'user_id': userId,
+        'farm_id': farmId,
         'date': date,
         'pickup_date': pickupDate,
         'quantity': quantity,
@@ -83,6 +88,7 @@ class Reservation extends Equatable {
   factory Reservation.fromJson(Map<String, dynamic> json) => Reservation(
         id: json['id'] as String,
         userId: json['user_id'] as String,
+        farmId: json['farm_id'] as String?,
         date: json['date'] as String,
         pickupDate: json['pickup_date'] as String?,
         quantity: json['quantity'] as int,
@@ -99,6 +105,7 @@ class Reservation extends Equatable {
   List<Object?> get props => [
         id,
         userId,
+        farmId,
         date,
         pickupDate,
         quantity,

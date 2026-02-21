@@ -2,14 +2,14 @@ import '../../../../core/core.dart';
 import '../entities/expense.dart';
 
 abstract class ExpenseRepository {
-  Future<Result<List<Expense>>> getExpenses(String userId);
+  Future<Result<List<Expense>>> getExpenses(String userId, {String? farmId});
   Future<Result<Expense>> getExpenseById(String id);
-  Future<Result<List<Expense>>> getExpensesInRange(String userId, String startDate, String endDate);
-  Future<Result<List<Expense>>> getExpensesByCategory(String userId, ExpenseCategory category);
+  Future<Result<List<Expense>>> getExpensesInRange(String userId, String startDate, String endDate, {String? farmId});
+  Future<Result<List<Expense>>> getExpensesByCategory(String userId, ExpenseCategory category, {String? farmId});
   Future<Result<Expense>> createExpense(Expense expense);
   Future<Result<Expense>> updateExpense(Expense expense);
   Future<Result<void>> deleteExpense(String id);
-  Future<Result<ExpenseStatistics>> getStatistics(String userId, String startDate, String endDate);
+  Future<Result<ExpenseStatistics>> getStatistics(String userId, String startDate, String endDate, {String? farmId});
 }
 
 class ExpenseStatistics {

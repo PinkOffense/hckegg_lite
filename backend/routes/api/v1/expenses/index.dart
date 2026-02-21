@@ -17,8 +17,11 @@ Future<Response> _getExpenses(RequestContext context) async {
     final userId = AuthUtils.getUserIdFromContext(context);
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
+    final queryParams = context.request.uri.queryParameters;
+    final farmId = queryParams['farm_id'];
+
     final repository = ExpenseRepositoryImpl(SupabaseClientManager.client);
-    final result = await repository.getExpenses(userId);
+    final result = await repository.getExpenses(userId, farmId: farmId);
 
     return result.fold(
       onSuccess: (expenses) => Response.json(body: {'data': expenses.map((e) => e.toJson()).toList(), 'count': expenses.length}),
@@ -35,9 +38,11 @@ Future<Response> _createExpense(RequestContext context) async {
     if (userId == null) return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
 
     final body = await context.request.json() as Map<String, dynamic>;
+    final farmId = body['farm_id'] as String?;
     final expense = Expense(
       id: '',
       userId: userId,
+      farmId: farmId,
       date: body['date'] as String,
       category: ExpenseCategory.fromString(body['category'] as String),
       amount: (body['amount'] as num).toDouble(),
