@@ -536,6 +536,59 @@ BEGIN
 END;
 $$;
 
+-- Function to get pending invitations for the current user (to accept)
+CREATE OR REPLACE FUNCTION public.get_my_pending_invitations()
+RETURNS TABLE (
+    id UUID,
+    farm_id UUID,
+    email TEXT,
+    role TEXT,
+    invited_by_name TEXT,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE,
+    token TEXT,
+    farm_name TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_user_email TEXT;
+BEGIN
+    -- Get current user's email
+    SELECT u.email INTO v_user_email
+    FROM auth.users u
+    WHERE u.id = auth.uid();
+
+    IF v_user_email IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
+    RETURN QUERY
+    SELECT
+        fi.id,
+        fi.farm_id,
+        fi.email,
+        fi.role,
+        COALESCE(up.display_name, u.email),
+        fi.expires_at,
+        fi.created_at,
+        fi.token,
+        f.name
+    FROM public.farm_invitations fi
+    JOIN auth.users u ON fi.invited_by = u.id
+    LEFT JOIN public.user_profiles up ON fi.invited_by = up.user_id
+    JOIN public.farms f ON fi.farm_id = f.id
+    WHERE LOWER(fi.email) = LOWER(v_user_email)
+      AND fi.accepted_at IS NULL
+      AND fi.expires_at > NOW()
+    ORDER BY fi.created_at DESC;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_my_pending_invitations() TO authenticated;
+
 -- ============================================
 -- STEP 4: ENABLE RLS ON NEW TABLES
 -- ============================================

@@ -95,12 +95,20 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
                 const SizedBox(height: 12),
                 _buildMembersCard(context, t, theme, farmProvider),
 
-                // Pending Invitations (owner only)
+                // Pending Invitations sent by owner (owner only)
                 if (farm.isOwner && farmProvider.pendingInvitations.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   _buildSectionHeader(t('pending_invitations'), theme),
                   const SizedBox(height: 12),
                   _buildInvitationsCard(context, t, theme, farmProvider),
+                ],
+
+                // Invitations to join other farms (for current user)
+                if (_myInvitations.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  _buildSectionHeader(t('you_have_invitations'), theme),
+                  const SizedBox(height: 12),
+                  _buildMyInvitationsCard(context, t, theme, farmProvider),
                 ],
 
                 // Actions Section
@@ -165,30 +173,33 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              ..._myInvitations.map((invitation) => Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
+              ..._myInvitations.map((invitation) {
+                final farmName = invitation.farmName ?? t('unknown_farm');
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.mail_outline,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.mail_outline,
-                      color: theme.colorScheme.onPrimaryContainer,
+                    title: Text(farmName),
+                    subtitle: Text(
+                      '${invitation.role.displayName(context.read<LocaleProvider>().code)} • ${t('expires_in', params: {'days': invitation.expiresAt.difference(DateTime.now()).inDays.toString()})}',
+                    ),
+                    trailing: FilledButton(
+                      onPressed: () => _acceptInvitation(context, t, farmProvider, invitation),
+                      child: Text(t('accept')),
                     ),
                   ),
-                  title: Text(t('farm_invitation')),
-                  subtitle: Text(
-                    '${invitation.role.displayName(context.read<LocaleProvider>().code)} • ${t('expires_in', params: {'days': invitation.expiresAt.difference(DateTime.now()).inDays.toString()})}',
-                  ),
-                  trailing: FilledButton(
-                    onPressed: () => _acceptInvitation(context, t, farmProvider, invitation),
-                    child: Text(t('accept')),
-                  ),
-                ),
-              )),
+                );
+              }),
             ],
           ],
         ),
@@ -471,6 +482,45 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
               icon: const Icon(Icons.close),
               onPressed: () => _cancelInvitation(context, t, invitation, farmProvider),
               tooltip: t('cancel_invitation'),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildMyInvitationsCard(
+    BuildContext context,
+    Function t,
+    ThemeData theme,
+    FarmProvider farmProvider,
+  ) {
+    return Card(
+      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+      child: Column(
+        children: _myInvitations.map((invitation) {
+          final daysLeft = invitation.expiresAt.difference(DateTime.now()).inDays;
+          final farmName = invitation.farmName ?? t('unknown_farm');
+
+          return ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.mail_outline,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+            title: Text(farmName),
+            subtitle: Text(
+              '${invitation.role.displayName(context.read<LocaleProvider>().code)} • ${t('expires_in', params: {'days': '$daysLeft'})}',
+            ),
+            trailing: FilledButton(
+              onPressed: () => _acceptInvitation(context, t, farmProvider, invitation),
+              child: Text(t('accept')),
             ),
           );
         }).toList(),
