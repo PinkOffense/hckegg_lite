@@ -190,14 +190,14 @@ BEGIN
     SELECT u.id INTO v_existing_user_id
     FROM auth.users u
     JOIN public.farm_members fm ON u.id = fm.user_id
-    WHERE u.email = p_email AND fm.farm_id = p_farm_id;
+    WHERE LOWER(u.email) = LOWER(p_email) AND fm.farm_id = p_farm_id;
 
     IF v_existing_user_id IS NOT NULL THEN
         RAISE EXCEPTION 'User already has access to this farm';
     END IF;
 
     INSERT INTO public.farm_invitations (farm_id, email, role, invited_by)
-    VALUES (p_farm_id, p_email, p_role, v_user_id)
+    VALUES (p_farm_id, LOWER(p_email), p_role, v_user_id)
     ON CONFLICT (farm_id, email)
     DO UPDATE SET
         role = EXCLUDED.role,
@@ -233,7 +233,7 @@ BEGIN
     SELECT * INTO v_invitation
     FROM public.farm_invitations
     WHERE token = p_token
-      AND email = v_user_email
+      AND LOWER(email) = LOWER(v_user_email)
       AND accepted_at IS NULL
       AND expires_at > NOW();
 
