@@ -8,6 +8,8 @@ import '../state/providers/providers.dart';
 import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../features/analytics/presentation/providers/analytics_provider.dart';
 import '../features/farms/presentation/providers/farm_provider.dart';
+import '../features/health/presentation/providers/vet_provider.dart';
+import '../features/feed_stock/presentation/providers/feed_stock_provider.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 
@@ -30,6 +32,7 @@ class _DataLoaderShellState extends State<DataLoaderShell> {
   String? _loadingMessage;
   String? _lastUserId;
   StreamSubscription<AuthState>? _authSubscription;
+  bool _farmListenerRegistered = false;
 
   static const _loadTimeout = Duration(seconds: 10);
 
@@ -60,6 +63,41 @@ class _DataLoaderShellState extends State<DataLoaderShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _loadData();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Register farm change listener once
+    if (!_farmListenerRegistered) {
+      context.read<FarmProvider>().addFarmChangedListener(_onFarmChanged);
+      _farmListenerRegistered = true;
+    }
+  }
+
+  /// Called when the active farm changes - reload all data
+  void _onFarmChanged(farm) {
+    if (mounted && _dataLoaded) {
+      _reloadAllData();
+    }
+  }
+
+  /// Reload all data providers (when farm changes)
+  Future<void> _reloadAllData() async {
+    if (!mounted) return;
+    try {
+      await Future.wait([
+        context.read<EggProvider>().loadRecords(),
+        context.read<AnalyticsProvider>().loadDashboardAnalytics(),
+        context.read<SaleProvider>().loadSales(),
+        context.read<ExpenseProvider>().loadExpenses(),
+        context.read<ReservationProvider>().loadReservations(),
+        context.read<VetProvider>().loadRecords(),
+        context.read<FeedStockProvider>().loadFeedStocks(),
+      ]);
+    } catch (e) {
+      debugPrint('Error reloading data: $e');
+    }
   }
 
   Future<void> _loadData() async {
@@ -116,7 +154,7 @@ class _DataLoaderShellState extends State<DataLoaderShell> {
     // Load secondary providers individually so one failure doesn't block others
     _loadWithRetry(() => context.read<ExpenseProvider>().loadExpenses());
     _loadWithRetry(() => context.read<ReservationProvider>().loadReservations());
-    _loadWithRetry(() => context.read<VetRecordProvider>().loadVetRecords());
+    _loadWithRetry(() => context.read<VetProvider>().loadRecords());
     _loadWithRetry(() => context.read<FeedStockProvider>().loadFeedStocks());
   }
 
@@ -137,6 +175,11 @@ class _DataLoaderShellState extends State<DataLoaderShell> {
   void dispose() {
     _skipTimer?.cancel();
     _authSubscription?.cancel();
+    if (_farmListenerRegistered) {
+      try {
+        context.read<FarmProvider>().removeFarmChangedListener(_onFarmChanged);
+      } catch (_) {}
+    }
     super.dispose();
   }
 

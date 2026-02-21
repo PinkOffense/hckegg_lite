@@ -3,6 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/context/farm_context.dart';
 import '../../../../models/farm.dart';
 
+/// Callback type for when active farm changes
+typedef FarmChangedCallback = void Function(Farm? newFarm);
+
 /// Provider for farm management and multi-user access
 class FarmProvider extends ChangeNotifier {
   final SupabaseClient _supabase;
@@ -13,6 +16,9 @@ class FarmProvider extends ChangeNotifier {
   List<FarmInvitation> _pendingInvitations = [];
   bool _isLoading = false;
   String? _error;
+
+  /// Callbacks to notify when active farm changes (for data reload)
+  final List<FarmChangedCallback> _farmChangedCallbacks = [];
 
   FarmProvider(this._supabase);
 
@@ -25,6 +31,23 @@ class FarmProvider extends ChangeNotifier {
   String? get error => _error;
   bool get hasFarms => _farms.isNotEmpty;
   bool get isOwnerOfActiveFarm => _activeFarm?.isOwner ?? false;
+
+  /// Register a callback to be notified when active farm changes
+  void addFarmChangedListener(FarmChangedCallback callback) {
+    _farmChangedCallbacks.add(callback);
+  }
+
+  /// Remove a farm changed callback
+  void removeFarmChangedListener(FarmChangedCallback callback) {
+    _farmChangedCallbacks.remove(callback);
+  }
+
+  /// Notify all listeners that the farm changed
+  void _notifyFarmChanged() {
+    for (final callback in _farmChangedCallbacks) {
+      callback(_activeFarm);
+    }
+  }
 
   /// Initialize farm provider - load farms and migrate if needed
   /// Returns silently if the farm feature is not yet set up in the backend
@@ -42,6 +65,7 @@ class FarmProvider extends ChangeNotifier {
       if (_activeFarm == null && _farms.isNotEmpty) {
         _activeFarm = _farms.first;
         _updateFarmContext();
+        _notifyFarmChanged();
         notifyListeners();
       }
     } catch (e) {
@@ -99,9 +123,15 @@ class FarmProvider extends ChangeNotifier {
       orElse: () => throw Exception('Farm not found'),
     );
 
+    final farmChanged = _activeFarm?.id != farm.id;
     _activeFarm = farm;
     _updateFarmContext();
     notifyListeners();
+
+    // Notify listeners to reload data if farm changed
+    if (farmChanged) {
+      _notifyFarmChanged();
+    }
 
     // Load members for the active farm
     await loadFarmMembers();
@@ -152,6 +182,7 @@ class FarmProvider extends ChangeNotifier {
         _activeFarm = newFarm;
       }
       _updateFarmContext();
+      _notifyFarmChanged();
       notifyListeners();
 
       return farmId;
@@ -352,6 +383,8 @@ class FarmProvider extends ChangeNotifier {
       } else {
         _activeFarm = null;
         _members = [];
+        _updateFarmContext();
+        _notifyFarmChanged();
         notifyListeners();
       }
     } catch (e) {
@@ -388,6 +421,9 @@ class FarmProvider extends ChangeNotifier {
       } else {
         _activeFarm = null;
         _members = [];
+        _pendingInvitations = [];
+        _updateFarmContext();
+        _notifyFarmChanged();
         notifyListeners();
       }
     } catch (e) {
