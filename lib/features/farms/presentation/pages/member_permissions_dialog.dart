@@ -95,7 +95,7 @@ class _MemberPermissionsDialogState extends State<MemberPermissionsDialog> {
                 Text(
                   widget.member.email,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                   ),
                 ),
               ],
