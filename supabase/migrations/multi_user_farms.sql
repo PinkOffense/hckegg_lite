@@ -21,6 +21,14 @@
 -- ============================================
 
 -- ============================================
+-- STEP 0: ENABLE REQUIRED EXTENSIONS
+-- ============================================
+
+-- pgcrypto is needed for gen_random_bytes() used in invitation tokens
+-- On Supabase, extensions may live in the 'extensions' schema
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- ============================================
 -- STEP 1: CREATE FARM TABLES
 -- ============================================
 
@@ -62,7 +70,7 @@ CREATE TABLE IF NOT EXISTS public.farm_invitations (
     email TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'editor' CHECK (role IN ('owner', 'editor')),
     invited_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    token TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+    token TEXT NOT NULL UNIQUE DEFAULT encode(extensions.gen_random_bytes(32), 'hex'),
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),
     accepted_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -147,11 +155,16 @@ END;
 $$;
 
 -- Function to get user's farms
+-- NOTE: Return column names must NOT conflict with table column names
+-- to avoid "column reference is ambiguous" errors in subqueries.
 CREATE OR REPLACE FUNCTION public.get_user_farms(p_user_id UUID DEFAULT auth.uid())
 RETURNS TABLE (
-    farm_id UUID,
-    farm_name TEXT,
-    farm_description TEXT,
+    id UUID,
+    name TEXT,
+    description TEXT,
+    created_by UUID,
+    created_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE,
     user_role TEXT,
     member_count BIGINT,
     joined_at TIMESTAMP WITH TIME ZONE
@@ -166,8 +179,11 @@ BEGIN
         f.id,
         f.name,
         f.description,
+        f.created_by,
+        f.created_at,
+        f.updated_at,
         fm.role,
-        (SELECT COUNT(*) FROM public.farm_members WHERE farm_id = f.id),
+        (SELECT COUNT(*) FROM public.farm_members sub_fm WHERE sub_fm.farm_id = f.id),
         fm.joined_at
     FROM public.farms f
     JOIN public.farm_members fm ON f.id = fm.farm_id
@@ -217,7 +233,7 @@ CREATE OR REPLACE FUNCTION public.invite_to_farm(
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_invitation_id UUID;
