@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/context/farm_context.dart';
 import '../models/egg_reservation_model.dart';
 
 abstract class ReservationRemoteDataSource {
@@ -16,16 +17,31 @@ class ReservationRemoteDataSourceImpl implements ReservationRemoteDataSource {
 
   ReservationRemoteDataSourceImpl({required this.client});
 
+  String? get _farmId => FarmContext().farmId;
+
+  String get _userId {
+    final user = client.auth.currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+    return user.id;
+  }
+
   String _toIsoDateString(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   @override
   Future<List<EggReservationModel>> getReservations() async {
-    final response = await client
-        .from('egg_reservations')
-        .select()
-        .order('date', ascending: false);
+    var query = client.from('egg_reservations').select();
+
+    if (_farmId != null) {
+      query = query.eq('farm_id', _farmId!);
+    } else {
+      query = query.eq('user_id', _userId);
+    }
+
+    final response = await query.order('date', ascending: false);
 
     return (response as List)
         .map((json) => EggReservationModel.fromJson(json))
@@ -48,9 +64,15 @@ class ReservationRemoteDataSourceImpl implements ReservationRemoteDataSource {
     final startStr = _toIsoDateString(start);
     final endStr = _toIsoDateString(end);
 
-    final response = await client
-        .from('egg_reservations')
-        .select()
+    var query = client.from('egg_reservations').select();
+
+    if (_farmId != null) {
+      query = query.eq('farm_id', _farmId!);
+    } else {
+      query = query.eq('user_id', _userId);
+    }
+
+    final response = await query
         .gte('date', startStr)
         .lte('date', endStr)
         .order('date', ascending: false);
@@ -62,13 +84,11 @@ class ReservationRemoteDataSourceImpl implements ReservationRemoteDataSource {
 
   @override
   Future<EggReservationModel> createReservation(EggReservationModel reservation) async {
-    final userId = client.auth.currentUser?.id;
-    if (userId == null) {
-      throw Exception('User not authenticated');
-    }
-
     final data = reservation.toJson();
-    data['user_id'] = userId;
+    data['user_id'] = _userId;
+    if (_farmId != null) {
+      data['farm_id'] = _farmId;
+    }
 
     final response = await client
         .from('egg_reservations')
@@ -81,9 +101,14 @@ class ReservationRemoteDataSourceImpl implements ReservationRemoteDataSource {
 
   @override
   Future<EggReservationModel> updateReservation(EggReservationModel reservation) async {
+    final data = reservation.toJson();
+    if (_farmId != null) {
+      data['farm_id'] = _farmId;
+    }
+
     final response = await client
         .from('egg_reservations')
-        .update(reservation.toJson())
+        .update(data)
         .eq('id', reservation.id)
         .select()
         .single();
