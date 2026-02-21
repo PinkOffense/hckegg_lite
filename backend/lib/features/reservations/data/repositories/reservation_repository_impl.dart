@@ -9,13 +9,18 @@ class ReservationRepositoryImpl implements ReservationRepository {
   static const _table = 'egg_reservations';
 
   @override
-  Future<Result<List<Reservation>>> getReservations(String userId) async {
+  Future<Result<List<Reservation>>> getReservations(String userId, {String? farmId}) async {
     try {
-      final response = await _client
-          .from(_table)
-          .select()
-          .eq('user_id', userId)
-          .order('date', ascending: false);
+      var query = _client.from(_table).select();
+
+      // Filter by farm_id if provided, otherwise by user_id
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('date', ascending: false);
       return Result.success(
         (response as List)
             .map((j) => Reservation.fromJson(j as Map<String, dynamic>))
@@ -48,16 +53,23 @@ class ReservationRepositoryImpl implements ReservationRepository {
   Future<Result<List<Reservation>>> getReservationsInRange(
     String userId,
     String startDate,
-    String endDate,
-  ) async {
+    String endDate, {
+    String? farmId,
+  }) async {
     try {
-      final response = await _client
+      var query = _client
           .from(_table)
           .select()
-          .eq('user_id', userId)
           .gte('date', startDate)
-          .lte('date', endDate)
-          .order('date', ascending: false);
+          .lte('date', endDate);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('date', ascending: false);
       return Result.success(
         (response as List)
             .map((j) => Reservation.fromJson(j as Map<String, dynamic>))
@@ -69,15 +81,21 @@ class ReservationRepositoryImpl implements ReservationRepository {
   }
 
   @override
-  Future<Result<List<Reservation>>> getUpcomingPickups(String userId) async {
+  Future<Result<List<Reservation>>> getUpcomingPickups(String userId, {String? farmId}) async {
     try {
       final today = DateTime.now().toIso8601String().substring(0, 10);
-      final response = await _client
+      var query = _client
           .from(_table)
           .select()
-          .eq('user_id', userId)
-          .gte('pickup_date', today)
-          .order('pickup_date', ascending: true);
+          .gte('pickup_date', today);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('pickup_date', ascending: true);
       return Result.success(
         (response as List)
             .map((j) => Reservation.fromJson(j as Map<String, dynamic>))
@@ -93,6 +111,7 @@ class ReservationRepositoryImpl implements ReservationRepository {
     try {
       final data = {
         'user_id': reservation.userId,
+        'farm_id': reservation.farmId,
         'date': reservation.date,
         'pickup_date': reservation.pickupDate,
         'quantity': reservation.quantity,

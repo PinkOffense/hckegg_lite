@@ -6,6 +6,7 @@ class EggRecord extends Equatable {
   const EggRecord({
     required this.id,
     required this.userId,
+    this.farmId,
     required this.date,
     required this.eggsCollected,
     required this.eggsConsumed,
@@ -17,6 +18,7 @@ class EggRecord extends Equatable {
 
   final String id;
   final String userId;
+  final String? farmId;
   final String date; // Format: YYYY-MM-DD
   final int eggsCollected;
   final int eggsConsumed;
@@ -32,6 +34,7 @@ class EggRecord extends Equatable {
   EggRecord copyWith({
     String? id,
     String? userId,
+    String? farmId,
     String? date,
     int? eggsCollected,
     int? eggsConsumed,
@@ -43,6 +46,7 @@ class EggRecord extends Equatable {
     return EggRecord(
       id: id ?? this.id,
       userId: userId ?? this.userId,
+      farmId: farmId ?? this.farmId,
       date: date ?? this.date,
       eggsCollected: eggsCollected ?? this.eggsCollected,
       eggsConsumed: eggsConsumed ?? this.eggsConsumed,
@@ -58,6 +62,7 @@ class EggRecord extends Equatable {
     return {
       'id': id,
       'user_id': userId,
+      'farm_id': farmId,
       'date': date,
       'eggs_collected': eggsCollected,
       'eggs_consumed': eggsConsumed,
@@ -73,6 +78,7 @@ class EggRecord extends Equatable {
     return EggRecord(
       id: json['id'] as String,
       userId: json['user_id'] as String,
+      farmId: json['farm_id'] as String?,
       date: json['date'] as String,
       eggsCollected: json['eggs_collected'] as int,
       eggsConsumed: json['eggs_consumed'] as int? ?? 0,
@@ -87,6 +93,7 @@ class EggRecord extends Equatable {
   List<Object?> get props => [
         id,
         userId,
+        farmId,
         date,
         eggsCollected,
         eggsConsumed,

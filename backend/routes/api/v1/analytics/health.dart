@@ -18,8 +18,11 @@ Future<Response> onRequest(RequestContext context) async {
       );
     }
 
+    final queryParams = context.request.uri.queryParameters;
+    final farmId = queryParams['farm_id'];
+
     final repository = AnalyticsRepository(SupabaseClientManager.client);
-    final result = await repository.getHealthAnalytics(userId);
+    final result = await repository.getHealthAnalytics(userId, farmId: farmId);
 
     return result.fold(
       onSuccess: (health) => Response.json(body: {'data': health.toJson()}),

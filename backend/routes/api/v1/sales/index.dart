@@ -20,9 +20,12 @@ Future<Response> _getSales(RequestContext context) async {
       return Response.json(statusCode: HttpStatus.unauthorized, body: {'error': 'Unauthorized'});
     }
 
+    final queryParams = context.request.uri.queryParameters;
+    final farmId = queryParams['farm_id'];
+
     final repository = SaleRepositoryImpl(SupabaseClientManager.client);
     final useCase = GetSales(repository);
-    final result = await useCase(GetSalesParams(userId: userId));
+    final result = await useCase(GetSalesParams(userId: userId, farmId: farmId));
 
     return result.fold(
       onSuccess: (sales) => Response.json(body: {'data': sales.map((s) => s.toJson()).toList(), 'count': sales.length}),
@@ -42,9 +45,11 @@ Future<Response> _createSale(RequestContext context) async {
 
     final body = await context.request.json() as Map<String, dynamic>;
 
+    final farmId = body['farm_id'] as String?;
     final sale = Sale(
       id: '',
       userId: userId,
+      farmId: farmId,
       date: body['date'] as String,
       quantitySold: body['quantity_sold'] as int,
       pricePerEgg: (body['price_per_egg'] as num).toDouble(),

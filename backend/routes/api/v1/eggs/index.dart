@@ -35,6 +35,7 @@ Future<Response> _getEggRecords(RequestContext context) async {
     final queryParams = context.request.uri.queryParameters;
     final startDate = queryParams['start_date'];
     final endDate = queryParams['end_date'];
+    final farmId = queryParams['farm_id'];
     final limit = int.tryParse(queryParams['limit'] ?? '') ?? 100;
     final offset = int.tryParse(queryParams['offset'] ?? '') ?? 0;
 
@@ -62,11 +63,12 @@ Future<Response> _getEggRecords(RequestContext context) async {
           userId: userId,
           startDate: startDate,
           endDate: endDate,
+          farmId: farmId,
         ),
       );
     } else {
       final useCase = GetEggRecords(repository);
-      result = await useCase(GetEggRecordsParams(userId: userId));
+      result = await useCase(GetEggRecordsParams(userId: userId, farmId: farmId));
     }
 
     return result.fold(
@@ -126,9 +128,11 @@ Future<Response> _createEggRecord(RequestContext context) async {
     }
 
     final now = DateTime.now().toUtc();
+    final farmId = body['farm_id'] as String?;
     final record = EggRecord(
       id: '',
       userId: userId,
+      farmId: farmId,
       date: body['date'] as String,
       eggsCollected: body['eggs_collected'] as int,
       eggsConsumed: (body['eggs_consumed'] as int?) ?? 0,

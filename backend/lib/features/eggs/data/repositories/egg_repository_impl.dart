@@ -12,13 +12,21 @@ class EggRepositoryImpl implements EggRepository {
   static const _table = 'daily_egg_records';
 
   @override
-  Future<Result<List<EggRecord>>> getEggRecords(String userId) async {
+  Future<Result<List<EggRecord>>> getEggRecords(
+    String userId, {
+    String? farmId,
+  }) async {
     try {
-      final response = await _client
-          .from(_table)
-          .select()
-          .eq('user_id', userId)
-          .order('date', ascending: false);
+      var query = _client.from(_table).select();
+
+      // Filter by farm_id if provided, otherwise by user_id
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('date', ascending: false);
 
       final records = (response as List)
           .map((json) => EggRecord.fromJson(json as Map<String, dynamic>))
@@ -52,15 +60,19 @@ class EggRepositoryImpl implements EggRepository {
   @override
   Future<Result<EggRecord?>> getEggRecordByDate(
     String userId,
-    String date,
-  ) async {
+    String date, {
+    String? farmId,
+  }) async {
     try {
-      final response = await _client
-          .from(_table)
-          .select()
-          .eq('user_id', userId)
-          .eq('date', date)
-          .maybeSingle();
+      var query = _client.from(_table).select().eq('date', date);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.maybeSingle();
 
       if (response == null) {
         return Result.success(null);
@@ -76,16 +88,23 @@ class EggRepositoryImpl implements EggRepository {
   Future<Result<List<EggRecord>>> getEggRecordsInRange(
     String userId,
     String startDate,
-    String endDate,
-  ) async {
+    String endDate, {
+    String? farmId,
+  }) async {
     try {
-      final response = await _client
+      var query = _client
           .from(_table)
           .select()
-          .eq('user_id', userId)
           .gte('date', startDate)
-          .lte('date', endDate)
-          .order('date', ascending: false);
+          .lte('date', endDate);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('date', ascending: false);
 
       final records = (response as List)
           .map((json) => EggRecord.fromJson(json as Map<String, dynamic>))
@@ -103,6 +122,7 @@ class EggRepositoryImpl implements EggRepository {
       final now = DateTime.now().toUtc();
       final data = {
         'user_id': record.userId,
+        'farm_id': record.farmId,
         'date': record.date,
         'eggs_collected': record.eggsCollected,
         'eggs_consumed': record.eggsConsumed,
@@ -172,12 +192,20 @@ class EggRepositoryImpl implements EggRepository {
   }
 
   @override
-  Future<Result<int>> getTotalEggsCollected(String userId) async {
+  Future<Result<int>> getTotalEggsCollected(
+    String userId, {
+    String? farmId,
+  }) async {
     try {
-      final response = await _client
-          .from(_table)
-          .select('eggs_collected')
-          .eq('user_id', userId);
+      var query = _client.from(_table).select('eggs_collected');
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query;
 
       final total = (response as List).fold<int>(
         0,
@@ -194,15 +222,23 @@ class EggRepositoryImpl implements EggRepository {
   Future<Result<EggStatistics>> getStatistics(
     String userId,
     String startDate,
-    String endDate,
-  ) async {
+    String endDate, {
+    String? farmId,
+  }) async {
     try {
-      final response = await _client
+      var query = _client
           .from(_table)
           .select()
-          .eq('user_id', userId)
           .gte('date', startDate)
           .lte('date', endDate);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query;
 
       final records = response as List;
 

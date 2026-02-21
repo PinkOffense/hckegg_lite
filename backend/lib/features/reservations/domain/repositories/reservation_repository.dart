@@ -2,14 +2,15 @@ import '../../../../core/core.dart';
 import '../entities/reservation.dart';
 
 abstract class ReservationRepository {
-  Future<Result<List<Reservation>>> getReservations(String userId);
+  Future<Result<List<Reservation>>> getReservations(String userId, {String? farmId});
   Future<Result<Reservation>> getReservationById(String id);
   Future<Result<List<Reservation>>> getReservationsInRange(
     String userId,
     String startDate,
-    String endDate,
-  );
-  Future<Result<List<Reservation>>> getUpcomingPickups(String userId);
+    String endDate, {
+    String? farmId,
+  });
+  Future<Result<List<Reservation>>> getUpcomingPickups(String userId, {String? farmId});
   Future<Result<Reservation>> createReservation(Reservation reservation);
   Future<Result<Reservation>> updateReservation(Reservation reservation);
   Future<Result<void>> deleteReservation(String id);

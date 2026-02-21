@@ -14,13 +14,13 @@ class AnalyticsRepository {
 
   /// Get complete dashboard analytics
   /// Uses parallel queries for better performance
-  Future<Result<DashboardAnalytics>> getDashboardAnalytics(String userId) async {
+  Future<Result<DashboardAnalytics>> getDashboardAnalytics(String userId, {String? farmId}) async {
     try {
       // Phase 1: Run independent queries in parallel
       final results = await Future.wait([
-        _getProductionSummary(userId),
-        _getSalesSummary(userId),
-        _getHealthSummary(userId),
+        _getProductionSummary(userId, farmId: farmId),
+        _getSalesSummary(userId, farmId: farmId),
+        _getHealthSummary(userId, farmId: farmId),
       ]);
 
       final production = results[0] as ProductionSummary;
@@ -29,15 +29,15 @@ class AnalyticsRepository {
 
       // Phase 2: Run dependent queries in parallel
       final dependentResults = await Future.wait([
-        _getExpensesSummary(userId, sales.totalRevenue),
-        _getFeedSummary(userId, production.totalCollected),
+        _getExpensesSummary(userId, sales.totalRevenue, farmId: farmId),
+        _getFeedSummary(userId, production.totalCollected, farmId: farmId),
       ]);
 
       final expenses = dependentResults[0] as ExpensesSummary;
       final feed = dependentResults[1] as FeedSummary;
 
       // Phase 3: Get alerts (depends on feed and health)
-      final alerts = await _getAlerts(userId, feed, health);
+      final alerts = await _getAlerts(userId, feed, health, farmId: farmId);
 
       return Result.success(DashboardAnalytics(
         production: production,
@@ -53,25 +53,26 @@ class AnalyticsRepository {
   }
 
   /// Get production summary using database aggregates when available
-  Future<ProductionSummary> _getProductionSummary(String userId) async {
+  Future<ProductionSummary> _getProductionSummary(String userId, {String? farmId}) async {
     if (_useRpcFunctions) {
       try {
-        return await _getProductionSummaryRpc(userId);
+        return await _getProductionSummaryRpc(userId, farmId: farmId);
       } catch (_) {
         // RPC functions not available, fall back to manual aggregation
         _useRpcFunctions = false;
       }
     }
-    return _getProductionSummaryManual(userId);
+    return _getProductionSummaryManual(userId, farmId: farmId);
   }
 
   /// Get production summary using RPC functions (database-side aggregation)
-  Future<ProductionSummary> _getProductionSummaryRpc(String userId) async {
+  Future<ProductionSummary> _getProductionSummaryRpc(String userId, {String? farmId}) async {
     // Run RPC calls in parallel
+    final params = farmId != null ? {'p_farm_id': farmId} : {'p_user_id': userId};
     final results = await Future.wait([
-      _client.rpc('get_production_totals', params: {'p_user_id': userId}),
-      _client.rpc('get_production_week_data', params: {'p_user_id': userId}),
-      _client.rpc('get_total_eggs_sold', params: {'p_user_id': userId}),
+      _client.rpc('get_production_totals', params: params),
+      _client.rpc('get_production_week_data', params: params),
+      _client.rpc('get_total_eggs_sold', params: params),
     ]);
 
     final totals = (results[0] as List).isNotEmpty ? results[0][0] : {};
@@ -109,17 +110,19 @@ class AnalyticsRepository {
   }
 
   /// Get production summary using manual aggregation (fallback)
-  Future<ProductionSummary> _getProductionSummaryManual(String userId) async {
+  Future<ProductionSummary> _getProductionSummaryManual(String userId, {String? farmId}) async {
     final now = DateTime.now();
     final today = _formatDate(now);
     final weekAgo = _formatDate(now.subtract(const Duration(days: 7)));
 
     // Get all egg records
-    final records = await _client
-        .from('daily_egg_records')
-        .select()
-        .eq('user_id', userId)
-        .order('date', ascending: false);
+    var query = _client.from('daily_egg_records').select();
+    if (farmId != null) {
+      query = query.eq('farm_id', farmId);
+    } else {
+      query = query.eq('user_id', userId);
+    }
+    final records = await query.order('date', ascending: false);
 
     final recordsList = records as List;
 
@@ -148,10 +151,13 @@ class AnalyticsRepository {
     }
 
     // Get sold eggs to calculate remaining
-    final sales = await _client
-        .from('egg_sales')
-        .select('quantity_sold')
-        .eq('user_id', userId);
+    var salesQuery = _client.from('egg_sales').select('quantity_sold');
+    if (farmId != null) {
+      salesQuery = salesQuery.eq('farm_id', farmId);
+    } else {
+      salesQuery = salesQuery.eq('user_id', userId);
+    }
+    final sales = await salesQuery;
 
     int totalSold = 0;
     for (final s in sales as List) {
@@ -216,20 +222,21 @@ class AnalyticsRepository {
   }
 
   /// Get sales summary using database aggregates when available
-  Future<SalesSummary> _getSalesSummary(String userId) async {
+  Future<SalesSummary> _getSalesSummary(String userId, {String? farmId}) async {
     if (_useRpcFunctions) {
       try {
-        return await _getSalesSummaryRpc(userId);
+        return await _getSalesSummaryRpc(userId, farmId: farmId);
       } catch (_) {
         _useRpcFunctions = false;
       }
     }
-    return _getSalesSummaryManual(userId);
+    return _getSalesSummaryManual(userId, farmId: farmId);
   }
 
   /// Get sales summary using RPC functions (database-side aggregation)
-  Future<SalesSummary> _getSalesSummaryRpc(String userId) async {
-    final result = await _client.rpc('get_sales_totals', params: {'p_user_id': userId});
+  Future<SalesSummary> _getSalesSummaryRpc(String userId, {String? farmId}) async {
+    final params = farmId != null ? {'p_farm_id': farmId} : {'p_user_id': userId};
+    final result = await _client.rpc('get_sales_totals', params: params);
     final data = (result as List).isNotEmpty ? result[0] : {};
 
     final totalQuantity = (data['total_quantity'] as num?)?.toInt() ?? 0;
@@ -250,15 +257,18 @@ class AnalyticsRepository {
   }
 
   /// Get sales summary using manual aggregation (fallback)
-  Future<SalesSummary> _getSalesSummaryManual(String userId) async {
+  Future<SalesSummary> _getSalesSummaryManual(String userId, {String? farmId}) async {
     final now = DateTime.now();
     final weekAgo = _formatDate(now.subtract(const Duration(days: 7)));
     final monthAgo = _formatDate(now.subtract(const Duration(days: 30)));
 
-    final sales = await _client
-        .from('egg_sales')
-        .select()
-        .eq('user_id', userId);
+    var query = _client.from('egg_sales').select();
+    if (farmId != null) {
+      query = query.eq('farm_id', farmId);
+    } else {
+      query = query.eq('user_id', userId);
+    }
+    final sales = await query;
 
     final salesList = sales as List;
 
@@ -318,22 +328,23 @@ class AnalyticsRepository {
   }
 
   /// Get expenses summary using database aggregates when available
-  Future<ExpensesSummary> _getExpensesSummary(String userId, double totalRevenue) async {
+  Future<ExpensesSummary> _getExpensesSummary(String userId, double totalRevenue, {String? farmId}) async {
     if (_useRpcFunctions) {
       try {
-        return await _getExpensesSummaryRpc(userId, totalRevenue);
+        return await _getExpensesSummaryRpc(userId, totalRevenue, farmId: farmId);
       } catch (_) {
         _useRpcFunctions = false;
       }
     }
-    return _getExpensesSummaryManual(userId, totalRevenue);
+    return _getExpensesSummaryManual(userId, totalRevenue, farmId: farmId);
   }
 
   /// Get expenses summary using RPC functions (database-side aggregation)
-  Future<ExpensesSummary> _getExpensesSummaryRpc(String userId, double totalRevenue) async {
+  Future<ExpensesSummary> _getExpensesSummaryRpc(String userId, double totalRevenue, {String? farmId}) async {
+    final params = farmId != null ? {'p_farm_id': farmId} : {'p_user_id': userId};
     final results = await Future.wait([
-      _client.rpc('get_expenses_totals', params: {'p_user_id': userId}),
-      _client.rpc('get_vet_costs_totals', params: {'p_user_id': userId}),
+      _client.rpc('get_expenses_totals', params: params),
+      _client.rpc('get_vet_costs_totals', params: params),
     ]);
 
     final expData = (results[0] as List).isNotEmpty ? results[0][0] : {};
@@ -376,15 +387,18 @@ class AnalyticsRepository {
   }
 
   /// Get expenses summary using manual aggregation (fallback)
-  Future<ExpensesSummary> _getExpensesSummaryManual(String userId, double totalRevenue) async {
+  Future<ExpensesSummary> _getExpensesSummaryManual(String userId, double totalRevenue, {String? farmId}) async {
     final now = DateTime.now();
     final weekAgo = _formatDate(now.subtract(const Duration(days: 7)));
     final monthAgo = _formatDate(now.subtract(const Duration(days: 30)));
 
-    final expenses = await _client
-        .from('expenses')
-        .select()
-        .eq('user_id', userId);
+    var expQuery = _client.from('expenses').select();
+    if (farmId != null) {
+      expQuery = expQuery.eq('farm_id', farmId);
+    } else {
+      expQuery = expQuery.eq('user_id', userId);
+    }
+    final expenses = await expQuery;
 
     final expensesList = expenses as List;
 
@@ -410,10 +424,13 @@ class AnalyticsRepository {
     }
 
     // Add vet costs to expenses
-    final vetRecords = await _client
-        .from('vet_records')
-        .select('cost, date')
-        .eq('user_id', userId);
+    var vetQuery = _client.from('vet_records').select('cost, date');
+    if (farmId != null) {
+      vetQuery = vetQuery.eq('farm_id', farmId);
+    } else {
+      vetQuery = vetQuery.eq('user_id', userId);
+    }
+    final vetRecords = await vetQuery;
 
     for (final v in vetRecords as List) {
       final cost = (v['cost'] as num?)?.toDouble() ?? 0.0;
@@ -440,22 +457,23 @@ class AnalyticsRepository {
   }
 
   /// Get feed summary using database aggregates when available
-  Future<FeedSummary> _getFeedSummary(String userId, int totalEggsCollected) async {
+  Future<FeedSummary> _getFeedSummary(String userId, int totalEggsCollected, {String? farmId}) async {
     if (_useRpcFunctions) {
       try {
-        return await _getFeedSummaryRpc(userId, totalEggsCollected);
+        return await _getFeedSummaryRpc(userId, totalEggsCollected, farmId: farmId);
       } catch (_) {
         _useRpcFunctions = false;
       }
     }
-    return _getFeedSummaryManual(userId, totalEggsCollected);
+    return _getFeedSummaryManual(userId, totalEggsCollected, farmId: farmId);
   }
 
   /// Get feed summary using RPC functions (database-side aggregation)
-  Future<FeedSummary> _getFeedSummaryRpc(String userId, int totalEggsCollected) async {
+  Future<FeedSummary> _getFeedSummaryRpc(String userId, int totalEggsCollected, {String? farmId}) async {
+    final params = farmId != null ? {'p_farm_id': farmId} : {'p_user_id': userId};
     final results = await Future.wait([
-      _client.rpc('get_feed_totals', params: {'p_user_id': userId}),
-      _client.rpc('get_feed_consumed_total', params: {'p_user_id': userId}),
+      _client.rpc('get_feed_totals', params: params),
+      _client.rpc('get_feed_consumed_total', params: params),
     ]);
 
     final feedData = (results[0] as List).isNotEmpty ? results[0][0] : {};
@@ -510,11 +528,14 @@ class AnalyticsRepository {
   }
 
   /// Get feed summary using manual aggregation (fallback)
-  Future<FeedSummary> _getFeedSummaryManual(String userId, int totalEggsCollected) async {
-    final feedStocks = await _client
-        .from('feed_stocks')
-        .select()
-        .eq('user_id', userId);
+  Future<FeedSummary> _getFeedSummaryManual(String userId, int totalEggsCollected, {String? farmId}) async {
+    var stockQuery = _client.from('feed_stocks').select();
+    if (farmId != null) {
+      stockQuery = stockQuery.eq('farm_id', farmId);
+    } else {
+      stockQuery = stockQuery.eq('user_id', userId);
+    }
+    final feedStocks = await stockQuery;
 
     final stocksList = feedStocks as List;
 
@@ -536,10 +557,13 @@ class AnalyticsRepository {
     }
 
     // Get total consumed from movements
-    final movements = await _client
-        .from('feed_movements')
-        .select('quantity_kg, movement_type')
-        .eq('user_id', userId);
+    var movQuery = _client.from('feed_movements').select('quantity_kg, movement_type');
+    if (farmId != null) {
+      movQuery = movQuery.eq('farm_id', farmId);
+    } else {
+      movQuery = movQuery.eq('user_id', userId);
+    }
+    final movements = await movQuery;
 
     double totalConsumedKg = 0;
     for (final m in movements as List) {
@@ -578,20 +602,21 @@ class AnalyticsRepository {
   }
 
   /// Get health summary using database aggregates when available
-  Future<HealthSummary> _getHealthSummary(String userId) async {
+  Future<HealthSummary> _getHealthSummary(String userId, {String? farmId}) async {
     if (_useRpcFunctions) {
       try {
-        return await _getHealthSummaryRpc(userId);
+        return await _getHealthSummaryRpc(userId, farmId: farmId);
       } catch (_) {
         _useRpcFunctions = false;
       }
     }
-    return _getHealthSummaryManual(userId);
+    return _getHealthSummaryManual(userId, farmId: farmId);
   }
 
   /// Get health summary using RPC functions (database-side aggregation)
-  Future<HealthSummary> _getHealthSummaryRpc(String userId) async {
-    final result = await _client.rpc('get_health_totals', params: {'p_user_id': userId});
+  Future<HealthSummary> _getHealthSummaryRpc(String userId, {String? farmId}) async {
+    final params = farmId != null ? {'p_farm_id': farmId} : {'p_user_id': userId};
+    final result = await _client.rpc('get_health_totals', params: params);
     final data = (result as List).isNotEmpty ? result[0] : {};
 
     return HealthSummary(
@@ -604,15 +629,18 @@ class AnalyticsRepository {
   }
 
   /// Get health summary using manual aggregation (fallback)
-  Future<HealthSummary> _getHealthSummaryManual(String userId) async {
+  Future<HealthSummary> _getHealthSummaryManual(String userId, {String? farmId}) async {
     final now = DateTime.now();
     final monthAgo = _formatDate(now.subtract(const Duration(days: 30)));
     final today = _formatDate(now);
 
-    final vetRecords = await _client
-        .from('vet_records')
-        .select()
-        .eq('user_id', userId);
+    var healthQuery = _client.from('vet_records').select();
+    if (farmId != null) {
+      healthQuery = healthQuery.eq('farm_id', farmId);
+    } else {
+      healthQuery = healthQuery.eq('user_id', userId);
+    }
+    final vetRecords = await healthQuery;
 
     final recordsList = vetRecords as List;
 
@@ -658,8 +686,9 @@ class AnalyticsRepository {
   Future<List<DashboardAlert>> _getAlerts(
     String userId,
     FeedSummary feed,
-    HealthSummary health,
-  ) async {
+    HealthSummary health, {
+    String? farmId,
+  }) async {
     final alerts = <DashboardAlert>[];
     final now = DateTime.now();
     final today = _formatDate(now);
@@ -667,10 +696,13 @@ class AnalyticsRepository {
 
     // Low stock alerts
     if (feed.lowStockCount > 0) {
-      final feedStocks = await _client
-          .from('feed_stocks')
-          .select('type, current_quantity_kg, minimum_quantity_kg')
-          .eq('user_id', userId);
+      var feedQuery = _client.from('feed_stocks').select('type, current_quantity_kg, minimum_quantity_kg');
+      if (farmId != null) {
+        feedQuery = feedQuery.eq('farm_id', farmId);
+      } else {
+        feedQuery = feedQuery.eq('user_id', userId);
+      }
+      final feedStocks = await feedQuery;
 
       for (final f in feedStocks as List) {
         final qty = (f['current_quantity_kg'] as num?)?.toDouble() ?? 0.0;
@@ -691,11 +723,13 @@ class AnalyticsRepository {
     }
 
     // Pending reservations
-    final reservations = await _client
-        .from('egg_reservations')
-        .select()
-        .eq('user_id', userId)
-        .or('pickup_date.eq.$today,pickup_date.eq.$tomorrow');
+    var resQuery = _client.from('egg_reservations').select();
+    if (farmId != null) {
+      resQuery = resQuery.eq('farm_id', farmId);
+    } else {
+      resQuery = resQuery.eq('user_id', userId);
+    }
+    final reservations = await resQuery.or('pickup_date.eq.$today,pickup_date.eq.$tomorrow');
 
     for (final r in reservations as List) {
       final pickupDate = r['pickup_date'] as String?;
@@ -714,11 +748,13 @@ class AnalyticsRepository {
     }
 
     // Vet appointments
-    final vetAppointments = await _client
-        .from('vet_records')
-        .select()
-        .eq('user_id', userId)
-        .or('next_action_date.eq.$today,next_action_date.eq.$tomorrow');
+    var vetQuery = _client.from('vet_records').select();
+    if (farmId != null) {
+      vetQuery = vetQuery.eq('farm_id', farmId);
+    } else {
+      vetQuery = vetQuery.eq('user_id', userId);
+    }
+    final vetAppointments = await vetQuery.or('next_action_date.eq.$today,next_action_date.eq.$tomorrow');
 
     for (final v in vetAppointments as List) {
       final nextDate = v['next_action_date'] as String?;
@@ -739,21 +775,22 @@ class AnalyticsRepository {
   }
 
   /// Get week statistics using database aggregates when available
-  Future<Result<WeekStats>> getWeekStats(String userId) async {
+  Future<Result<WeekStats>> getWeekStats(String userId, {String? farmId}) async {
     if (_useRpcFunctions) {
       try {
-        return await _getWeekStatsRpc(userId);
+        return await _getWeekStatsRpc(userId, farmId: farmId);
       } catch (_) {
         _useRpcFunctions = false;
       }
     }
-    return _getWeekStatsManual(userId);
+    return _getWeekStatsManual(userId, farmId: farmId);
   }
 
   /// Get week statistics using RPC function (single database call)
-  Future<Result<WeekStats>> _getWeekStatsRpc(String userId) async {
+  Future<Result<WeekStats>> _getWeekStatsRpc(String userId, {String? farmId}) async {
     try {
-      final result = await _client.rpc('get_week_stats', params: {'p_user_id': userId});
+      final params = farmId != null ? {'p_farm_id': farmId} : {'p_user_id': userId};
+      final result = await _client.rpc('get_week_stats', params: params);
       final data = (result as List).isNotEmpty ? result[0] : {};
 
       final expenses = (data['expenses'] as num?)?.toDouble() ?? 0.0;
@@ -775,39 +812,37 @@ class AnalyticsRepository {
   }
 
   /// Get week statistics using manual aggregation (fallback)
-  Future<Result<WeekStats>> _getWeekStatsManual(String userId) async {
+  Future<Result<WeekStats>> _getWeekStatsManual(String userId, {String? farmId}) async {
     try {
       final now = DateTime.now();
       final weekAgo = now.subtract(const Duration(days: 7));
       final startDate = _formatDate(weekAgo);
       final endDate = _formatDate(now);
 
+      // Build queries with farm_id or user_id filter
+      var eggQuery = _client.from('daily_egg_records').select();
+      var salesQuery = _client.from('egg_sales').select();
+      var expQuery = _client.from('expenses').select();
+      var vetQuery = _client.from('vet_records').select('cost');
+
+      if (farmId != null) {
+        eggQuery = eggQuery.eq('farm_id', farmId);
+        salesQuery = salesQuery.eq('farm_id', farmId);
+        expQuery = expQuery.eq('farm_id', farmId);
+        vetQuery = vetQuery.eq('farm_id', farmId);
+      } else {
+        eggQuery = eggQuery.eq('user_id', userId);
+        salesQuery = salesQuery.eq('user_id', userId);
+        expQuery = expQuery.eq('user_id', userId);
+        vetQuery = vetQuery.eq('user_id', userId);
+      }
+
       // Run all queries in parallel - they are independent
       final results = await Future.wait([
-        _client
-            .from('daily_egg_records')
-            .select()
-            .eq('user_id', userId)
-            .gte('date', startDate)
-            .lte('date', endDate),
-        _client
-            .from('egg_sales')
-            .select()
-            .eq('user_id', userId)
-            .gte('date', startDate)
-            .lte('date', endDate),
-        _client
-            .from('expenses')
-            .select()
-            .eq('user_id', userId)
-            .gte('date', startDate)
-            .lte('date', endDate),
-        _client
-            .from('vet_records')
-            .select('cost')
-            .eq('user_id', userId)
-            .gte('date', startDate)
-            .lte('date', endDate),
+        eggQuery.gte('date', startDate).lte('date', endDate),
+        salesQuery.gte('date', startDate).lte('date', endDate),
+        expQuery.gte('date', startDate).lte('date', endDate),
+        vetQuery.gte('date', startDate).lte('date', endDate),
       ]);
 
       // Process egg records
@@ -853,47 +888,47 @@ class AnalyticsRepository {
   }
 
   /// Get production analytics with prediction
-  Future<Result<ProductionSummary>> getProductionAnalytics(String userId) async {
+  Future<Result<ProductionSummary>> getProductionAnalytics(String userId, {String? farmId}) async {
     try {
-      return Result.success(await _getProductionSummary(userId));
+      return Result.success(await _getProductionSummary(userId, farmId: farmId));
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }
   }
 
   /// Get sales analytics
-  Future<Result<SalesSummary>> getSalesAnalytics(String userId) async {
+  Future<Result<SalesSummary>> getSalesAnalytics(String userId, {String? farmId}) async {
     try {
-      return Result.success(await _getSalesSummary(userId));
+      return Result.success(await _getSalesSummary(userId, farmId: farmId));
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }
   }
 
   /// Get expenses analytics
-  Future<Result<ExpensesSummary>> getExpensesAnalytics(String userId) async {
+  Future<Result<ExpensesSummary>> getExpensesAnalytics(String userId, {String? farmId}) async {
     try {
-      final sales = await _getSalesSummary(userId);
-      return Result.success(await _getExpensesSummary(userId, sales.totalRevenue));
+      final sales = await _getSalesSummary(userId, farmId: farmId);
+      return Result.success(await _getExpensesSummary(userId, sales.totalRevenue, farmId: farmId));
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }
   }
 
   /// Get feed analytics
-  Future<Result<FeedSummary>> getFeedAnalytics(String userId) async {
+  Future<Result<FeedSummary>> getFeedAnalytics(String userId, {String? farmId}) async {
     try {
-      final production = await _getProductionSummary(userId);
-      return Result.success(await _getFeedSummary(userId, production.totalCollected));
+      final production = await _getProductionSummary(userId, farmId: farmId);
+      return Result.success(await _getFeedSummary(userId, production.totalCollected, farmId: farmId));
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }
   }
 
   /// Get health analytics
-  Future<Result<HealthSummary>> getHealthAnalytics(String userId) async {
+  Future<Result<HealthSummary>> getHealthAnalytics(String userId, {String? farmId}) async {
     try {
-      return Result.success(await _getHealthSummary(userId));
+      return Result.success(await _getHealthSummary(userId, farmId: farmId));
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
     }

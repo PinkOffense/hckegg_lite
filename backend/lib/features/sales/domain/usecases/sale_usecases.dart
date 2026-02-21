@@ -8,12 +8,13 @@ class GetSales implements UseCase<List<Sale>, GetSalesParams> {
 
   @override
   Future<Result<List<Sale>>> call(GetSalesParams params) =>
-      repository.getSales(params.userId);
+      repository.getSales(params.userId, farmId: params.farmId);
 }
 
 class GetSalesParams {
-  const GetSalesParams({required this.userId});
+  const GetSalesParams({required this.userId, this.farmId});
   final String userId;
+  final String? farmId;
 }
 
 class GetSaleById implements UseCase<Sale, GetSaleByIdParams> {
@@ -107,7 +108,7 @@ class GetSaleStatistics implements UseCase<SaleStatistics, GetSaleStatisticsPara
 
   @override
   Future<Result<SaleStatistics>> call(GetSaleStatisticsParams params) =>
-      repository.getStatistics(params.userId, params.startDate, params.endDate);
+      repository.getStatistics(params.userId, params.startDate, params.endDate, farmId: params.farmId);
 }
 
 class GetSaleStatisticsParams {
@@ -115,8 +116,10 @@ class GetSaleStatisticsParams {
     required this.userId,
     required this.startDate,
     required this.endDate,
+    this.farmId,
   });
   final String userId;
   final String startDate;
   final String endDate;
+  final String? farmId;
 }

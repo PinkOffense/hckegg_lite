@@ -22,8 +22,11 @@ Future<Response> _getReservations(RequestContext context) async {
       );
     }
 
+    final queryParams = context.request.uri.queryParameters;
+    final farmId = queryParams['farm_id'];
+
     final repository = ReservationRepositoryImpl(SupabaseClientManager.client);
-    final result = await repository.getReservations(userId);
+    final result = await repository.getReservations(userId, farmId: farmId);
 
     return result.fold(
       onSuccess: (reservations) => Response.json(
@@ -66,9 +69,11 @@ Future<Response> _createReservation(RequestContext context) async {
       );
     }
 
+    final farmId = body['farm_id'] as String?;
     final reservation = Reservation(
       id: '',
       userId: userId,
+      farmId: farmId,
       date: body['date'] as String,
       pickupDate: body['pickup_date'] as String?,
       quantity: body['quantity'] as int,

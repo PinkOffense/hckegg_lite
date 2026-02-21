@@ -9,9 +9,18 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
   static const _table = 'expenses';
 
   @override
-  Future<Result<List<Expense>>> getExpenses(String userId) async {
+  Future<Result<List<Expense>>> getExpenses(String userId, {String? farmId}) async {
     try {
-      final response = await _client.from(_table).select().eq('user_id', userId).order('date', ascending: false);
+      var query = _client.from(_table).select();
+
+      // Filter by farm_id if provided, otherwise by user_id
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('date', ascending: false);
       return Result.success((response as List).map((j) => Expense.fromJson(j as Map<String, dynamic>)).toList());
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
@@ -32,9 +41,17 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
   }
 
   @override
-  Future<Result<List<Expense>>> getExpensesInRange(String userId, String startDate, String endDate) async {
+  Future<Result<List<Expense>>> getExpensesInRange(String userId, String startDate, String endDate, {String? farmId}) async {
     try {
-      final response = await _client.from(_table).select().eq('user_id', userId).gte('date', startDate).lte('date', endDate).order('date', ascending: false);
+      var query = _client.from(_table).select().gte('date', startDate).lte('date', endDate);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('date', ascending: false);
       return Result.success((response as List).map((j) => Expense.fromJson(j as Map<String, dynamic>)).toList());
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
@@ -42,9 +59,17 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
   }
 
   @override
-  Future<Result<List<Expense>>> getExpensesByCategory(String userId, ExpenseCategory category) async {
+  Future<Result<List<Expense>>> getExpensesByCategory(String userId, ExpenseCategory category, {String? farmId}) async {
     try {
-      final response = await _client.from(_table).select().eq('user_id', userId).eq('category', category.name);
+      var query = _client.from(_table).select().eq('category', category.name);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query;
       return Result.success((response as List).map((j) => Expense.fromJson(j as Map<String, dynamic>)).toList());
     } catch (e) {
       return Result.failure(ServerFailure(message: e.toString()));
@@ -56,6 +81,7 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
     try {
       final data = {
         'user_id': expense.userId,
+        'farm_id': expense.farmId,
         'date': expense.date,
         'category': expense.category.name,
         'amount': expense.amount,
@@ -98,9 +124,17 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
   }
 
   @override
-  Future<Result<ExpenseStatistics>> getStatistics(String userId, String startDate, String endDate) async {
+  Future<Result<ExpenseStatistics>> getStatistics(String userId, String startDate, String endDate, {String? farmId}) async {
     try {
-      final response = await _client.from(_table).select().eq('user_id', userId).gte('date', startDate).lte('date', endDate);
+      var query = _client.from(_table).select().gte('date', startDate).lte('date', endDate);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query;
       final expenses = (response as List).map((j) => Expense.fromJson(j as Map<String, dynamic>)).toList();
 
       final byCategory = <String, double>{};

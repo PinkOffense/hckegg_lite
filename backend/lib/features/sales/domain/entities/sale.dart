@@ -20,6 +20,7 @@ class Sale extends Equatable {
   const Sale({
     required this.id,
     required this.userId,
+    this.farmId,
     required this.date,
     required this.quantitySold,
     required this.pricePerEgg,
@@ -38,6 +39,7 @@ class Sale extends Equatable {
 
   final String id;
   final String userId;
+  final String? farmId;
   final String date;
   final int quantitySold;
   final double pricePerEgg;
@@ -60,6 +62,7 @@ class Sale extends Equatable {
   Map<String, dynamic> toJson() => {
         'id': id,
         'user_id': userId,
+        'farm_id': farmId,
         'date': date,
         'quantity_sold': quantitySold,
         'price_per_egg': pricePerEgg,
@@ -80,6 +83,7 @@ class Sale extends Equatable {
   factory Sale.fromJson(Map<String, dynamic> json) => Sale(
         id: json['id'] as String,
         userId: json['user_id'] as String,
+        farmId: json['farm_id'] as String?,
         date: json['date'] as String,
         quantitySold: json['quantity_sold'] as int,
         pricePerEgg: (json['price_per_egg'] as num).toDouble(),

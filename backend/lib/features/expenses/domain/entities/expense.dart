@@ -19,6 +19,7 @@ class Expense extends Equatable {
   const Expense({
     required this.id,
     required this.userId,
+    this.farmId,
     required this.date,
     required this.category,
     required this.amount,
@@ -29,6 +30,7 @@ class Expense extends Equatable {
 
   final String id;
   final String userId;
+  final String? farmId;
   final String date;
   final ExpenseCategory category;
   final double amount;
@@ -39,6 +41,7 @@ class Expense extends Equatable {
   Map<String, dynamic> toJson() => {
         'id': id,
         'user_id': userId,
+        'farm_id': farmId,
         'date': date,
         'category': category.name,
         'amount': amount,
@@ -50,6 +53,7 @@ class Expense extends Equatable {
   factory Expense.fromJson(Map<String, dynamic> json) => Expense(
         id: json['id'] as String,
         userId: json['user_id'] as String,
+        farmId: json['farm_id'] as String?,
         date: json['date'] as String,
         category: ExpenseCategory.fromString(json['category'] as String),
         amount: (json['amount'] as num).toDouble(),

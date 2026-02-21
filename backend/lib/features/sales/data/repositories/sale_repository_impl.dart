@@ -10,13 +10,18 @@ class SaleRepositoryImpl implements SaleRepository {
   static const _table = 'egg_sales';
 
   @override
-  Future<Result<List<Sale>>> getSales(String userId) async {
+  Future<Result<List<Sale>>> getSales(String userId, {String? farmId}) async {
     try {
-      final response = await _client
-          .from(_table)
-          .select()
-          .eq('user_id', userId)
-          .order('date', ascending: false);
+      var query = _client.from(_table).select();
+
+      // Filter by farm_id if provided, otherwise by user_id
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('date', ascending: false);
       return Result.success(
         (response as List).map((j) => Sale.fromJson(j as Map<String, dynamic>)).toList(),
       );
@@ -41,15 +46,21 @@ class SaleRepositoryImpl implements SaleRepository {
   }
 
   @override
-  Future<Result<List<Sale>>> getSalesInRange(String userId, String startDate, String endDate) async {
+  Future<Result<List<Sale>>> getSalesInRange(String userId, String startDate, String endDate, {String? farmId}) async {
     try {
-      final response = await _client
+      var query = _client
           .from(_table)
           .select()
-          .eq('user_id', userId)
           .gte('date', startDate)
-          .lte('date', endDate)
-          .order('date', ascending: false);
+          .lte('date', endDate);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('date', ascending: false);
       return Result.success(
         (response as List).map((j) => Sale.fromJson(j as Map<String, dynamic>)).toList(),
       );
@@ -59,14 +70,21 @@ class SaleRepositoryImpl implements SaleRepository {
   }
 
   @override
-  Future<Result<List<Sale>>> getPendingPayments(String userId) async {
+  Future<Result<List<Sale>>> getPendingPayments(String userId, {String? farmId}) async {
     try {
-      final response = await _client
+      var query = _client
           .from(_table)
           .select()
-          .eq('user_id', userId)
           .eq('payment_status', 'pending')
           .eq('is_lost', false);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query;
       return Result.success(
         (response as List).map((j) => Sale.fromJson(j as Map<String, dynamic>)).toList(),
       );
@@ -76,13 +94,20 @@ class SaleRepositoryImpl implements SaleRepository {
   }
 
   @override
-  Future<Result<List<Sale>>> getLostSales(String userId) async {
+  Future<Result<List<Sale>>> getLostSales(String userId, {String? farmId}) async {
     try {
-      final response = await _client
+      var query = _client
           .from(_table)
           .select()
-          .eq('user_id', userId)
           .eq('is_lost', true);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query;
       return Result.success(
         (response as List).map((j) => Sale.fromJson(j as Map<String, dynamic>)).toList(),
       );
@@ -96,6 +121,7 @@ class SaleRepositoryImpl implements SaleRepository {
     try {
       final data = {
         'user_id': sale.userId,
+        'farm_id': sale.farmId,
         'date': sale.date,
         'quantity_sold': sale.quantitySold,
         'price_per_egg': sale.pricePerEgg,
@@ -177,14 +203,21 @@ class SaleRepositoryImpl implements SaleRepository {
   }
 
   @override
-  Future<Result<SaleStatistics>> getStatistics(String userId, String startDate, String endDate) async {
+  Future<Result<SaleStatistics>> getStatistics(String userId, String startDate, String endDate, {String? farmId}) async {
     try {
-      final response = await _client
+      var query = _client
           .from(_table)
           .select()
-          .eq('user_id', userId)
           .gte('date', startDate)
           .lte('date', endDate);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query;
 
       final sales = (response as List).map((j) => Sale.fromJson(j as Map<String, dynamic>)).toList();
 

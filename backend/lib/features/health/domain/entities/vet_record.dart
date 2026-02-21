@@ -39,6 +39,7 @@ class VetRecord extends Equatable {
   const VetRecord({
     required this.id,
     required this.userId,
+    this.farmId,
     required this.date,
     required this.type,
     required this.hensAffected,
@@ -54,6 +55,7 @@ class VetRecord extends Equatable {
 
   final String id;
   final String userId;
+  final String? farmId;
   final String date; // Format: YYYY-MM-DD
   final VetRecordType type;
   final int hensAffected;
@@ -69,6 +71,7 @@ class VetRecord extends Equatable {
   VetRecord copyWith({
     String? id,
     String? userId,
+    String? farmId,
     String? date,
     VetRecordType? type,
     int? hensAffected,
@@ -84,6 +87,7 @@ class VetRecord extends Equatable {
     return VetRecord(
       id: id ?? this.id,
       userId: userId ?? this.userId,
+      farmId: farmId ?? this.farmId,
       date: date ?? this.date,
       type: type ?? this.type,
       hensAffected: hensAffected ?? this.hensAffected,
@@ -101,6 +105,7 @@ class VetRecord extends Equatable {
   Map<String, dynamic> toJson() => {
         'id': id,
         'user_id': userId,
+        'farm_id': farmId,
         'date': date,
         'type': type.name,
         'hens_affected': hensAffected,
@@ -117,6 +122,7 @@ class VetRecord extends Equatable {
   factory VetRecord.fromJson(Map<String, dynamic> json) => VetRecord(
         id: json['id'] as String,
         userId: json['user_id'] as String,
+        farmId: json['farm_id'] as String?,
         date: json['date'] as String,
         type: VetRecordType.fromString(json['type'] as String),
         hensAffected: json['hens_affected'] as int,
@@ -136,6 +142,7 @@ class VetRecord extends Equatable {
   List<Object?> get props => [
         id,
         userId,
+        farmId,
         date,
         type,
         hensAffected,

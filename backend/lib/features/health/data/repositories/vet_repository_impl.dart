@@ -9,13 +9,18 @@ class VetRepositoryImpl implements VetRepository {
   static const _table = 'vet_records';
 
   @override
-  Future<Result<List<VetRecord>>> getVetRecords(String userId) async {
+  Future<Result<List<VetRecord>>> getVetRecords(String userId, {String? farmId}) async {
     try {
-      final response = await _client
-          .from(_table)
-          .select()
-          .eq('user_id', userId)
-          .order('date', ascending: false);
+      var query = _client.from(_table).select();
+
+      // Filter by farm_id if provided, otherwise by user_id
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('date', ascending: false);
       return Result.success(
         (response as List)
             .map((j) => VetRecord.fromJson(j as Map<String, dynamic>))
@@ -48,16 +53,23 @@ class VetRepositoryImpl implements VetRepository {
   Future<Result<List<VetRecord>>> getVetRecordsInRange(
     String userId,
     String startDate,
-    String endDate,
-  ) async {
+    String endDate, {
+    String? farmId,
+  }) async {
     try {
-      final response = await _client
+      var query = _client
           .from(_table)
           .select()
-          .eq('user_id', userId)
           .gte('date', startDate)
-          .lte('date', endDate)
-          .order('date', ascending: false);
+          .lte('date', endDate);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('date', ascending: false);
       return Result.success(
         (response as List)
             .map((j) => VetRecord.fromJson(j as Map<String, dynamic>))
@@ -71,14 +83,19 @@ class VetRepositoryImpl implements VetRepository {
   @override
   Future<Result<List<VetRecord>>> getVetRecordsByType(
     String userId,
-    VetRecordType type,
-  ) async {
+    VetRecordType type, {
+    String? farmId,
+  }) async {
     try {
-      final response = await _client
-          .from(_table)
-          .select()
-          .eq('user_id', userId)
-          .eq('type', type.name);
+      var query = _client.from(_table).select().eq('type', type.name);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query;
       return Result.success(
         (response as List)
             .map((j) => VetRecord.fromJson(j as Map<String, dynamic>))
@@ -90,15 +107,21 @@ class VetRepositoryImpl implements VetRepository {
   }
 
   @override
-  Future<Result<List<VetRecord>>> getUpcomingAppointments(String userId) async {
+  Future<Result<List<VetRecord>>> getUpcomingAppointments(String userId, {String? farmId}) async {
     try {
       final today = DateTime.now().toIso8601String().substring(0, 10);
-      final response = await _client
+      var query = _client
           .from(_table)
           .select()
-          .eq('user_id', userId)
-          .gte('next_action_date', today)
-          .order('next_action_date', ascending: true);
+          .gte('next_action_date', today);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query.order('next_action_date', ascending: true);
       return Result.success(
         (response as List)
             .map((j) => VetRecord.fromJson(j as Map<String, dynamic>))
@@ -115,6 +138,7 @@ class VetRepositoryImpl implements VetRepository {
       final now = DateTime.now().toUtc();
       final data = {
         'user_id': vetRecord.userId,
+        'farm_id': vetRecord.farmId,
         'date': vetRecord.date,
         'type': vetRecord.type.name,
         'hens_affected': vetRecord.hensAffected,
@@ -176,15 +200,23 @@ class VetRepositoryImpl implements VetRepository {
   Future<Result<VetStatistics>> getStatistics(
     String userId,
     String startDate,
-    String endDate,
-  ) async {
+    String endDate, {
+    String? farmId,
+  }) async {
     try {
-      final response = await _client
+      var query = _client
           .from(_table)
           .select()
-          .eq('user_id', userId)
           .gte('date', startDate)
           .lte('date', endDate);
+
+      if (farmId != null) {
+        query = query.eq('farm_id', farmId);
+      } else {
+        query = query.eq('user_id', userId);
+      }
+
+      final response = await query;
       final vetRecords = (response as List)
           .map((j) => VetRecord.fromJson(j as Map<String, dynamic>))
           .toList();
