@@ -6,6 +6,7 @@ import '../../../../l10n/locale_provider.dart';
 import '../../../../l10n/translations.dart';
 import '../../../../widgets/app_scaffold.dart';
 import 'invite_member_dialog.dart';
+import 'member_permissions_dialog.dart';
 
 class FarmSettingsPage extends StatefulWidget {
   const FarmSettingsPage({super.key});
@@ -412,11 +413,6 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
     FarmProvider farmProvider,
     bool isOwner,
   ) {
-    final isCurrentUser = member.userId == farmProvider.members.firstWhere(
-      (m) => m.role == FarmRole.owner,
-      orElse: () => member,
-    ).userId; // This logic needs refinement
-
     return ListTile(
       leading: CircleAvatar(
         backgroundImage: member.avatarUrl != null ? NetworkImage(member.avatarUrl!) : null,
@@ -426,6 +422,9 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
       ),
       title: Text(member.displayNameOrEmail),
       subtitle: Text(member.email),
+      onTap: isOwner
+          ? () => _showPermissionsDialog(context, member)
+          : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -444,13 +443,19 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
               ),
             ),
           ),
-          if (isOwner && member.role != FarmRole.owner)
+          if (isOwner && member.role != FarmRole.owner) ...[
+            IconButton(
+              icon: const Icon(Icons.tune),
+              onPressed: () => _showPermissionsDialog(context, member),
+              tooltip: t('edit_permissions'),
+            ),
             IconButton(
               icon: const Icon(Icons.remove_circle_outline),
               color: theme.colorScheme.error,
               onPressed: () => _confirmRemoveMember(context, t, member, farmProvider),
               tooltip: t('remove_member'),
             ),
+          ],
         ],
       ),
     );
@@ -563,6 +568,13 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
   }
 
   // ===== DIALOGS =====
+
+  void _showPermissionsDialog(BuildContext context, FarmMember member) {
+    showDialog(
+      context: context,
+      builder: (context) => MemberPermissionsDialog(member: member),
+    );
+  }
 
   Future<void> _showCreateFarmDialog(BuildContext context, Function t, FarmProvider farmProvider) async {
     final nameController = TextEditingController();

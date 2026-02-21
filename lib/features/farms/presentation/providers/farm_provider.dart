@@ -365,6 +365,43 @@ class FarmProvider extends ChangeNotifier {
     }
   }
 
+  /// Update member permissions (owner only)
+  Future<void> updateMemberPermissions(String memberUserId, MemberPermissions permissions) async {
+    if (_activeFarm == null) {
+      throw Exception('No active farm selected');
+    }
+
+    if (!_activeFarm!.isOwner) {
+      throw Exception('Only farm owners can update permissions');
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _supabase.rpc(
+        'update_member_permissions',
+        params: {
+          'p_farm_id': _activeFarm!.id,
+          'p_member_user_id': memberUserId,
+          'p_permissions': permissions.toJson(),
+        },
+      );
+
+      // Update local member list
+      final memberIndex = _members.indexWhere((m) => m.userId == memberUserId);
+      if (memberIndex != -1) {
+        _members[memberIndex] = _members[memberIndex].copyWith(permissions: permissions);
+        notifyListeners();
+      }
+    } catch (e) {
+      _setError('Failed to update permissions: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Cancel a pending invitation
   Future<void> cancelInvitation(String invitationId) async {
     if (_activeFarm == null || !_activeFarm!.isOwner) {
