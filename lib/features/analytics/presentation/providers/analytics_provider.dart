@@ -1,13 +1,13 @@
 import 'package:flutter/foundation.dart';
-import '../../data/datasources/analytics_supabase_datasource.dart';
+import '../../data/datasources/analytics_api_datasource.dart';
 import '../../domain/entities/analytics_data.dart';
 
 /// State for analytics
 enum AnalyticsState { initial, loading, loaded, error }
 
-/// Provider for analytics - computes analytics from Supabase data
+/// Provider for analytics - fetches all business logic from backend
 class AnalyticsProvider extends ChangeNotifier {
-  final AnalyticsSupabaseDataSource _dataSource;
+  final AnalyticsApiDataSource _dataSource;
 
   AnalyticsProvider(this._dataSource);
 

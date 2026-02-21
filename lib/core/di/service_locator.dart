@@ -1,38 +1,46 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Core
+import '../api/api_client.dart';
+import '../api/api_config.dart';
+
 // Features
 import '../../features/eggs/eggs.dart';
-import '../../features/eggs/data/datasources/egg_supabase_datasource.dart';
 import '../../features/sales/sales.dart';
 import '../../features/expenses/expenses.dart';
 import '../../features/health/health.dart';
 import '../../features/feed_stock/feed_stock.dart';
 import '../../features/reservations/reservations.dart';
-import '../../features/analytics/data/datasources/analytics_supabase_datasource.dart';
+import '../../features/analytics/data/datasources/analytics_api_datasource.dart';
 import '../../features/analytics/presentation/providers/analytics_provider.dart';
 import '../../features/farms/presentation/providers/farm_provider.dart';
 
 /// Service Locator for dependency injection
-/// All data operations go directly through Supabase
+/// All data operations go through the backend API
+/// Supabase is only used for authentication (token management)
 class ServiceLocator {
   static final ServiceLocator _instance = ServiceLocator._internal();
   static ServiceLocator get instance => _instance;
 
   ServiceLocator._internal();
 
+  late final ApiClient _apiClient;
   bool _initialized = false;
 
-  /// Get the Supabase client
+  /// Get the Supabase client (for auth only)
   SupabaseClient get supabaseClient => Supabase.instance.client;
 
-  // Data Sources (all use Supabase)
+  /// Get the API client
+  ApiClient get apiClient => _apiClient;
+
+  // Data Sources (all use API)
   late final EggRemoteDataSource _eggDataSource;
   late final SaleRemoteDataSource _saleDataSource;
   late final ExpenseRemoteDataSource _expenseDataSource;
   late final VetRemoteDataSource _vetDataSource;
   late final FeedStockRemoteDataSource _feedStockDataSource;
   late final ReservationRemoteDataSource _reservationDataSource;
-  late final AnalyticsSupabaseDataSource _analyticsDataSource;
+  late final AnalyticsApiDataSource _analyticsDataSource;
 
   // Repositories
   late final EggRepository _eggRepository;
@@ -46,14 +54,17 @@ class ServiceLocator {
   void initialize() {
     if (_initialized) return;
 
-    // Initialize all data sources using Supabase
-    _eggDataSource = EggSupabaseDataSourceImpl(supabaseClient);
-    _saleDataSource = SaleRemoteDataSourceImpl(supabaseClient);
-    _expenseDataSource = ExpenseRemoteDataSourceImpl(supabaseClient);
-    _vetDataSource = VetRemoteDataSourceImpl(supabaseClient);
-    _feedStockDataSource = FeedStockRemoteDataSourceImpl(client: supabaseClient);
-    _reservationDataSource = ReservationRemoteDataSourceImpl(client: supabaseClient);
-    _analyticsDataSource = AnalyticsSupabaseDataSource(supabaseClient);
+    // Initialize API client
+    _apiClient = ApiClient(baseUrl: ApiConfig.apiUrl);
+
+    // Initialize all data sources using the API backend
+    _eggDataSource = EggApiDataSourceImpl(_apiClient);
+    _saleDataSource = SaleApiDataSourceImpl(_apiClient);
+    _expenseDataSource = ExpenseApiDataSourceImpl(_apiClient);
+    _vetDataSource = VetApiDataSourceImpl(_apiClient);
+    _feedStockDataSource = FeedStockApiDataSourceImpl(apiClient: _apiClient);
+    _reservationDataSource = ReservationApiDataSourceImpl(apiClient: _apiClient);
+    _analyticsDataSource = AnalyticsApiDataSource(_apiClient);
 
     // Initialize Repositories
     _eggRepository = EggRepositoryImpl(remoteDataSource: _eggDataSource);
