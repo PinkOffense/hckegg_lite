@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../../../app/app_router.dart';
 import '../../../../models/farm.dart';
 import '../providers/farm_provider.dart';
 import '../../../../l10n/locale_provider.dart';
 import '../../../../l10n/translations.dart';
 import '../../../../widgets/app_scaffold.dart';
 import 'invite_member_dialog.dart';
-import 'member_permissions_dialog.dart';
 
 class FarmSettingsPage extends StatefulWidget {
   const FarmSettingsPage({super.key});
@@ -372,88 +373,36 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
   ) {
     final members = farmProvider.members;
     final isOwner = farmProvider.activeFarm?.isOwner ?? false;
+    final memberCount = farmProvider.activeFarm?.memberCount ?? members.length;
 
     return Card(
       child: Column(
         children: [
-          if (isOwner)
+          // For owners: Navigate to members management page
+          // For editors: Just show member count (no management)
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: Icon(Icons.group, color: theme.colorScheme.primary),
+            ),
+            title: Text(t('farm_members')),
+            subtitle: Text(
+              t('member_count', params: {'count': '$memberCount'}),
+            ),
+            trailing: isOwner ? const Icon(Icons.chevron_right) : null,
+            onTap: isOwner ? () => context.push(AppRoutes.farmMembers) : null,
+          ),
+          if (isOwner) ...[
+            const Divider(height: 1),
             ListTile(
               leading: CircleAvatar(
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: Icon(Icons.person_add, color: theme.colorScheme.primary),
+                backgroundColor: theme.colorScheme.secondaryContainer,
+                child: Icon(Icons.person_add, color: theme.colorScheme.secondary),
               ),
               title: Text(t('invite_member')),
               subtitle: Text(t('invite_by_email')),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _showInviteDialog(context),
-            ),
-          if (isOwner && members.isNotEmpty) const Divider(height: 1),
-          if (members.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                t('no_farms'),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.textTheme.bodySmall?.color,
-                ),
-              ),
-            )
-          else
-            ...members.map((member) => _buildMemberTile(context, t, theme, member, farmProvider, isOwner)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMemberTile(
-    BuildContext context,
-    Function t,
-    ThemeData theme,
-    FarmMember member,
-    FarmProvider farmProvider,
-    bool isOwner,
-  ) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundImage: member.avatarUrl != null ? NetworkImage(member.avatarUrl!) : null,
-        child: member.avatarUrl == null
-            ? Text(member.displayNameOrEmail.substring(0, 1).toUpperCase())
-            : null,
-      ),
-      title: Text(member.displayNameOrEmail),
-      subtitle: Text(member.email),
-      onTap: isOwner
-          ? () => _showPermissionsDialog(context, member)
-          : null,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: member.role == FarmRole.owner
-                  ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                  : theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              member.role == FarmRole.owner ? t('role_owner') : t('role_editor'),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: member.role == FarmRole.owner ? theme.colorScheme.primary : null,
-              ),
-            ),
-          ),
-          if (isOwner && member.role != FarmRole.owner) ...[
-            IconButton(
-              icon: const Icon(Icons.tune),
-              onPressed: () => _showPermissionsDialog(context, member),
-              tooltip: t('edit_permissions'),
-            ),
-            IconButton(
-              icon: const Icon(Icons.remove_circle_outline),
-              color: theme.colorScheme.error,
-              onPressed: () => _confirmRemoveMember(context, t, member, farmProvider),
-              tooltip: t('remove_member'),
             ),
           ],
         ],
@@ -568,13 +517,6 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
   }
 
   // ===== DIALOGS =====
-
-  void _showPermissionsDialog(BuildContext context, FarmMember member) {
-    showDialog(
-      context: context,
-      builder: (context) => MemberPermissionsDialog(member: member),
-    );
-  }
 
   Future<void> _showCreateFarmDialog(BuildContext context, Function t, FarmProvider farmProvider) async {
     final nameController = TextEditingController();
@@ -705,47 +647,6 @@ class _FarmSettingsPageState extends State<FarmSettingsPage> {
       context: context,
       builder: (context) => const InviteMemberDialog(),
     );
-  }
-
-  Future<void> _confirmRemoveMember(
-    BuildContext context,
-    Function t,
-    FarmMember member,
-    FarmProvider farmProvider,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t('remove_member')),
-        content: Text(t('remove_member_confirm', params: {'name': member.displayNameOrEmail})),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(t('cancel')),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(t('remove_member')),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        await farmProvider.removeMember(member.userId);
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${t('error')}: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
   }
 
   Future<void> _cancelInvitation(
