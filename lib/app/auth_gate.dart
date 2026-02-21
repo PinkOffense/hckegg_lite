@@ -2,10 +2,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../state/providers/providers.dart';
 import '../features/eggs/presentation/providers/egg_provider.dart';
 import '../features/analytics/presentation/providers/analytics_provider.dart';
+import '../features/farms/presentation/providers/farm_provider.dart';
 import '../l10n/locale_provider.dart';
 import '../l10n/translations.dart';
 
@@ -26,12 +28,35 @@ class _DataLoaderShellState extends State<DataLoaderShell> {
   bool _showSkip = false;
   Timer? _skipTimer;
   String? _loadingMessage;
+  String? _lastUserId;
+  StreamSubscription<AuthState>? _authSubscription;
 
   static const _loadTimeout = Duration(seconds: 10);
 
   @override
   void initState() {
     super.initState();
+
+    // Listen for auth state changes to reset data when user changes
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((event) {
+      final currentUserId = event.session?.user.id;
+
+      // If user changed (login/logout), reset data loading
+      if (_lastUserId != null && _lastUserId != currentUserId) {
+        setState(() {
+          _dataLoaded = false;
+          _dataLoading = false;
+        });
+        if (currentUserId != null && mounted) {
+          _loadData();
+        }
+      }
+      _lastUserId = currentUserId;
+    });
+
+    // Initial user ID
+    _lastUserId = Supabase.instance.client.auth.currentUser?.id;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _loadData();
     });
@@ -56,6 +81,9 @@ class _DataLoaderShellState extends State<DataLoaderShell> {
 
     try {
       setState(() => _loadingMessage = 'Loading your data...');
+
+      // Initialize FarmProvider first (needed for multi-user data)
+      await context.read<FarmProvider>().initialize();
 
       // Load primary data with timeout to prevent infinite loading
       await Future.wait([
@@ -108,6 +136,7 @@ class _DataLoaderShellState extends State<DataLoaderShell> {
   @override
   void dispose() {
     _skipTimer?.cancel();
+    _authSubscription?.cancel();
     super.dispose();
   }
 
