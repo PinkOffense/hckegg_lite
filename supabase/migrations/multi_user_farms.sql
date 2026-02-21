@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS public.farms (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_farms_created_by ON public.farms(created_by);
+CREATE INDEX IF NOT EXISTS idx_farms_created_by ON public.farms(created_by);
 
 COMMENT ON TABLE public.farms IS 'Farms/chicken coops that can be shared between multiple users';
 
@@ -57,8 +57,8 @@ CREATE TABLE IF NOT EXISTS public.farm_members (
     UNIQUE(farm_id, user_id)
 );
 
-CREATE INDEX idx_farm_members_farm ON public.farm_members(farm_id);
-CREATE INDEX idx_farm_members_user ON public.farm_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_farm_members_farm ON public.farm_members(farm_id);
+CREATE INDEX IF NOT EXISTS idx_farm_members_user ON public.farm_members(user_id);
 
 COMMENT ON TABLE public.farm_members IS 'Farm membership with roles (owner/editor)';
 COMMENT ON COLUMN public.farm_members.role IS 'Role: owner (full access) or editor (CRUD on records)';
@@ -77,9 +77,9 @@ CREATE TABLE IF NOT EXISTS public.farm_invitations (
     UNIQUE(farm_id, email)
 );
 
-CREATE INDEX idx_farm_invitations_email ON public.farm_invitations(email);
-CREATE INDEX idx_farm_invitations_token ON public.farm_invitations(token);
-CREATE INDEX idx_farm_invitations_farm ON public.farm_invitations(farm_id);
+CREATE INDEX IF NOT EXISTS idx_farm_invitations_email ON public.farm_invitations(email);
+CREATE INDEX IF NOT EXISTS idx_farm_invitations_token ON public.farm_invitations(token);
+CREATE INDEX IF NOT EXISTS idx_farm_invitations_farm ON public.farm_invitations(farm_id);
 
 COMMENT ON TABLE public.farm_invitations IS 'Pending invitations to join a farm';
 COMMENT ON COLUMN public.farm_invitations.token IS 'Unique token for accepting invitation via link';
@@ -850,6 +850,7 @@ CREATE POLICY "Farm members can delete feed movements" ON public.feed_movements
 -- STEP 7: CREATE TRIGGERS
 -- ============================================
 
+DROP TRIGGER IF EXISTS update_farms_updated_at ON public.farms;
 CREATE TRIGGER update_farms_updated_at
     BEFORE UPDATE ON public.farms
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
