@@ -186,8 +186,8 @@ $$;
 -- STEP 3: UPDATE get_farm_members TO INCLUDE PERMISSIONS
 -- ============================================
 
--- Drop and recreate get_farm_members with permissions
-DROP FUNCTION IF EXISTS public.get_farm_members(UUID);
+-- Drop and recreate get_farm_members with permissions (safe to run multiple times)
+DROP FUNCTION IF EXISTS public.get_farm_members(UUID) CASCADE;
 
 CREATE OR REPLACE FUNCTION public.get_farm_members(p_farm_id UUID)
 RETURNS TABLE (
