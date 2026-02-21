@@ -49,7 +49,7 @@ class _FarmMembersPageState extends State<FarmMembersPage> {
 
     return AppScaffold(
       title: t('farm_members'),
-      actions: [
+      additionalActions: [
         Consumer<FarmProvider>(
           builder: (context, farmProvider, _) {
             if (farmProvider.activeFarm?.isOwner ?? false) {
