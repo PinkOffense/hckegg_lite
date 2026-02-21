@@ -28,8 +28,11 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     );
   }
 
-  Logger.info('HCKEgg API Server starting on ${ip.address}:$port');
+  // Force binding to 0.0.0.0 (IPv4 all interfaces) for Render compatibility
+  final bindAddress = InternetAddress.anyIPv4;
+
+  Logger.info('HCKEgg API Server starting on ${bindAddress.address}:$port');
 
   // Start the server using dart_frog's serve function
-  return serve(handler, ip, port);
+  return serve(handler, bindAddress, port);
 }
