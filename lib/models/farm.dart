@@ -330,14 +330,20 @@ class MemberPermissions {
   );
 
   factory MemberPermissions.fromJson(Map<String, dynamic> json) {
+    Map<String, dynamic>? _toMap(dynamic value) {
+      if (value is Map<String, dynamic>) return value;
+      if (value is Map) return Map<String, dynamic>.from(value);
+      return null;
+    }
+
     return MemberPermissions(
-      eggs: FeaturePermission.fromJson(json['eggs']),
-      health: FeaturePermission.fromJson(json['health']),
-      feed: FeaturePermission.fromJson(json['feed']),
-      sales: FeaturePermission.fromJson(json['sales']),
-      expenses: FeaturePermission.fromJson(json['expenses']),
-      reservations: FeaturePermission.fromJson(json['reservations']),
-      analytics: FeaturePermission.fromJson(json['analytics']),
+      eggs: FeaturePermission.fromJson(_toMap(json['eggs'])),
+      health: FeaturePermission.fromJson(_toMap(json['health'])),
+      feed: FeaturePermission.fromJson(_toMap(json['feed'])),
+      sales: FeaturePermission.fromJson(_toMap(json['sales'])),
+      expenses: FeaturePermission.fromJson(_toMap(json['expenses'])),
+      reservations: FeaturePermission.fromJson(_toMap(json['reservations'])),
+      analytics: FeaturePermission.fromJson(_toMap(json['analytics'])),
     );
   }
 
