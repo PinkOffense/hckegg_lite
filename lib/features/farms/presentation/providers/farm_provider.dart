@@ -49,7 +49,7 @@ class FarmProvider extends ChangeNotifier {
     }
   }
 
-  /// Initialize farm provider - load farms and migrate if needed
+  /// Initialize farm provider - load farms and create one if needed
   /// Returns silently if the farm feature is not yet set up in the backend
   Future<void> initialize() async {
     try {
@@ -58,6 +58,12 @@ class FarmProvider extends ChangeNotifier {
       // If no farms, try to migrate existing data to a personal farm
       if (_farms.isEmpty && !_migrationFailed) {
         await migrateToFarm();
+        await loadFarms();
+      }
+
+      // If still no farms after migration, create a personal farm
+      if (_farms.isEmpty) {
+        await _createPersonalFarm();
         await loadFarms();
       }
 
@@ -71,6 +77,29 @@ class FarmProvider extends ChangeNotifier {
     } catch (e) {
       // Farm feature may not be set up yet - this is OK
       debugPrint('FarmProvider.initialize: $e');
+    }
+  }
+
+  /// Create a personal farm for the user
+  Future<void> _createPersonalFarm() async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
+
+      // Use user's email or name for farm name
+      final email = user.email ?? '';
+      final userName = email.split('@').first;
+      final farmName = userName.isNotEmpty ? '$userName\'s Farm' : 'My Farm';
+
+      await _supabase.rpc(
+        'create_farm',
+        params: {
+          'p_name': farmName,
+          'p_description': 'Personal farm',
+        },
+      );
+    } catch (e) {
+      debugPrint('FarmProvider._createPersonalFarm: $e');
     }
   }
 
