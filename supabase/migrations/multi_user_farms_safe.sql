@@ -102,6 +102,9 @@ BEGIN
 END;
 $$;
 
+-- Drop first to allow changing return type
+DROP FUNCTION IF EXISTS public.get_user_farms(UUID) CASCADE;
+
 CREATE OR REPLACE FUNCTION public.get_user_farms(p_user_id UUID DEFAULT auth.uid())
 RETURNS TABLE (
     farm_id UUID,
@@ -344,6 +347,9 @@ BEGIN
 END;
 $$;
 
+-- Drop first to allow changing return type
+DROP FUNCTION IF EXISTS public.get_farm_members(UUID) CASCADE;
+
 CREATE OR REPLACE FUNCTION public.get_farm_members(p_farm_id UUID)
 RETURNS TABLE (
     member_id UUID,
@@ -379,6 +385,9 @@ BEGIN
     ORDER BY fm.role DESC, fm.joined_at ASC;
 END;
 $$;
+
+-- Drop first to allow changing return type
+DROP FUNCTION IF EXISTS public.get_farm_invitations(UUID) CASCADE;
 
 CREATE OR REPLACE FUNCTION public.get_farm_invitations(p_farm_id UUID)
 RETURNS TABLE (
