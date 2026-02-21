@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/context/farm_context.dart';
 import '../models/feed_stock_model.dart';
 
 abstract class FeedStockRemoteDataSource {
@@ -18,12 +19,27 @@ class FeedStockRemoteDataSourceImpl implements FeedStockRemoteDataSource {
 
   FeedStockRemoteDataSourceImpl({required this.client});
 
+  String? get _farmId => FarmContext().farmId;
+
+  String get _userId {
+    final user = client.auth.currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+    return user.id;
+  }
+
   @override
   Future<List<FeedStockModel>> getFeedStocks() async {
-    final response = await client
-        .from('feed_stocks')
-        .select()
-        .order('last_updated', ascending: false);
+    var query = client.from('feed_stocks').select();
+
+    if (_farmId != null) {
+      query = query.eq('farm_id', _farmId!);
+    } else {
+      query = query.eq('user_id', _userId);
+    }
+
+    final response = await query.order('last_updated', ascending: false);
 
     return (response as List)
         .map((json) => FeedStockModel.fromJson(json))
@@ -49,13 +65,11 @@ class FeedStockRemoteDataSourceImpl implements FeedStockRemoteDataSource {
 
   @override
   Future<FeedStockModel> createFeedStock(FeedStockModel stock) async {
-    final userId = client.auth.currentUser?.id;
-    if (userId == null) {
-      throw Exception('User not authenticated');
-    }
-
     final data = stock.toJson();
-    data['user_id'] = userId;
+    data['user_id'] = _userId;
+    if (_farmId != null) {
+      data['farm_id'] = _farmId;
+    }
     // Remove auto-generated fields - let Supabase handle these
     data.remove('id');
     data.remove('created_at');
@@ -76,6 +90,9 @@ class FeedStockRemoteDataSourceImpl implements FeedStockRemoteDataSource {
     data.remove('id');
     data.remove('created_at');
     data.remove('user_id');
+    if (_farmId != null) {
+      data['farm_id'] = _farmId;
+    }
 
     final response = await client
         .from('feed_stocks')
@@ -107,13 +124,11 @@ class FeedStockRemoteDataSourceImpl implements FeedStockRemoteDataSource {
 
   @override
   Future<FeedMovementModel> addMovement(FeedMovementModel movement) async {
-    final userId = client.auth.currentUser?.id;
-    if (userId == null) {
-      throw Exception('User not authenticated');
-    }
-
     final data = movement.toJson();
-    data['user_id'] = userId;
+    data['user_id'] = _userId;
+    if (_farmId != null) {
+      data['farm_id'] = _farmId;
+    }
     // Remove auto-generated fields - let Supabase handle these
     data.remove('id');
     data.remove('created_at');

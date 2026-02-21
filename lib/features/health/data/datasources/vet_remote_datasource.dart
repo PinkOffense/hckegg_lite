@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/context/farm_context.dart';
 import '../../domain/entities/vet_record.dart';
 import '../models/vet_record_model.dart';
 
@@ -19,6 +20,8 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
 
   VetRemoteDataSourceImpl(this._client);
 
+  String? get _farmId => FarmContext().farmId;
+
   String get _userId {
     final user = _client.auth.currentUser;
     if (user == null) {
@@ -34,11 +37,15 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
 
   @override
   Future<List<VetRecordModel>> getRecords() async {
-    final response = await _client
-        .from(_tableName)
-        .select()
-        .eq('user_id', _userId)
-        .order('date', ascending: false);
+    var query = _client.from(_tableName).select();
+
+    if (_farmId != null) {
+      query = query.eq('farm_id', _farmId!);
+    } else {
+      query = query.eq('user_id', _userId);
+    }
+
+    final response = await query.order('date', ascending: false);
     return (response as List).map((j) => VetRecordModel.fromJson(j)).toList();
   }
 
@@ -48,17 +55,21 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
         .from(_tableName)
         .select()
         .eq('id', id)
-        .eq('user_id', _userId)
         .single();
     return VetRecordModel.fromJson(response);
   }
 
   @override
   Future<List<VetRecordModel>> getRecordsByType(VetRecordType type) async {
-    final response = await _client
-        .from(_tableName)
-        .select()
-        .eq('user_id', _userId)
+    var query = _client.from(_tableName).select();
+
+    if (_farmId != null) {
+      query = query.eq('farm_id', _farmId!);
+    } else {
+      query = query.eq('user_id', _userId);
+    }
+
+    final response = await query
         .eq('type', type.name)
         .order('date', ascending: false);
     return (response as List).map((j) => VetRecordModel.fromJson(j)).toList();
@@ -66,10 +77,15 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
 
   @override
   Future<List<VetRecordModel>> getUpcomingAppointments() async {
-    final response = await _client
-        .from(_tableName)
-        .select()
-        .eq('user_id', _userId)
+    var query = _client.from(_tableName).select();
+
+    if (_farmId != null) {
+      query = query.eq('farm_id', _farmId!);
+    } else {
+      query = query.eq('user_id', _userId);
+    }
+
+    final response = await query
         .not('next_action_date', 'is', null)
         .gte('next_action_date', _todayStr())
         .order('next_action_date', ascending: true);
@@ -78,19 +94,28 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
 
   @override
   Future<List<VetRecordModel>> getTodayAppointments() async {
-    final response = await _client
-        .from(_tableName)
-        .select()
-        .eq('user_id', _userId)
-        .eq('next_action_date', _todayStr());
+    var query = _client.from(_tableName).select();
+
+    if (_farmId != null) {
+      query = query.eq('farm_id', _farmId!);
+    } else {
+      query = query.eq('user_id', _userId);
+    }
+
+    final response = await query.eq('next_action_date', _todayStr());
     return (response as List).map((j) => VetRecordModel.fromJson(j)).toList();
   }
 
   @override
   Future<VetRecordModel> createRecord(VetRecordModel record) async {
+    final data = record.toInsertJson(_userId);
+    if (_farmId != null) {
+      data['farm_id'] = _farmId;
+    }
+
     final response = await _client
         .from(_tableName)
-        .insert(record.toInsertJson(_userId))
+        .insert(data)
         .select()
         .single();
     return VetRecordModel.fromJson(response);
@@ -98,11 +123,15 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
 
   @override
   Future<VetRecordModel> updateRecord(VetRecordModel record) async {
+    final data = record.toInsertJson(_userId);
+    if (_farmId != null) {
+      data['farm_id'] = _farmId;
+    }
+
     final response = await _client
         .from(_tableName)
-        .update(record.toInsertJson(_userId))
+        .update(data)
         .eq('id', record.id)
-        .eq('user_id', _userId)
         .select()
         .single();
     return VetRecordModel.fromJson(response);
@@ -110,6 +139,6 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
 
   @override
   Future<void> deleteRecord(String id) async {
-    await _client.from(_tableName).delete().eq('id', id).eq('user_id', _userId);
+    await _client.from(_tableName).delete().eq('id', id);
   }
 }

@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/context/farm_context.dart';
 import '../models/egg_sale_model.dart';
 
 abstract class SaleRemoteDataSource {
@@ -20,6 +21,8 @@ class SaleRemoteDataSourceImpl implements SaleRemoteDataSource {
 
   SaleRemoteDataSourceImpl(this._client);
 
+  String? get _farmId => FarmContext().farmId;
+
   String get _userId {
     final user = _client.auth.currentUser;
     if (user == null) {
@@ -30,11 +33,15 @@ class SaleRemoteDataSourceImpl implements SaleRemoteDataSource {
 
   @override
   Future<List<EggSaleModel>> getSales() async {
-    final response = await _client
-        .from(_tableName)
-        .select()
-        .eq('user_id', _userId)
-        .order('date', ascending: false);
+    var query = _client.from(_tableName).select();
+
+    if (_farmId != null) {
+      query = query.eq('farm_id', _farmId!);
+    } else {
+      query = query.eq('user_id', _userId);
+    }
+
+    final response = await query.order('date', ascending: false);
     return (response as List).map((j) => EggSaleModel.fromJson(j)).toList();
   }
 
@@ -44,17 +51,21 @@ class SaleRemoteDataSourceImpl implements SaleRemoteDataSource {
         .from(_tableName)
         .select()
         .eq('id', id)
-        .eq('user_id', _userId)
         .single();
     return EggSaleModel.fromJson(response);
   }
 
   @override
   Future<List<EggSaleModel>> getSalesByDateRange({required String startDate, required String endDate}) async {
-    final response = await _client
-        .from(_tableName)
-        .select()
-        .eq('user_id', _userId)
+    var query = _client.from(_tableName).select();
+
+    if (_farmId != null) {
+      query = query.eq('farm_id', _farmId!);
+    } else {
+      query = query.eq('user_id', _userId);
+    }
+
+    final response = await query
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date', ascending: false);
@@ -63,10 +74,15 @@ class SaleRemoteDataSourceImpl implements SaleRemoteDataSource {
 
   @override
   Future<List<EggSaleModel>> getPendingPayments() async {
-    final response = await _client
-        .from(_tableName)
-        .select()
-        .eq('user_id', _userId)
+    var query = _client.from(_tableName).select();
+
+    if (_farmId != null) {
+      query = query.eq('farm_id', _farmId!);
+    } else {
+      query = query.eq('user_id', _userId);
+    }
+
+    final response = await query
         .eq('payment_status', 'pending')
         .eq('is_lost', false)
         .order('date', ascending: false);
@@ -75,10 +91,15 @@ class SaleRemoteDataSourceImpl implements SaleRemoteDataSource {
 
   @override
   Future<List<EggSaleModel>> getLostSales() async {
-    final response = await _client
-        .from(_tableName)
-        .select()
-        .eq('user_id', _userId)
+    var query = _client.from(_tableName).select();
+
+    if (_farmId != null) {
+      query = query.eq('farm_id', _farmId!);
+    } else {
+      query = query.eq('user_id', _userId);
+    }
+
+    final response = await query
         .eq('is_lost', true)
         .order('date', ascending: false);
     return (response as List).map((j) => EggSaleModel.fromJson(j)).toList();
@@ -86,9 +107,14 @@ class SaleRemoteDataSourceImpl implements SaleRemoteDataSource {
 
   @override
   Future<EggSaleModel> createSale(EggSaleModel sale) async {
+    final data = sale.toInsertJson(_userId);
+    if (_farmId != null) {
+      data['farm_id'] = _farmId;
+    }
+
     final response = await _client
         .from(_tableName)
-        .insert(sale.toInsertJson(_userId))
+        .insert(data)
         .select()
         .single();
     return EggSaleModel.fromJson(response);
@@ -96,11 +122,15 @@ class SaleRemoteDataSourceImpl implements SaleRemoteDataSource {
 
   @override
   Future<EggSaleModel> updateSale(EggSaleModel sale) async {
+    final data = sale.toInsertJson(_userId);
+    if (_farmId != null) {
+      data['farm_id'] = _farmId;
+    }
+
     final response = await _client
         .from(_tableName)
-        .update(sale.toInsertJson(_userId))
+        .update(data)
         .eq('id', sale.id)
-        .eq('user_id', _userId)
         .select()
         .single();
     return EggSaleModel.fromJson(response);
@@ -108,7 +138,7 @@ class SaleRemoteDataSourceImpl implements SaleRemoteDataSource {
 
   @override
   Future<void> deleteSale(String id) async {
-    await _client.from(_tableName).delete().eq('id', id).eq('user_id', _userId);
+    await _client.from(_tableName).delete().eq('id', id);
   }
 
   @override
@@ -116,8 +146,7 @@ class SaleRemoteDataSourceImpl implements SaleRemoteDataSource {
     await _client
         .from(_tableName)
         .update({'payment_status': 'paid', 'payment_date': paymentDate})
-        .eq('id', id)
-        .eq('user_id', _userId);
+        .eq('id', id);
   }
 
   @override
@@ -125,7 +154,6 @@ class SaleRemoteDataSourceImpl implements SaleRemoteDataSource {
     await _client
         .from(_tableName)
         .update({'is_lost': true})
-        .eq('id', id)
-        .eq('user_id', _userId);
+        .eq('id', id);
   }
 }

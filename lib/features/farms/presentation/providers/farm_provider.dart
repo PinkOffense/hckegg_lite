@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/context/farm_context.dart';
 import '../../../../models/farm.dart';
 
 /// Provider for farm management and multi-user access
@@ -40,12 +41,18 @@ class FarmProvider extends ChangeNotifier {
       // Set active farm to first farm if not set
       if (_activeFarm == null && _farms.isNotEmpty) {
         _activeFarm = _farms.first;
+        _updateFarmContext();
         notifyListeners();
       }
     } catch (e) {
       // Farm feature may not be set up yet - this is OK
       debugPrint('FarmProvider.initialize: $e');
     }
+  }
+
+  /// Update the global FarmContext with the current active farm
+  void _updateFarmContext() {
+    FarmContext().setFarmId(_activeFarm?.id);
   }
 
   bool _migrationFailed = false;
@@ -93,6 +100,7 @@ class FarmProvider extends ChangeNotifier {
     );
 
     _activeFarm = farm;
+    _updateFarmContext();
     notifyListeners();
 
     // Load members for the active farm
@@ -143,6 +151,7 @@ class FarmProvider extends ChangeNotifier {
         _farms = [..._farms, newFarm];
         _activeFarm = newFarm;
       }
+      _updateFarmContext();
       notifyListeners();
 
       return farmId;
@@ -496,6 +505,7 @@ class FarmProvider extends ChangeNotifier {
     _pendingInvitations = [];
     _error = null;
     _isLoading = false;
+    FarmContext().clear();
     notifyListeners();
   }
 }
