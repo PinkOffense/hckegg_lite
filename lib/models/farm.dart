@@ -101,6 +101,7 @@ class FarmMember {
   final String? avatarUrl;
   final FarmRole role;
   final DateTime joinedAt;
+  final MemberPermissions permissions;
 
   const FarmMember({
     required this.id,
@@ -111,9 +112,25 @@ class FarmMember {
     this.avatarUrl,
     required this.role,
     required this.joinedAt,
+    required this.permissions,
   });
 
   String get displayNameOrEmail => displayName ?? email;
+
+  /// Owners always have full access
+  bool get hasFullAccess => role == FarmRole.owner;
+
+  /// Check if member can view a feature
+  bool canView(String feature) {
+    if (hasFullAccess) return true;
+    return permissions.canView(feature);
+  }
+
+  /// Check if member can edit a feature
+  bool canEdit(String feature) {
+    if (hasFullAccess) return true;
+    return permissions.canEdit(feature);
+  }
 
   factory FarmMember.fromJson(Map<String, dynamic> json) {
     return FarmMember(
@@ -127,6 +144,33 @@ class FarmMember {
       joinedAt: json['joined_at'] != null
           ? DateTime.parse(json['joined_at'])
           : DateTime.now(),
+      permissions: json['permissions'] != null
+          ? MemberPermissions.fromJson(json['permissions'])
+          : MemberPermissions.defaultPermissions(),
+    );
+  }
+
+  FarmMember copyWith({
+    String? id,
+    String? farmId,
+    String? userId,
+    String? email,
+    String? displayName,
+    String? avatarUrl,
+    FarmRole? role,
+    DateTime? joinedAt,
+    MemberPermissions? permissions,
+  }) {
+    return FarmMember(
+      id: id ?? this.id,
+      farmId: farmId ?? this.farmId,
+      userId: userId ?? this.userId,
+      email: email ?? this.email,
+      displayName: displayName ?? this.displayName,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      role: role ?? this.role,
+      joinedAt: joinedAt ?? this.joinedAt,
+      permissions: permissions ?? this.permissions,
     );
   }
 
@@ -216,6 +260,186 @@ enum FarmRole {
         return locale == 'pt' ? 'Proprietário' : 'Owner';
       case FarmRole.editor:
         return locale == 'pt' ? 'Editor' : 'Editor';
+    }
+  }
+}
+
+/// Feature permission - view and edit flags for a single feature
+class FeaturePermission {
+  final bool view;
+  final bool edit;
+
+  const FeaturePermission({
+    this.view = true,
+    this.edit = true,
+  });
+
+  factory FeaturePermission.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return const FeaturePermission();
+    return FeaturePermission(
+      view: json['view'] ?? true,
+      edit: json['edit'] ?? true,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'view': view,
+    'edit': edit,
+  };
+
+  FeaturePermission copyWith({bool? view, bool? edit}) {
+    return FeaturePermission(
+      view: view ?? this.view,
+      edit: edit ?? this.edit,
+    );
+  }
+}
+
+/// Member permissions - granular permissions for each feature
+class MemberPermissions {
+  final FeaturePermission eggs;
+  final FeaturePermission health;
+  final FeaturePermission feed;
+  final FeaturePermission sales;
+  final FeaturePermission expenses;
+  final FeaturePermission reservations;
+  final FeaturePermission analytics;
+
+  const MemberPermissions({
+    this.eggs = const FeaturePermission(),
+    this.health = const FeaturePermission(),
+    this.feed = const FeaturePermission(),
+    this.sales = const FeaturePermission(),
+    this.expenses = const FeaturePermission(),
+    this.reservations = const FeaturePermission(),
+    this.analytics = const FeaturePermission(edit: false),
+  });
+
+  /// Create default permissions (all enabled)
+  factory MemberPermissions.defaultPermissions() => const MemberPermissions();
+
+  /// Create permissions with all disabled
+  factory MemberPermissions.none() => const MemberPermissions(
+    eggs: FeaturePermission(view: false, edit: false),
+    health: FeaturePermission(view: false, edit: false),
+    feed: FeaturePermission(view: false, edit: false),
+    sales: FeaturePermission(view: false, edit: false),
+    expenses: FeaturePermission(view: false, edit: false),
+    reservations: FeaturePermission(view: false, edit: false),
+    analytics: FeaturePermission(view: false, edit: false),
+  );
+
+  factory MemberPermissions.fromJson(Map<String, dynamic> json) {
+    return MemberPermissions(
+      eggs: FeaturePermission.fromJson(json['eggs']),
+      health: FeaturePermission.fromJson(json['health']),
+      feed: FeaturePermission.fromJson(json['feed']),
+      sales: FeaturePermission.fromJson(json['sales']),
+      expenses: FeaturePermission.fromJson(json['expenses']),
+      reservations: FeaturePermission.fromJson(json['reservations']),
+      analytics: FeaturePermission.fromJson(json['analytics']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'eggs': eggs.toJson(),
+    'health': health.toJson(),
+    'feed': feed.toJson(),
+    'sales': sales.toJson(),
+    'expenses': expenses.toJson(),
+    'reservations': reservations.toJson(),
+    'analytics': analytics.toJson(),
+  };
+
+  /// Get permission for a feature by name
+  FeaturePermission getFeature(String feature) {
+    switch (feature) {
+      case 'eggs': return eggs;
+      case 'health': return health;
+      case 'feed': return feed;
+      case 'sales': return sales;
+      case 'expenses': return expenses;
+      case 'reservations': return reservations;
+      case 'analytics': return analytics;
+      default: return const FeaturePermission();
+    }
+  }
+
+  /// Check if user can view a feature
+  bool canView(String feature) => getFeature(feature).view;
+
+  /// Check if user can edit a feature
+  bool canEdit(String feature) => getFeature(feature).edit;
+
+  /// List of all feature keys
+  static const List<String> featureKeys = [
+    'eggs',
+    'health',
+    'feed',
+    'sales',
+    'expenses',
+    'reservations',
+    'analytics',
+  ];
+
+  /// Get feature display name
+  static String featureDisplayName(String feature, String locale) {
+    final names = locale == 'pt' ? {
+      'eggs': 'Registos de Ovos',
+      'health': 'Saúde das Galinhas',
+      'feed': 'Stock de Ração',
+      'sales': 'Vendas',
+      'expenses': 'Despesas',
+      'reservations': 'Reservas',
+      'analytics': 'Painel/Estatísticas',
+    } : {
+      'eggs': 'Egg Records',
+      'health': 'Chicken Health',
+      'feed': 'Feed Stock',
+      'sales': 'Sales',
+      'expenses': 'Expenses',
+      'reservations': 'Reservations',
+      'analytics': 'Dashboard/Analytics',
+    };
+    return names[feature] ?? feature;
+  }
+
+  /// Whether analytics supports edit (always false)
+  static bool featureSupportsEdit(String feature) {
+    return feature != 'analytics';
+  }
+
+  MemberPermissions copyWith({
+    FeaturePermission? eggs,
+    FeaturePermission? health,
+    FeaturePermission? feed,
+    FeaturePermission? sales,
+    FeaturePermission? expenses,
+    FeaturePermission? reservations,
+    FeaturePermission? analytics,
+  }) {
+    return MemberPermissions(
+      eggs: eggs ?? this.eggs,
+      health: health ?? this.health,
+      feed: feed ?? this.feed,
+      sales: sales ?? this.sales,
+      expenses: expenses ?? this.expenses,
+      reservations: reservations ?? this.reservations,
+      analytics: analytics ?? this.analytics,
+    );
+  }
+
+  /// Update a specific feature permission
+  MemberPermissions updateFeature(String feature, FeaturePermission permission) {
+    switch (feature) {
+      case 'eggs': return copyWith(eggs: permission);
+      case 'health': return copyWith(health: permission);
+      case 'feed': return copyWith(feed: permission);
+      case 'sales': return copyWith(sales: permission);
+      case 'expenses': return copyWith(expenses: permission);
+      case 'reservations': return copyWith(reservations: permission);
+      case 'analytics': return copyWith(analytics: permission);
+      default: return this;
     }
   }
 }
